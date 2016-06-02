@@ -261,10 +261,10 @@ void adjustMotor() {
 #endif
 	//throttleOffset=getThrottleOffset();
 	
-	maxLimit = (float) max(
+	maxLimit = (float) min(
 			(getThrottlePowerLevel() + throttleOffset) + getAdjustPowerLeveRange(),
 			getMaxPowerLeve());
-	minLimit = (float) min(
+	minLimit = (float) max(
 			(getThrottlePowerLevel() + throttleOffset) - getAdjustPowerLeveRange(),
 			getMinPowerLevel());
 
