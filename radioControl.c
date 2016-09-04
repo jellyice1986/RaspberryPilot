@@ -13,11 +13,6 @@
 #include "radioControl.h"
 #include "safeMachenism.h"
 
-
-
-
-#define TRANSMIT_TIMER 50000
-
 static int serialFd;
 static pthread_t radioThreadId;
 static pthread_t transmitThreadId;;
@@ -26,6 +21,7 @@ static pthread_t transmitThreadId;;
 void *radioReceiveThread(void *arg);
 void *radioTransmitThread(void *arg);
 short processRadioMessages(int fd, char *buf, short lenth);
+bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 
 
 /**
@@ -60,7 +56,7 @@ bool radioControlInit(){
 
 
 /**
- * This thread is used to report runtime states of pilot to remote side
+ *  report pilot's information to remote side
  */
 void *radioTransmitThread(void *arg) {
 
@@ -104,6 +100,7 @@ void *radioTransmitThread(void *arg) {
 		//printf("%s\n",message);
 		if (strlen(message) > sizeof(message))
 			printf("buffer overflow\n");
+		
 		serialPuts(fd, message);
 		increasePacketAccCounter();
 		memset(message, '\0', sizeof(message));
@@ -153,6 +150,39 @@ void *radioReceiveThread(void *arg) {
 	}
 }
 
+
+bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+
+	int i=0;
+	char *token=NULL;
+	char cmd[lenth];
+
+	//printf("%s\n",buf);
+	
+	for (i = 1; (buf[i] != '#')&&(i<lenth); i++) {
+		cmd[i - 1] = buf[i];
+	}
+	cmd[i-1]='\0';
+	i=1;
+	token = strtok(cmd, ":");
+	strncpy(container[0],token,sizeof(token));
+
+	if(token==NULL) return false;
+		
+	do{
+		token = strtok(NULL, ":");
+		if(token==NULL){
+			break; 
+		}else{
+			strncpy(container[i],token,sizeof(token));
+			i++;
+		}
+	}while(true);
+	
+	return true;
+		
+}
+
 /**
  * Decode a received packet
  *
@@ -163,11 +193,8 @@ void *radioReceiveThread(void *arg) {
  * 				packet size
  */
 short processRadioMessages(int fd, char *buf, short lenth) {
-	short cmdIndex = -1;
-	char cmd[lenth];
-	char *token;
-	short i = 0;
-	short changeLeve = 0;
+
+	char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH];
 	short parameter = 0;
 	float parameterF = 0.0;
 	float rollSpShift = 0;
@@ -177,31 +204,18 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	struct timeval tv;
 	struct timeval tv_last;
 
-
 	resetPacketAccCounter();
-	
-	//printf("%s %d: %s\n",__func__,__LINE__,buf);
 
-	memset(cmd, '\0', sizeof(cmd));
+	if(!extractPacketInfo(buf,lenth,packet)) return;
 
-	for (i = 1; buf[i] != '#'; i++) {
-		cmd[i - 1] = buf[i];
-	}
-//	printf("%s %d: %s\n",__func__,__LINE__,cmd);
 
-	token = strtok(cmd, ":");
-	cmdIndex = atoi(token);
+	switch (atoi(packet[0])) {
+		
+		case HEADER_ENABLE_FLY_SYSTEM:
+			// enable fly system (init motor)
+			// @1#
 
-	switch (cmdIndex) {
-	case 1:
-		// enable fly sysmon (init motor)
-		// @1#
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameter = atoi(token);
-		if (1 == parameter) {
+		if (1 == atoi(packet[ENABLE_FLY_SYSTEM_FIWLD_ISENABLE])) {
 			// printf("1\n");
 			if (false==flySystemIsEnable()) {
 				enableFlySystem();
@@ -213,7 +227,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		}
 
 		break;
-	case 2:
+		
+		case HEADER_CONTROL_MOTION:
 		
 #if 0 /*check cycle time of while*/
 				gettimeofday(&tv,NULL);
@@ -226,36 +241,23 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 
 		//printf("%s\n",buf);
 
-		//change motor power level
-		token = strtok(NULL, ":");
-//			printf("token=%s\n",token);
-		if (token == 0) {
-			break;
-		}
-		parameter = atoi(token);
-		token = strtok(NULL, ":");
-		rollSpShift = atof(token);
-
-		token = strtok(NULL, ":");
-		pitchSpShift = atof(token);
-
-		token = strtok(NULL, ":");
-		yawShiftValue = atof(token);
-		//printf("factor=%d\n",(int)(((float)(parameter-100)/(float)100)*(float)(MAX_POWER_LEVEL-MIN_POWER_LEVEL)));
-		//printf("parameter=%d\n",parameter);
-		throttlePercentage=(float)parameter / 100.f;
+		rollSpShift = atof(packet[CONTROL_MOTION_ROLL_SP_SHIFT]);
+		pitchSpShift = atof(packet[CONTROL_MOTION_PITCH_SP_SHIFT]);
+		yawShiftValue = atof(packet[CONTROL_MOTION_YAW_SHIFT_VALUE]);
+		throttlePercentage=atof(packet[CONTROL_MOTION_THROTTLE]) / 100.f;
 		parameter = getMinPowerLevel()
 				+ (int) (throttlePercentage
 						* (float) (getMaxPowerLeve()
-								- getMinPowerLevel())); /*(100~200)*10=1000~2000 us*/
+								- getMinPowerLevel())); 
+		
 		//printf("getMaxPowerLeveRange()- getMinPowerLeveRange()=%f\n",getMaxPowerLeve()- getMinPowerLevel());
-		//printf("parameter=%d\n",parameter);
 
 		if (parameter > getMaxPowerLeve()
 				|| parameter < getMinPowerLevel()) {
 			printf("break\n");
 			break;
 		}
+		
 		if (true==flySystemIsEnable()) {
 			
 			pthread_mutex_lock(&controlMotorMutex);
@@ -305,10 +307,9 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		}
 
 			//printf("throttle=%d roll=%f pitch=%f\n",parameter,rollSpShift,pitchSpShift);
-
 		break;
 
-	case 3:
+	case HEADER_HALT_PI:
 		//halt raspberry pi
 		//@3#
 		pthread_mutex_lock(&controlMotorMutex);
@@ -319,326 +320,246 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setLeaveFlyControlerFlag(true);
 		break;
 
-	case 4:
-		printf("%s %d: %s\n", __func__, __LINE__, buf);
+	case HEADER_SETUP_FACTOR:
 
-		printf("%s\n", buf);
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameter = atoi(token);
+		printf("%s %d: %s\n", __func__, __LINE__, buf);
+		/***/
+		parameter = atoi(packet[SETUP_FACTOR_PERIOD]);
 		if (parameter == 0) {
 			parameter = 1;
 		}
 		setAdjustPeriod(parameter);
 		printf("Adjustment Period: %d\n", getAdjustPeriod());
 		/***/
-
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameter = atoi(token);
+		parameter = atoi(packet[SETUP_FACTOR_POWER_LEVEL_RANGE]);
 		if (parameter == 0) {
 			parameter = 1;
 		}
 		setAdjustPowerLeveRange(parameter);
 		printf("Adjustment Range: %d\n", getAdjustPowerLeveRange());
 		/***/
-
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameter = atoi(token);
+		parameter = atoi(packet[SETUP_FACTOR_POWER_LIMIT]);
 		if (parameter == 0) {
 			parameter = 1;
 		}
 		setAdjustPowerLimit(parameter);
 		printf("Adjustment Limit: %d\n", getAdjustPowerLimit());
 		/***/
-
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameterF = atof(token);
-		if (parameterF == 0) {
-			parameterF = 1;
+		parameterF = atof(packet[SETUP_FACTOR_GYRO_LIMIT]);
+		if (parameterF == 0.) {
+			parameterF = 1.;
 		}
 		setGyroLimit(parameterF);
 		printf("Angular Velocity Limit: %5.3f\n", getGyroLimit());
 		/***/
-
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameterF = atof(token);
-		if (parameterF == 0) {
-			parameterF = 1;
+		parameterF = atof(packet[SETUP_FACTOR_ANGULAR_LIMIT]);
+		if (parameterF == 0.) {
+			parameterF = 1.;
 		}
 		setAngularLimit(parameterF);
 		printf("Roll/Pitch Angular Limit: %5.3f\n", getAngularLimit());
 		/***/
-
-		token = strtok(NULL, ":");
-		if (token == 0) {
-			break;
-		}
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_FACTOR_ROLL_CAL]);
 		setPidSpShift(&rollAttitudePidSettings, parameterF);
 		printf("Roll Angular Calibration: %5.3f\n",
 				getPidSpShift(&rollAttitudePidSettings));
 		/***/
-
-		token = strtok(NULL, ":");
-                if (token == 0) {
-                        break;
-                }
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_FACTOR_PITCH_CAL]);
 		setPidSpShift(&pitchAttitudePidSettings, parameterF);
 		printf("Pitch Angular Calibration: %5.3f\n",
 				getPidSpShift(&pitchAttitudePidSettings));
-
 		/***/
-
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
-		if (parameterF == 0) {
-			parameterF = 1;
+		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_0]);
+		if (parameterF == 0.) {
+			parameterF = 1.;
 		}
 		setMotorGain(SOFT_PWM_CCW1, parameterF);
 		printf("Motor 0 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CCW1));
 		/***/
-
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
-		if (parameterF == 0) {
-			parameterF = 1;
+		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_1]);
+		if (parameterF == 0.) {
+			parameterF = 1.;
 		}
 		setMotorGain(SOFT_PWM_CW1, parameterF);
 		printf("Motor 1 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CW1));
-
 		/***/
-
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
-		if (parameterF == 0) {
-			parameterF = 1;
+		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_2]);
+		if (parameterF == 0.) {
+			parameterF = 1.;
 		}
 		setMotorGain(SOFT_PWM_CCW2, parameterF);
 		printf("Motor 2 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CCW2));
-
 		/***/
-
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
-		if (parameterF == 0) {
-			parameterF = 1;
+		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_3]);
+		if (parameterF == 0.) {
+			parameterF = 1.;
 		}
 		setMotorGain(SOFT_PWM_CW2, parameterF);
 		printf("Motor 3 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CW2));
-
 		/***/
-		
-		token = strtok(NULL, ":");
-		parameter = atoi(token);
+		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
 		setVerticalHeightHoldEnable((bool)parameter);
 		printf("Vertical Height Hold Enable: %s\n", getVerticalHeightHoldEnable()==true?"true":"false");
-
+		/***/
 		break;
 
-	case 5: 
+	case HEADER_OlED_DISPLAY: 
 		// oled control, doesn't exist anymore
 		break;
 
-	case 6:
+	case HEADER_SETUP_PID:
 		printf("%s\n", buf);
 
 		//attitude Roll P gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_P]);
 		setPGain(&rollAttitudePidSettings, parameterF);
 		printf("Attitude Roll P Gain=%4.6f\n", getPGain(&rollAttitudePidSettings));
 
 		//attitude Roll I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I]);
 		setIGain(&rollAttitudePidSettings, parameterF);
 		printf("Attitude Roll I Gain=%4.6f\n", getIGain(&rollAttitudePidSettings));
 
 		//attitude Roll I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I_LIMIT]);
 		setILimit(&rollAttitudePidSettings, parameterF);
 		printf("Attitude Roll I Output Limit=%4.6f\n",
 				getILimit(&rollAttitudePidSettings));
 
 		//attitude Roll D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_D]);
 		setDGain(&rollAttitudePidSettings, parameterF);
 		printf("Attitude Roll D Gain=%4.6f\n", getDGain(&rollAttitudePidSettings));
 
 		//attitude Pitch P gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_P]);
 		setPGain(&pitchAttitudePidSettings, parameterF);
 		printf("Attitude Pitch P Gain=%4.6f\n", getPGain(&pitchAttitudePidSettings));
 
 		//attitude Pitch I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I]);
 		setIGain(&pitchAttitudePidSettings, parameterF);
 		printf("Attitude Pitch I Gain=%4.6f\n", getIGain(&pitchAttitudePidSettings));
 
 		//attitude Pitch I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I_LIMIT]);
 		setILimit(&pitchAttitudePidSettings, parameterF);
 		printf("Attitude Pitch I Output Limit=%4.6f\n",
 				getILimit(&pitchAttitudePidSettings));
 
 		//attitude Pitch D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_D]);
 		setDGain(&pitchAttitudePidSettings, parameterF);
 		printf("Attitude Pitch D Gain=%4.6f\n", getDGain(&pitchAttitudePidSettings));
 
 		//attitude Yaw P gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_P]);
 		setPGain(&yawAttitudePidSettings, parameterF);
 		printf("Attitude Yaw P Gain=%4.6f\n", getPGain(&yawAttitudePidSettings));
 
 		//attitude Yaw I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I]);
 		setIGain(&yawAttitudePidSettings, parameterF);
 		printf("Attitude Yaw I Gain=%4.6f\n", getIGain(&yawAttitudePidSettings));
 
 		//attitude Yaw I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I_LIMIT]);
 		setILimit(&yawAttitudePidSettings, parameterF);
 		printf("Attitude Yaw I Output Limit=%4.6f\n",
 				getILimit(&yawAttitudePidSettings));
 
 		//attitude Yaw D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_D]);
 		setDGain(&yawAttitudePidSettings, parameterF);
 		printf("Attitude Yaw D Gain=%4.6f\n", getDGain(&yawAttitudePidSettings));
 
 		//Rate Roll P gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_ROLL_P]);
 		setPGain(&rollRatePidSettings, parameterF);
 		printf("Rate Roll P Gain=%4.6f\n", getPGain(&rollRatePidSettings));
 		//Rate Roll I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_ROLL_I]);
 		setIGain(&rollRatePidSettings, parameterF);
 		printf("Rate Roll I Gain=%4.6f\n", getIGain(&rollRatePidSettings));
 		//Rate Roll I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_ROLL_I_LIMIT]);
 		setILimit(&rollRatePidSettings, parameterF);
 		printf("Rate Roll I Output Limit=%4.6f\n",
 				getILimit(&rollRatePidSettings));
 		//Rate Roll D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_ROLL_D]);
 		setDGain(&rollRatePidSettings, parameterF);
 		printf("Rate Roll D Gain=%4.6f\n", getDGain(&rollRatePidSettings));
 
 		//Rate Pitch P gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_PITCH_P]);
 		setPGain(&pitchRatePidSettings, parameterF);
 		printf("Rate Pitch P Gain=%4.6f\n", getPGain(&pitchRatePidSettings));
 		//Rate Pitch I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_PITCH_I]);
 		setIGain(&pitchRatePidSettings, parameterF);
 		printf("Rate Pitch I Gain=%4.6f\n", getIGain(&pitchRatePidSettings));
 		//Rate Pitch I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_PITCH_I_LIMIT]);
 		setILimit(&pitchRatePidSettings, parameterF);
 		printf("Rate Pitch I Output Limit=%4.6f\n",
 				getILimit(&pitchRatePidSettings));
 		//Rate Pitch D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_PITCH_D]);
 		setDGain(&pitchRatePidSettings, parameterF);
 		printf("Rate Pitch D Gain=%4.6f\n", getDGain(&pitchRatePidSettings));
 
 		//Rate Yaw P gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_YAW_P]);
 		setPGain(&yawRatePidSettings, parameterF);
 		printf("Rate Yaw P Gain=%4.6f\n", getPGain(&yawRatePidSettings));
 		//Rate Yaw I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_YAW_I]);
 		setIGain(&yawRatePidSettings, parameterF);
 		printf("Rate Yaw I Gain=%4.6f\n", getIGain(&yawRatePidSettings));
 		//Rate Yaw I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_YAW_I_LIMIT]);
 		setILimit(&yawRatePidSettings, parameterF);
 		printf("Rate Yaw I Output Limit=%4.6f\n",
 				getILimit(&yawRatePidSettings));
 		//Rate Yaw D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_RATE_YAW_D]);
 		setDGain(&yawRatePidSettings, parameterF);
 		printf("Rate Yaw D Gain=%4.6f\n", getDGain(&yawRatePidSettings));
 
 		//Vertical Height P gain	
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
 		setPGain(&verticalHeightSettings, parameterF);
 		printf("Vertical Height P Gain=%4.6f\n", getPGain(&verticalHeightSettings));		
 		//Vertical Height I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I]);
 		setIGain(&verticalHeightSettings, parameterF);
 		printf("Vertical Height I Gain=%4.6f\n", getIGain(&verticalHeightSettings));
 		//Vertical Height I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I_LIMIT]);
 		setILimit(&verticalHeightSettings, parameterF);
 		printf("Vertical Height I Output Limit=%4.6f\n",
 		getILimit(&verticalHeightSettings));
 		//Vertical Height D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_D]);
 		setDGain(&verticalHeightSettings, parameterF);
 		printf("Vertical Height D Gain=%4.6f\n", getDGain(&verticalHeightSettings));
 
 		//Vertical Speed P gain	
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_P]);
 		setPGain(&verticalSpeedSettings, parameterF);
 		printf("Vertical Speed P Gain=%4.6f\n", getPGain(&verticalSpeedSettings));
 		//Vertical Speed I gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I]);
 		setIGain(&verticalSpeedSettings, parameterF);
 		printf("Vertical Speed I Gain=%4.6f\n", getIGain(&verticalSpeedSettings));
 		//Vertical Speed I outputLimit
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I_LIMIT]);
 		setILimit(&verticalSpeedSettings, parameterF);
 		printf("Vertical Speed I Output Limit=%4.6f\n",
 		getILimit(&verticalSpeedSettings));
 		//Vertical Height D gain
-		token = strtok(NULL, ":");
-		parameterF = atof(token);
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
 		setDGain(&verticalSpeedSettings, parameterF);
 		printf("Vertical Speed D Gain=%4.6f\n", getDGain(&verticalSpeedSettings));
 		
@@ -646,5 +567,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	}
 
 }
+
 
 
