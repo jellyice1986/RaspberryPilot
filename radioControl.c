@@ -31,7 +31,7 @@ bool radioControlInit(){
 
 	serialFd=0;
 
-	if ((serialFd = serialOpen("/dev/ttyAMA0", 57600)) < 0) {
+	if ((serialFd = serialOpen("/dev/ttyAMA0", SERIAL_BAUDRATE)) < 0) {
 			printf("Unable to open serial device: %s\n", strerror(errno));
 			return false;
 		}
@@ -90,10 +90,10 @@ void *radioTransmitThread(void *arg) {
 		 #
 		 */
 		sprintf(message,
-				"@%3.2f:%3.2f:%3.2f:%3.2f:%3.2f:%3.2f:%3.2f:%3.2f:%3.2f:%d:%d:%d:%d:%d#",
-				getRoll(), getPitch(), getYaw(), getPidSp(&rollAttitudePidSettings),
-				getPidSp(&pitchAttitudePidSettings),  getYawCenterPoint()+getPidSp(&yawAttitudePidSettings),
-				getRollGyro(), getPitchGyro(), getYawGyro(),
+				"@%.1f:%.1f:%.1f:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
+				getRoll(), getPitch(), getYaw(), (int)getPidSp(&rollAttitudePidSettings),
+				(int)getPidSp(&pitchAttitudePidSettings),  (int)(getYawCenterPoint()+getPidSp(&yawAttitudePidSettings)),
+				(int)getRollGyro(), (int)getPitchGyro(), (int)getYawGyro(),
 				getThrottlePowerLevel(), getMotorPowerLevelCCW1(),
 				getMotorPowerLevelCW1(), getMotorPowerLevelCCW2(),
 				getMotorPowerLevelCW2());

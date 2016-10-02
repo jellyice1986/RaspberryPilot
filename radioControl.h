@@ -2,9 +2,11 @@
 #include "commonLib.h"
 
 
-#define TRANSMIT_TIMER 50000
+#define TRANSMIT_TIMER 60000
 #define PACKET_FIELD_NUM 60
 #define PACKET_FIELD_LENGTH 20
+#define SERIAL_BAUDRATE 9600
+
 
 typedef enum{
 	HEADER_BEGIN,
