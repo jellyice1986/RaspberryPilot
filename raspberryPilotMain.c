@@ -23,7 +23,7 @@
 #ifdef MPU_DMP
 #define ADJUST_TIMER 2000 // 2 usec *+ DMP period
 #else
-#define ADJUST_TIMER 100  //5 usec
+#define ADJUST_TIMER 500  
 #endif
 
 int main() {
