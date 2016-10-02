@@ -7,7 +7,6 @@
 
 #include "motorControl.h"
 #include "systemControl.h"
-#include "smoother.h"
 #include "pid.h"
 #include "radioControl.h"
 #include "flyControler.h"
@@ -24,7 +23,7 @@
 #ifdef MPU_DMP
 #define ADJUST_TIMER 2000 // 2 usec *+ DMP period
 #else
-#define ADJUST_TIMER 500  //5 usec
+#define ADJUST_TIMER 100  //5 usec
 #endif
 
 int main() {
@@ -38,6 +37,8 @@ int main() {
 	float xyzAcc[3];
 	float xyzGravity[3];
 	float xyzMagnet[3];
+	int mpuResult=0;
+	void scanI2cDevice();
 	
 	printf("0x11 -> %d\n",checkI2cDeviceIsExist(0x11));
 	printf("0x77 -> %d\n",checkI2cDeviceIsExist(0x77));
@@ -88,8 +89,12 @@ int main() {
 		last_us=tv.tv_usec;
 		last_s=tv.tv_sec;
 #endif
-
-		if (0 == getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xyzGravity,xyzMagnet)) {
+		mpuResult= getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xyzGravity,xyzMagnet);
+		if (0 == mpuResult
+#ifdef MPU_DMP_YAW
+			|| 1 == mpuResult || 2 == mpuResult
+#endif
+		) {
 			
 #if 0 /*check cycle time of dmp*/
 			gettimeofday(&tv,NULL);
@@ -105,15 +110,9 @@ int main() {
 			setZAxisDegree(xyzGravity[2]);
 			//printf("Z Axis Degree=%3.3f\n",getZAxisDegree());
 
-#if 0 /*Attitude smoother*/
-			addDataToSmoother(roll_attitude_smoother_buffer, yrpAttitude[1]);
-			addDataToSmoother(pitch_attitude_smoother_buffer, yrpAttitude[2]);
-			addDataToSmoother(yaw_attitude_smoother_buffer, yrpAttitude[0]);
-			yrpAttitude[1] = getDataFromSmoother(roll_attitude_smoother_buffer);
-			yrpAttitude[2] = getDataFromSmoother(
-					pitch_attitude_smoother_buffer);
-			yrpAttitude[0] = getDataFromSmoother(yaw_attitude_smoother_buffer);
 
+#ifdef MPU_DMP_YAW
+			if(0 == mpuResult)
 #endif
 			setYaw(yrpAttitude[0]);
 			setPitch(yrpAttitude[2]);
@@ -125,14 +124,6 @@ int main() {
 			//printf("Mag_Yaw=%.3f\n",Mag_Yaw);
 
  			
-#if 0 /*Gyro smoother*/
-			addDataToSmoother(roll_gyro_smoother_buffer, pryRate[1]);
-			addDataToSmoother(pitch_gyro_smoother_buffer, pryRate[0]);
-			addDataToSmoother(yaw_gyro_smoother_buffer, pryRate[2]);
-			pryRate[1] = getDataFromSmoother(roll_gyro_smoother_buffer);
-			pryRate[0] = getDataFromSmoother(pitch_gyro_smoother_buffer);
-			pryRate[2] = getDataFromSmoother(yaw_gyro_smoother_buffer);
-#endif
 			setYawGyro(-pryRate[2]);
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
@@ -171,8 +162,6 @@ int main() {
 						getThrottlePowerLevel());
 					*/
 					pthread_mutex_unlock(&controlMotorMutex);
-				}else{
-					usleep(1500);
 				}
 				
 				count = 0;

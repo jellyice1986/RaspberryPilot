@@ -2,10 +2,92 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <linux/i2c-dev.h>
+#include <linux/i2c.h>
 #include <sys/ioctl.h>
 #include <memory.h>
+#include <errno.h>
 
 #include "i2c.h"
+
+#if 0
+#define MODE_AUTO	0
+#define MODE_QUICK  1
+#define MODE_READ	 2
+#define MODE_FUNC	 3
+
+static int scan_i2c_busr(int file, int mode, int first, int last)
+    {
+        int i, j;
+        int res;
+    
+       // printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
+    
+        for (i = 0; i < 128; i += 16) {
+           // printf("%02x: ", i);
+            for(j = 0; j < 16; j++) {
+                fflush(stdout);
+    
+                /* Skip unwanted addresses */
+                if (i+j < first || i+j > last) {
+             //       printf("   ");
+                    continue;
+                }
+    
+                /* Set slave address */
+                if (ioctl(file, I2C_SLAVE, i+j) < 0) {
+                    if (errno == EBUSY) {
+                        printf("UU ");
+                        continue;
+                    } else {
+                        fprintf(stderr, "Error: Could not set "
+                            "address to 0x%02x: %s\n", i+j,
+                            strerror(errno));
+                        return -1;
+                    }
+                }
+    
+                /* Probe this address */
+                switch (mode) {
+                case MODE_QUICK:
+                    /* This is known to corrupt the Atmel AT24RF08
+                       EEPROM */
+                    res = i2c_smbus_write_quick(file,
+                          I2C_SMBUS_WRITE);
+                    break;
+                case MODE_READ:
+                    /* This is known to lock SMBus on various
+                       write-only chips (mainly clock chips) */
+                    res = i2c_smbus_read_byte(file);
+                    break;
+                default:
+                    if ((i+j >= 0x30 && i+j <= 0x37)
+                     || (i+j >= 0x50 && i+j <= 0x5F))
+                        res = i2c_smbus_read_byte(file);
+                    else
+                        res = i2c_smbus_write_quick(file,
+                              I2C_SMBUS_WRITE);
+                }
+   
+               if (res < 0)
+                  printf(" ");
+               else
+                   printf("%02x ", i+j);
+           }
+           printf("\n");
+       }
+   
+       return 0;
+   }
+
+   void scanI2cDevice(){
+	int first = 0x03, last = 0x77;
+	int fd = open("/dev/i2c-1", O_RDWR);
+	scan_i2c_busr(fd, MODE_AUTO,  first,  last);
+}
+#else
+void scanI2cDevice(){
+}
+#endif
 
 bool checkI2cDeviceIsExist(unsigned char devAddr){
 	int fd=-1;

@@ -990,7 +990,7 @@ bool mpu6050Init() {
 
 	devAddr = MPU6050_DEFAULT_ADDRESS;
 
-#ifdef MPU_DMP	
+#if  defined(MPU_DMP) || defined(MPU_DMP_YAW)	
 	dmpReady = false;
 	// initialize device
 	printf("Initializing I2C devices...\n");
@@ -2432,9 +2432,9 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	float gravity[3];    	    // [x, y, z]            gravity 
 	short acc[3];  // [x, y, z] acc
 	//short magData[3];
-	
-
-#ifdef MPU_DMP		
+	unsigned char	result=0;
+ 
+#if defined(MPU_DMP)|| defined(MPU_DMP_YAW)	
 	unsigned short fifoCount = 0;
 
 	memset(q, 0, sizeof(q));
@@ -2453,8 +2453,8 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		// reset so we can continue cleanly
 		resetFIFO();
 		//printf("%s %d: FIFO overflow!\n",__func__,__LINE__);
-		return 1;
 		// otherwise, check for DMP data ready interrupt (this should happen frequently)
+		result=1;
 	} else if (fifoCount >= dmpPacketSize) {
 		getFIFOBytes(fifoBuffer, packetSize);
 		// display Euler angles in degrees
@@ -2468,22 +2468,68 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		//dmpGetMag(magData, fifoBuffer);
 		//printf("acc x=%d,acc y=%d,acc z=%d\n",acc[0],acc[1],acc[2]);
 		//printf("magData x=%d,magData y=%d,magData z=%d\n",magData[0],magData[1],magData[2]);
-		
-		yprAttitude[0] = yprAttitude[0] * 180 / (float) M_PI;
-		yprAttitude[1] = yprAttitude[1] * 180 / (float) M_PI;
-		yprAttitude[2] = yprAttitude[2] * 180 / (float) M_PI;
+#ifndef MPU_DMP_YAW	
 		xyzGravity[0]=gravity[0];
 		xyzGravity[1]=gravity[1];
 		xyzGravity[2]=gravity[2];
 		xyzAcc[0]=(float)acc[0]/8192.f;
 		xyzAcc[1]=(float)acc[1]/8192.f;
 		xyzAcc[2]=(float)acc[2]/8192.f;
+		yprAttitude[1] = yprAttitude[1] * 180 / (float) M_PI;
+		yprAttitude[2] = yprAttitude[2] * 180 / (float) M_PI;
+#endif
+		yprAttitude[0] = yprAttitude[0] * 180 / (float) M_PI;
 		//printf("accX=%d,accY=%d,accZ=%d,gvX=%f,gvY=%f,gvZ=%f\n",acc[0],acc[1],acc[2],gravity[0],gravity[1],gravity[2]);
-		return 0;
+		result=0;
 	} else {
-		//printf("data is processed: fifoCount=%d\n",fifoCount);
-		return 2;
+		//printf("data is processed: fifoCount=%d\n",fifoCount);	
+		result=2;
 	}
+
+#ifdef MPU_DMP_YAW
+	//printf("result=%d\n",result);
+	float ax=0.f;
+	float ay=0.f;
+	float az=0.f;
+	float gx=0.f;
+	float gy=0.f;
+	float gz=0.f;
+	float mx=0.f;
+	float my=0.f;
+	float mz=0.f;
+	float yawtmp=0.f;
+	if(0==result){
+		yawtmp=yprAttitude[0];
+	}
+	getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+	m_ax=alpha_ax*m_ax+(1-alpha_ax)*ax;
+	m_ay=alpha_ay*m_ay+(1-alpha_ay)*ay;
+	m_az=alpha_az*m_az+(1-alpha_az)*az;
+	m_gx=alpha_gx*m_gx+(1-alpha_gx)*gx;
+	m_gy=alpha_gy*m_gy+(1-alpha_gy)*gy;
+	m_gz=alpha_gz*m_gz+(1-alpha_gz)*gz;
+	IMUupdate(m_gx, m_gy,m_gz,m_ax,m_ay,m_az,q);
+    dmpGetGravity(gravity, q);
+	dmpGetYawPitchRoll(yprAttitude, q, gravity);
+    yprAttitude[1] = yprAttitude[1] * 180.0 / (float) M_PI;
+    yprAttitude[2] = yprAttitude[2] * 180.0 / (float) M_PI;
+	if(0==result){
+		yprAttitude[0]=yawtmp;
+	}
+	xyzGravity[0]=gravity[0];
+	xyzGravity[1]=gravity[1];
+	xyzGravity[2]=gravity[2];
+	yprRate[0]=m_gx* (float) 180.f/M_PI;
+	yprRate[1]=m_gy* (float) 180.f/M_PI;
+	yprRate[2]=m_gz* (float) 180.f/M_PI;
+	xyzAcc[0]=m_ax;
+	xyzAcc[1]=m_ay;
+	xyzAcc[2]=m_az;
+	xyzMagnet[0]=m_my;
+	xyzMagnet[1]=m_mx;
+	xyzMagnet[2]=-m_mz;
+#endif
+	return result;
 #else
 		float ax=0;
 		float ay=0;

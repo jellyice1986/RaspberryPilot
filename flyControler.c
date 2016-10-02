@@ -51,7 +51,6 @@ void flyControlerInit(){
 	setMotorGain(SOFT_PWM_CW1, 1);
 	setMotorGain(SOFT_PWM_CCW2, 1);
 	setMotorGain(SOFT_PWM_CW2, 1);
-	initSmootherBuffer();
 	rollAttitudeOutput = 0;
 	pitchAttitudeOutput = 0;
 	yawAttitudeOutput = 0;

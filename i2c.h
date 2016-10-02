@@ -1,6 +1,8 @@
 
 #include "commonLib.h"
 
+void scanI2cDevice();
+
 bool checkI2cDeviceIsExist(unsigned char devAddr);
 
 char writeByte(unsigned char devAddr, unsigned char regAddr,
