@@ -118,17 +118,14 @@ int main() {
 			setPitch(yrpAttitude[2]);
 			setRoll(yrpAttitude[1]);
 
- 			//printf("Roll_Attitude=%3.3f, Pitch_Attitude=%3.3f, Yaw_Attitude=%3.3f\n",getRoll(),getPitch(),getYaw());
-
-			//float Mag_Yaw = 57.295780 * atan2(xyzMagnet[0]*cos(-getRoll()*(float) M_PI/180.0 ) + xyzMagnet[1]*sin(-getRoll()*(float) M_PI/180.0)*sin(getPitch()*(float) M_PI/180.0) + xyzMagnet[2]*sin(-getRoll()*(float) M_PI/180.0)*cos(getPitch()*(float) M_PI/180.0),xyzMagnet[1]*cos(getPitch()*(float) M_PI/180.0) - xyzMagnet[2]*sin(getPitch()*(float) M_PI/180.0));
-			//printf("Mag_Yaw=%.3f\n",Mag_Yaw);
-
+ 			_DEBUG(DEBUG_ATTI,"ATT: Roll=%3.3f Pitch_Attitude=%3.3f Yaw_Attitude=%3.3f\n",getRoll(),getPitch(),getYaw());
  			
 			setYawGyro(-pryRate[2]);
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
-			//printf("buf: Roll_Gyro=%3.3f, Pitch_Gyro=%3.3f, Yaw_Gyro=%3.3f\n", getRollGyro(),getPitchGyro(),getYawGyro());
-			//printf("acc_x=%.3f, acc_y=%.3f acc_z=%.3f total=%.3f\n",xyzAcc[0],xyzAcc[1],xyzAcc[2],fabs(xyzAcc[0])+fabs(xyzAcc[1])+fabs(xyzAcc[2]));
+			
+			_DEBUG(DEBUG_GYRO,"GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", getRollGyro(),getPitchGyro(),getYawGyro());
+			_DEBUG(DEBUG_ACC,"ACC: x=%3.3f y=%3.3f z=%3.3f\n",xyzAcc[0],xyzAcc[1],xyzAcc[2]);
 						
 			if (count >= getAdjustPeriod()) {
 				if(true==flySystemIsEnable()){
