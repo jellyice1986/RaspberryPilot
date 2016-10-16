@@ -116,14 +116,12 @@ int main() {
 #endif
 			setYaw(yrpAttitude[0]);
 			setPitch(yrpAttitude[2]);
-			setRoll(yrpAttitude[1]);
-
- 			_DEBUG(DEBUG_ATTI,"ATT: Roll=%3.3f Pitch_Attitude=%3.3f Yaw_Attitude=%3.3f\n",getRoll(),getPitch(),getYaw());
- 			
+			setRoll(yrpAttitude[1]);			
 			setYawGyro(-pryRate[2]);
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
 			
+			_DEBUG(DEBUG_ATTI,"ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",getRoll(),getPitch(),getYaw());
 			_DEBUG(DEBUG_GYRO,"GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", getRollGyro(),getPitchGyro(),getYawGyro());
 			_DEBUG(DEBUG_ACC,"ACC: x=%3.3f y=%3.3f z=%3.3f\n",xyzAcc[0],xyzAcc[1],xyzAcc[2]);
 						

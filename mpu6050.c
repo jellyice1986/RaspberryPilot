@@ -369,12 +369,12 @@ static float m_mz=0;
 static float alpha_ax=0.f;
 static float alpha_ay=0.f;
 static float alpha_az=0.f;
-static float alpha_gx=0.1f;
-static float alpha_gy=0.1f;
-static float alpha_gz=0.1f;
-static float alpha_mx=0.9f;
-static float alpha_my=0.9f;
-static float alpha_mz=0.9f; 
+static float alpha_gx=0.f;
+static float alpha_gy=0.f;
+static float alpha_gz=0.f;
+static float alpha_mx=0.f;
+static float alpha_my=0.f;
+static float alpha_mz=0.f; 
 
 
 
@@ -471,7 +471,7 @@ unsigned char dmpInitialize();
 unsigned short dmpGetFIFOPacketSize();
 unsigned char dmpGetYawPitchRoll(float *data, float *q, float *gravity);
 unsigned char dmpGetGravity(float *gravity, float *q);
-unsigned char dmpGetGyro(float *data, const unsigned char* packet);
+unsigned char dmpGetGyro(short *data, const unsigned char* packet);
 unsigned char dmpGetGyro2(float *data, const unsigned char* packet);
 unsigned char dmpGetQuaternion(float *q, const unsigned char* packet);
 unsigned char sub_dmpGetQuaternion(short *qi, const unsigned char* packet);
@@ -992,13 +992,11 @@ bool mpu6050Init() {
 
 #if  defined(MPU_DMP) || defined(MPU_DMP_YAW)	
 	dmpReady = false;
-	// initialize device
-	printf("Initializing I2C devices...\n");
-
-	setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
-	setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
-	setSleepEnabled(false);
+	usleep(1000);
+    setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
+	usleep(1000);
+
 	// verify connection
 	printf("Testing device connections...\n");
 	printf(
@@ -2431,6 +2429,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	float q[4];		    // [w, x, y, z]         quaternion container
 	float gravity[3];    	    // [x, y, z]            gravity 
 	short acc[3];  // [x, y, z] acc
+	short rate[3];  // [x, y, z] rate
 	//short magData[3];
 	unsigned char	result=0;
  
@@ -2463,7 +2462,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 
 		//printf("%3.3f %3.3f %3.3f %3.3f\n",gravity[0],gravity[1],gravity[2],gravity[2]/(sqrt(gravity[0]*gravity[0]+gravity[2]*gravity[2]+gravity[1]*gravity[1])));
 		dmpGetYawPitchRoll(yprAttitude, q, gravity);
-		dmpGetGyro(yprRate, fifoBuffer);
+		dmpGetGyro(rate, fifoBuffer);
 		dmpGetAccel(acc, fifoBuffer);
 		//dmpGetMag(magData, fifoBuffer);
 		//printf("acc x=%d,acc y=%d,acc z=%d\n",acc[0],acc[1],acc[2]);
@@ -2472,6 +2471,9 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		xyzGravity[0]=gravity[0];
 		xyzGravity[1]=gravity[1];
 		xyzGravity[2]=gravity[2];
+		yprRate[0]=(float)rate[0]/16.4;
+		yprRate[1]=(float)rate[1]/16.4;
+		yprRate[2]=(float)rate[2]/16.4;
 		xyzAcc[0]=(float)acc[0]/8192.f;
 		xyzAcc[1]=(float)acc[1]/8192.f;
 		xyzAcc[2]=(float)acc[2]/8192.f;
@@ -2519,9 +2521,9 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	xyzGravity[0]=gravity[0];
 	xyzGravity[1]=gravity[1];
 	xyzGravity[2]=gravity[2];
-	yprRate[0]=m_gx* (float) 180.f/M_PI;
-	yprRate[1]=m_gy* (float) 180.f/M_PI;
-	yprRate[2]=m_gz* (float) 180.f/M_PI;
+	yprRate[0]=m_gx*  180.f/M_PI;
+	yprRate[1]=m_gy*  180.f/M_PI;
+	yprRate[2]=m_gz*  180.f/M_PI;
 	xyzAcc[0]=m_ax;
 	xyzAcc[1]=m_ay;
 	xyzAcc[2]=m_az;
@@ -2654,17 +2656,13 @@ unsigned char dmpGetGyro2(float *data, const unsigned char* packet) {
 			| ((unsigned int) packet[26] << 8) | packet[27])));
 	return 0;
 }
-unsigned char dmpGetGyro(float *data, const unsigned char* packet) {
+unsigned char dmpGetGyro(short *data, const unsigned char* packet) {
 	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
-	short data2[3] = { 0, 0, 0 };
 	if (packet == 0)
 		packet = dmpPacketBuffer;
-	data2[0] = ((packet[16] << 8) | packet[17]);
-	data2[1] = ((packet[20] << 8) | packet[21]);
-	data2[2] = ((packet[24] << 8) | packet[25]);
-	data[0] = (float) data2[0];
-	data[1] = (float) data2[1];
-	data[2] = (float) data2[2];
+	data[0] = ((packet[16] << 8) | packet[17]);
+	data[1] = ((packet[20] << 8) | packet[21]);
+	data[2] = ((packet[24] << 8) | packet[25]);
 	//printf("data[0]=%3.3f, data[1]=%3.3f, data[2]=%3.3f\n",data[0],data[1],data[2]);
 	return 0;
 }
@@ -2752,10 +2750,6 @@ void getMotion9(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
     *my=(float)smy*0.15*asaY;  //uT
     *mz=(float)smz*0.15*asaZ;  //uT
 
-	//printf("ax=%f, ay=%f, az=%f\n",*ax,*ay,*az);
-	//printf("gx=%f, gy=%f, gz=%f\n",*gx,*gy,*gz);
-	//printf("Raw magnet: smx=%d,smy=%d,smz=%d,mx=%f,my=%f,mz=%f\n",smx,smy,smz,*mx,*my,*mz);
-	
 }
 
 
@@ -2924,8 +2918,8 @@ unsigned char dmpInitialize() {
 			printf("Disabling all standby flags...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS , MPU6050_RA_PWR_MGMT_2, 0x00);
 
-			printf("Setting accelerometer sensitivity to +/- 2g...\n");
-			writeByte(MPU6050_DEFAULT_ADDRESS , MPU6050_RA_ACCEL_CONFIG, 0x00);
+			printf("Setting accelerometer sensitivity to +/- 4g...\n");
+			setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
 
 			printf("Setting motion detection threshold to 2...\n");
 			setMotionDetectionThreshold(2);

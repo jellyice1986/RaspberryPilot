@@ -22,7 +22,7 @@ void ahrsInit() {
 }
 
 void initQuaternion() {
-
+#if 0
 	float a_init_ax = 0.f;
 	float a_init_ay = 0.f;
 	float a_init_az = 0.f;
@@ -91,6 +91,7 @@ void initQuaternion() {
 			- sin(0.5 * init_Roll) * sin(0.5 * init_Pitch)
 					* cos(0.5 * init_Yaw);  //z
 
+#endif
 }
 
 float invSqrt(float x) 
