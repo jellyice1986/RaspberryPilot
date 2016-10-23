@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "commonLib.h"
 #include "i2c.h"
 #include "ms5611.h"
 

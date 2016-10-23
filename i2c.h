@@ -1,21 +1,19 @@
 
-#include "commonLib.h"
 
-void scanI2cDevice();
+#define I2C_DEV_PATH "/dev/i2c-1"
 
 bool checkI2cDeviceIsExist(unsigned char devAddr);
-
-char writeByte(unsigned char devAddr, unsigned char regAddr,
+bool writeByte(unsigned char devAddr, unsigned char regAddr,
 		unsigned char data);
-char writeBit(unsigned char devAddr, unsigned char regAddr,
+bool writeBit(unsigned char devAddr, unsigned char regAddr,
 		unsigned char bitNum, unsigned char data);
-char writeBits(unsigned char devAddr, unsigned char regAddr,
+bool writeBits(unsigned char devAddr, unsigned char regAddr,
 		unsigned char bitStart, unsigned char length, unsigned char data);
-char writeBytes(unsigned char devAddr, unsigned char regAddr,
+bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 		unsigned char length, unsigned char * data);
-char writeWord(unsigned char devAddr, unsigned char regAddr,
+bool writeWord(unsigned char devAddr, unsigned char regAddr,
 		unsigned short data);
-char writeWords(unsigned char devAddr, unsigned char regAddr,
+bool writeWords(unsigned char devAddr, unsigned char regAddr,
 		unsigned char length, unsigned short* data);
 char readByte(unsigned char devAddr, unsigned char regAddr,
 		unsigned char *data);

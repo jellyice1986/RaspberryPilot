@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "commonLib.h"
 #include "flyControler.h"
 #include "pid.h"
 #include "motorControl.h"
@@ -11,7 +12,7 @@
 #include "mpu6050.h"
 #include "verticalHeightHold.h"
 #include "radioControl.h"
-#include "safeMachenism.h"
+#include "securityMechanism.h"
 
 static int serialFd;
 static pthread_t radioThreadId;
@@ -102,7 +103,7 @@ void *radioTransmitThread(void *arg) {
 			printf("buffer overflow\n");
 		
 		serialPuts(fd, message);
-		increasePacketAccCounter();
+		increasePacketCounter();
 		memset(message, '\0', sizeof(message));
 		usleep(TRANSMIT_TIMER);
 	}
@@ -204,7 +205,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	struct timeval tv;
 	struct timeval tv_last;
 
-	resetPacketAccCounter();
+	resetPacketCounter();
 
 	if(!extractPacketInfo(buf,lenth,packet)) return;
 
@@ -217,7 +218,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 
 		if (1 == atoi(packet[ENABLE_FLY_SYSTEM_FIWLD_ISENABLE])) {
 			// printf("1\n");
-			if (false==flySystemIsEnable()) {
+			if (!flySystemIsEnable()) {
 				enableFlySystem();
 				motorInit();
 			}
@@ -262,9 +263,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 			
 			pthread_mutex_lock(&controlMotorMutex);
 
-			//if(false==getVerticalHeightHoldEnable()){
+#ifdef FEATURE_VH
+			if(false==getVerticalHeightHoldEnable())
+#endif
 			setThrottlePowerLevel(parameter);
-			//}
 			
 			if (getMinPowerLevel() == parameter) {
 				//printf("STOP\n");
@@ -284,8 +286,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 					printf("START Flying\n");
 					setYawCenterPoint(getYaw());
 					setPidSp(&yawAttitudePidSettings, 0);
-					setStartRisenVerticalHeight(getVerticalHeight());
+#ifdef FEATURE_VH				
+					setStartRisenVerticalHeight(getVerticalHeight());					
 					setInitVHH(true);
+#endif
 				}
 				setPidSp(&rollAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
@@ -293,15 +297,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				setPidSp(&pitchAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
 								getAngularLimit()));
-				setYawCenterPoint(getYawCenterPoint()+(yawShiftValue*4.0));
+				setYawCenterPoint(getYawCenterPoint()+(yawShiftValue*1.0));
+#ifdef FEATURE_VH				
 				setPidSp(&verticalHeightSettings,(float)getStartRisenVerticalHeight()+(throttlePercentage*(float)getMaxRisenVerticalHeight()));
-				//printf("start asl: %d, target asl: %d Difference=%d\n",getStartRisenVerticalHeight(),(short)getPidSp(&verticalHeightSettings),(short)getPidSp(&verticalHeightSettings)-getStartRisenVerticalHeight());
-				//yawShiftValue*4: 4 is a gain, yawShiftValue is 1 or -1
-				//printf("getYawCenterPoint=%3.3f\n",getYawCenterPoint());
+#endif
 			}
-			//printf("rollSpShift=%5.3f pitchSpShift=%5.3f\n",rollSpShift,pitchSpShift);
-			//printf("ROLL SP: %5.3f SHIFT: %5.3f\n",getPidSp(&rollAttitudePidSettings),getPidSpShift(&rollAttitudePidSettings));
-			//printf("PITCH SP: %5.3f SHIFT: %5.3f\n",getPidSp(&pitchPidSettings),getPidSpShift(&pitchPidSettings));
 			pthread_mutex_unlock(&controlMotorMutex);
 
 		}
@@ -342,8 +342,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		if (parameter == 0) {
 			parameter = 1;
 		}
-		setAdjustPowerLimit(parameter);
-		printf("Adjustment Limit: %d\n", getAdjustPowerLimit());
+		setPidAdjustPowerLimit(parameter);
+		printf("PID Adjustment Limit: %d\n", getPidAdjustPowerLimit());
 		/***/
 		parameterF = atof(packet[SETUP_FACTOR_GYRO_LIMIT]);
 		if (parameterF == 0.) {
@@ -398,8 +398,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		printf("Motor 3 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CW2));
 		/***/
 		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
+#ifdef FEATURE_VH		
 		setVerticalHeightHoldEnable((bool)parameter);
 		printf("Vertical Height Hold Enable: %s\n", getVerticalHeightHoldEnable()==true?"true":"false");
+#endif
 		/***/
 		break;
 

@@ -7,7 +7,7 @@
 #include <memory.h>
 #include <math.h>
 
-
+#include "commonLib.h"
 #include "i2c.h"
 #include "ahrs.h"
 #include "mpu6050.h"
@@ -334,6 +334,8 @@
 #define MRES  (10.*1229./4096.f) // Conversion from 1229 microTesla full scale (4096) to 12.29 Gauss full scale
 
 static unsigned char devAddr;
+static unsigned char scaleGyroRange;
+static unsigned char scaleAccRange;
 static char dmpReady;      // set true if DMP init was successful
 static unsigned char buffer[14];
 static unsigned char *dmpPacketBuffer;
@@ -455,7 +457,6 @@ void setDMPEnabled(char enabled);
 void resetDMP();
 unsigned char getIntStatus();
 void setExternalFrameSync(unsigned char sync);
-void getGyro(float *x, float *y, float *z);
 void getMpu6050Rotation(short int * x, short int * y, short int * z);
 short int getRotationX();
 short int getRotationY();
@@ -988,7 +989,16 @@ const prog_uchar dmpUpdates[MPU6050_DMP_UPDATES_SIZE] PROGMEM = {
 
 bool mpu6050Init() {
 
+	if(checkI2cDeviceIsExist(MPU6050_ADDRESS)){
+		_DEBUG(DEBUG_NORMAL,"MPU6050 exist\n");
+	}else{
+		_DEBUG(DEBUG_NORMAL,"MPU6050 dowsn't exist\n");
+		return false;
+	}
+	
 	devAddr = MPU6050_DEFAULT_ADDRESS;
+	scaleGyroRange=0;
+	scaleAccRange=0;
 
 #if  defined(MPU_DMP) || defined(MPU_DMP_YAW)	
 	dmpReady = false;
@@ -996,16 +1006,6 @@ bool mpu6050Init() {
 	usleep(1000);
     setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
 	usleep(1000);
-
-	// verify connection
-	printf("Testing device connections...\n");
-	printf(
-			testConnection() ?
-					"MPU6050 connection successful\n" :
-					"MPU6050 connection failed\n");
-
-	//printf("Start Gyro auto calibration...\n");
-	//autoCalGyroOffset();
 
 	// load and configure the DMP
 	printf("Initializing DMP...\n");
@@ -1053,13 +1053,13 @@ bool mpu6050Init() {
 		setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 		usleep(1000);
 		//printf("Setting sample rate to 200Hz...\n");
-       // setRate(4); // 1khz / (1 + 4) = 200 Hz
+        // setRate(4); // 1khz / (1 + 4) = 200 Hz
         usleep(1000);
 		setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 		usleep(1000);
     	setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
 		usleep(1000);
-		setXGyroOffsetUser(-43);
+		setXGyroOffsetUser(0);
 		usleep(1000);
 		setYGyroOffsetUser(0);
 		usleep(1000);
@@ -1101,19 +1101,94 @@ bool mpu6050Init() {
 		writeByte(devAddr,0x25, MPU9150_RA_MAG_ADDRESS| 0x80);//I2C_SLV0_ADDR(0x25)
 		usleep(1000);	
 		writeByte(devAddr,0x27, 0x80 | 8);//I2C_SLV0_CTRL
-
-#if 0
-setI2CMasterModeEnabled(false);
-		usleep(1000);
-    	setI2CBypassEnabled(true);
-
-#endif
-
 #endif
 
 	usleep(100000);
 	return true;
 	
+}
+
+
+
+float getGyroSensitivity(){
+	switch(scaleGyroRange){
+		case MPU6050_GYRO_FS_250:
+			return 131.f;
+		break;
+		case MPU6050_GYRO_FS_500:
+			return 65.5f;
+		break;
+		case MPU6050_GYRO_FS_1000:
+			return 32.8f;
+		break;
+		case MPU6050_GYRO_FS_2000:
+			return 16.4f;
+		break;
+		default:
+			_ERROR("(%s-%d) Unknow Gyro index\n",__func__,__LINE__);
+			return -1.f;
+	}
+}
+
+float getAccSensitivity(){
+	switch(scaleAccRange){
+		case MPU6050_ACCEL_FS_2:
+			return 16384.f;
+		break;
+		case MPU6050_ACCEL_FS_4:
+			return 8192.f;
+		break;
+		case MPU6050_ACCEL_FS_8:
+			return 4096.f;
+		break;
+		case MPU6050_ACCEL_FS_16:
+			return 2048.f;
+		break;
+		default:
+			_ERROR("(%s-%d) Unknow acc index\n",__func__,__LINE__);
+			return -1.f;
+	}
+}
+
+float getGyroSensitivityInv(){
+	switch(scaleGyroRange){
+		case MPU6050_GYRO_FS_250:
+			return 0.0076335877862f;
+		break;
+		case MPU6050_GYRO_FS_500:
+			return 0.0152671755725f;
+		break;
+		case MPU6050_GYRO_FS_1000:
+			return 0.0304878048780f;
+		break;
+		case MPU6050_GYRO_FS_2000:
+			return 0.0609756097560f;
+		break;
+		default:
+			_ERROR("(%s-%d) Unknow Gyro index\n",__func__,__LINE__);
+			return -1.f;
+	}
+}
+
+float getAccSensitivityInv(){
+
+	switch(scaleAccRange){
+		case MPU6050_ACCEL_FS_2:
+			return 0.0000610351563f;
+		break;
+		case MPU6050_ACCEL_FS_4:
+			return 0.0001220703125f;
+		break;
+		case MPU6050_ACCEL_FS_8:
+			return 0.000244140625f;
+		break;
+		case MPU6050_ACCEL_FS_16:
+			return 0.00048828125f;
+		break;
+		default:
+			_ERROR("(%s-%d) Unknow acc index\n",__func__,__LINE__);
+			return -1.f;
+	}
 }
 
 unsigned char autoCalGyroOffset() {
@@ -1164,10 +1239,10 @@ void meansensors() {
 
 	while (i < (AUTO_CAL_BUFFER_SIZE + 1)) {
 		// read raw gyro measurements from device
-		getMotion6(&ax_, &ay_, &az_, &gx_, &gy_, &gz_);
-		gx = (gx_ / 16.4);
-		gy = (gy_ / 16.4);
-		gz = (gz_ / 16.4);
+		getMotion6RawData(&ax_, &ay_, &az_, &gx_, &gy_, &gz_);
+		gx = (gx_ *getGyroSensitivityInv());
+		gy = (gy_ *getGyroSensitivityInv());
+		gz = (gz_ *getGyroSensitivityInv());
 		//printf("gx=%2.4f gy=%2.4f gz=%2.4f\n",gx,gy,gz);
 		if (i <= (AUTO_CAL_BUFFER_SIZE)) {
 			buff_gx = buff_gx + gx;
@@ -1371,25 +1446,6 @@ float getRollGyro() {
 	return rollGyro;
 }
 
-void getGyro(float *x, float *y, float *z) {
-	short sX;
-	short sY;
-	short sZ;
-	getMpu6050Rotation(&sX, &sY, &sZ);
-
-	//printf("getFullScaleGyroRange: %d\n",getFullScaleGyroRange());
-	// *x=(float)sX/(float)(16.4/(float)(1<<getFullScaleGyroRange()));
-	// *y=(float)sY/(float)(16.4/(float)(1<<getFullScaleGyroRange()));
-	// *z=(float)sZ/(float)(16.4/(float)(1<<getFullScaleGyroRange()));
-	*x = (float) sX / 16.4;
-	*y = (float) sY / 16.4;
-	*z = (float) sZ / 16.4;
-
-	// *x=(float)sX/131.0;
-	//   *y=(float)sY/131.0;
-	//  *z=(float)sZ/131.0;
-
-}
 
 // GYRO_*OUT_* registers
 
@@ -1422,7 +1478,7 @@ void getGyro(float *x, float *y, float *z) {
  * @param x 16-bit signed integer container for X-axis rotation
  * @param y 16-bit signed integer container for Y-axis rotation
  * @param z 16-bit signed integer container for Z-axis rotation
- * @see getMotion6()
+ * @see getMotion6RawData()
  * @see MPU6050_RA_GYRO_XOUT_H
  */
 void getMpu6050Rotation(short int * x, short int * y, short int * z) {
@@ -1434,7 +1490,7 @@ void getMpu6050Rotation(short int * x, short int * y, short int * z) {
 }
 /** Get X-axis gyroscope reading.
  * @return X-axis rotation measurement in 16-bit 2's complement format
- * @see getMotion6()
+ * @see getMotion6RawData()
  * @see MPU6050_RA_GYRO_XOUT_H
  */
 short int getRotationX() {
@@ -1443,7 +1499,7 @@ short int getRotationX() {
 }
 /** Get Y-axis gyroscope reading.
  * @return Y-axis rotation measurement in 16-bit 2's complement format
- * @see getMotion6()
+ * @see getMotion6RawData()
  * @see MPU6050_RA_GYRO_YOUT_H
  */
 short int getRotationY() {
@@ -1452,7 +1508,7 @@ short int getRotationY() {
 }
 /** Get Z-axis gyroscope reading.
  * @return Z-axis rotation measurement in 16-bit 2's complement format
- * @see getMotion6()
+ * @see getMotion6RawData()
  * @see MPU6050_RA_GYRO_ZOUT_H
  */
 short int getRotationZ() {
@@ -1609,6 +1665,7 @@ unsigned char getFullScaleGyroRange() {
 void setFullScaleGyroRange(unsigned char range) {
 	writeBits(devAddr, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT,
 	MPU6050_GCONFIG_FS_SEL_LENGTH, range);
+	scaleGyroRange=range;
 }
 
 /** Get full-scale accelerometer range.
@@ -1641,6 +1698,7 @@ unsigned char getFullScaleAccelRange() {
 void setFullScaleAccelRange(unsigned char range) {
 	writeBits(devAddr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_AFS_SEL_BIT,
 	MPU6050_ACONFIG_AFS_SEL_LENGTH, range);
+	scaleAccRange=range;
 }
 
 /** Get raw 6-axis motion sensor readings (accel/gyro).
@@ -1655,7 +1713,7 @@ void setFullScaleAccelRange(unsigned char range) {
  * @see getRotation()
  * @see MPU6050_RA_ACCEL_XOUT_H
  */
-void getMotion6(short* ax, short* ay, short* az, short* gx, short* gy,
+void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,
 		short* gz) {
 	readBytes(devAddr, MPU6050_RA_ACCEL_XOUT_H, 14, buffer);
 	*ax = (((short) buffer[0]) << 8) | buffer[1];
@@ -2427,10 +2485,9 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		float *xyzGravity, float *xyzMagnet) {
 
 	float q[4];		    // [w, x, y, z]         quaternion container
-	float gravity[3];    	    // [x, y, z]            gravity 
-	short acc[3];  // [x, y, z] acc
-	short rate[3];  // [x, y, z] rate
-	//short magData[3];
+	float gravity[3];   // [x, y, z]            gravity 
+	short acc[3];  		// [x, y, z] acc
+	short rate[3];  	// [x, y, z] rate
 	unsigned char	result=0;
  
 #if defined(MPU_DMP)|| defined(MPU_DMP_YAW)	
@@ -2451,85 +2508,71 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	if (fifoCount == 1024) {
 		// reset so we can continue cleanly
 		resetFIFO();
-		//printf("%s %d: FIFO overflow!\n",__func__,__LINE__);
-		// otherwise, check for DMP data ready interrupt (this should happen frequently)
 		result=1;
 	} else if (fifoCount >= dmpPacketSize) {
+
 		getFIFOBytes(fifoBuffer, packetSize);
-		// display Euler angles in degrees
 		dmpGetQuaternion(q, fifoBuffer);
 		dmpGetGravity(gravity, q);
-
-		//printf("%3.3f %3.3f %3.3f %3.3f\n",gravity[0],gravity[1],gravity[2],gravity[2]/(sqrt(gravity[0]*gravity[0]+gravity[2]*gravity[2]+gravity[1]*gravity[1])));
 		dmpGetYawPitchRoll(yprAttitude, q, gravity);
+
+#ifndef MPU_DMP_YAW
 		dmpGetGyro(rate, fifoBuffer);
 		dmpGetAccel(acc, fifoBuffer);
-		//dmpGetMag(magData, fifoBuffer);
-		//printf("acc x=%d,acc y=%d,acc z=%d\n",acc[0],acc[1],acc[2]);
-		//printf("magData x=%d,magData y=%d,magData z=%d\n",magData[0],magData[1],magData[2]);
-#ifndef MPU_DMP_YAW	
 		xyzGravity[0]=gravity[0];
 		xyzGravity[1]=gravity[1];
 		xyzGravity[2]=gravity[2];
-		yprRate[0]=(float)rate[0]/16.4;
-		yprRate[1]=(float)rate[1]/16.4;
-		yprRate[2]=(float)rate[2]/16.4;
-		xyzAcc[0]=(float)acc[0]/8192.f;
-		xyzAcc[1]=(float)acc[1]/8192.f;
-		xyzAcc[2]=(float)acc[2]/8192.f;
-		yprAttitude[1] = yprAttitude[1] * 180 / (float) M_PI;
-		yprAttitude[2] = yprAttitude[2] * 180 / (float) M_PI;
+		yprRate[0]=(float)rate[0];
+		yprRate[1]=(float)rate[1];
+		yprRate[2]=(float)rate[2];
+		xyzAcc[0]=(float)acc[0]*getAccSensitivityInv();
+		xyzAcc[1]=(float)acc[1]*getAccSensitivityInv();
+		xyzAcc[2]=(float)acc[2]*getAccSensitivityInv();
+		yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
+		yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
 #endif
-		yprAttitude[0] = yprAttitude[0] * 180 / (float) M_PI;
-		//printf("accX=%d,accY=%d,accZ=%d,gvX=%f,gvY=%f,gvZ=%f\n",acc[0],acc[1],acc[2],gravity[0],gravity[1],gravity[2]);
+		yprAttitude[0] = yprAttitude[0] * RA_TO_DE;
 		result=0;
 	} else {
-		//printf("data is processed: fifoCount=%d\n",fifoCount);	
 		result=2;
 	}
 
 #ifdef MPU_DMP_YAW
-	//printf("result=%d\n",result);
 	float ax=0.f;
 	float ay=0.f;
 	float az=0.f;
 	float gx=0.f;
 	float gy=0.f;
 	float gz=0.f;
-	float mx=0.f;
-	float my=0.f;
-	float mz=0.f;
 	float yawtmp=0.f;
 	if(0==result){
 		yawtmp=yprAttitude[0];
 	}
-	getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 	m_ax=alpha_ax*m_ax+(1-alpha_ax)*ax;
 	m_ay=alpha_ay*m_ay+(1-alpha_ay)*ay;
 	m_az=alpha_az*m_az+(1-alpha_az)*az;
 	m_gx=alpha_gx*m_gx+(1-alpha_gx)*gx;
 	m_gy=alpha_gy*m_gy+(1-alpha_gy)*gy;
 	m_gz=alpha_gz*m_gz+(1-alpha_gz)*gz;
+	
 	IMUupdate(m_gx, m_gy,m_gz,m_ax,m_ay,m_az,q);
     dmpGetGravity(gravity, q);
 	dmpGetYawPitchRoll(yprAttitude, q, gravity);
-    yprAttitude[1] = yprAttitude[1] * 180.0 / (float) M_PI;
-    yprAttitude[2] = yprAttitude[2] * 180.0 / (float) M_PI;
+    yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
+    yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
 	if(0==result){
 		yprAttitude[0]=yawtmp;
 	}
 	xyzGravity[0]=gravity[0];
 	xyzGravity[1]=gravity[1];
 	xyzGravity[2]=gravity[2];
-	yprRate[0]=m_gx*  180.f/M_PI;
-	yprRate[1]=m_gy*  180.f/M_PI;
-	yprRate[2]=m_gz*  180.f/M_PI;
+	yprRate[0]=m_gx*  RA_TO_DE;
+	yprRate[1]=m_gy*  RA_TO_DE;
+	yprRate[2]=m_gz*  RA_TO_DE;
 	xyzAcc[0]=m_ax;
 	xyzAcc[1]=m_ay;
 	xyzAcc[2]=m_az;
-	xyzMagnet[0]=m_my;
-	xyzMagnet[1]=m_mx;
-	xyzMagnet[2]=-m_mz;
 #endif
 	return result;
 #else
@@ -2558,11 +2601,10 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		gettimeofday(&tv,NULL);
 
 		if(tv_last.tv_sec!=0){
-			if((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)>=10000/*125000*/){
+			if((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)>=10000){
 				m_mx=alpha_mx*m_mx+(1-alpha_mx)*mx;
 				m_my=alpha_my*m_my+(1-alpha_my)*my;
 				m_mz=alpha_mz*m_mz+(1-alpha_mz)*mz;
-				//printf("Smoothing magnet: mx=%f,my=%f,mz=%f\n",m_mx,m_my,m_mz);
 				tv_last.tv_usec=tv.tv_usec;
 				tv_last.tv_sec=tv.tv_sec;
 			}
@@ -2571,44 +2613,25 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 			tv_last.tv_sec=tv.tv_sec;
 		}
 	
-			
-#if 0
- 		AHRSupdate(m_gx, m_gy,m_gz,m_ax,m_ay,m_az,m_mx,m_my,m_mz,q);
-#else
 		IMUupdate(m_gx, m_gy,m_gz,m_ax,m_ay,m_az,q);
-
-#endif
         dmpGetGravity(gravity, q);
 		dmpGetYawPitchRoll(yprAttitude, q, gravity);
 
-
-	    yprAttitude[0] = yprAttitude[0] * 180.0 / (float) M_PI;
-        yprAttitude[1] = yprAttitude[1] * 180.0 / (float) M_PI;
-        yprAttitude[2] = yprAttitude[2] * 180.0 / (float) M_PI;
+	    yprAttitude[0] = yprAttitude[0] * RA_TO_DE;
+        yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
+        yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
 		xyzGravity[0]=gravity[0];
 		xyzGravity[1]=gravity[1];
 		xyzGravity[2]=gravity[2];
-		yprRate[0]=m_gx* (float) 180.f/M_PI;
-		yprRate[1]=m_gy* (float) 180.f/M_PI;
-		yprRate[2]=m_gz* (float) 180.f/M_PI;
+		yprRate[0]=m_gx* RA_TO_DE;
+		yprRate[1]=m_gy* RA_TO_DE;
+		yprRate[2]=m_gz* RA_TO_DE;
 		xyzAcc[0]=m_ax;
 		xyzAcc[1]=m_ay;
 		xyzAcc[2]=m_az;
 		xyzMagnet[0]=m_my;
 		xyzMagnet[1]=m_mx;
 		xyzMagnet[2]=-m_mz;
-	/*	
-		printf("xyzAcc[0]=%7.3f, xyzAcc[1]=%7.3f, xyzAcc[2]=%7.3f, x=%7.3f, y=%7.3f, z=%7.3f, m_mx=%7.3f, m_my=%7.3f, m_mz=%7.3f\n",
-			xyzAcc[0],
-			xyzAcc[1],
-			xyzAcc[2],
-			yprRate[0], 
-			yprRate[1],
-			yprRate[2],
-			m_mx,
-			m_my,
-			m_mz);
-*/
 		return 0;
 #endif
 }
@@ -2726,6 +2749,26 @@ float ak8963SensitivityAdjustment(char asa){
 	return ((((float)asa-128.f)*0.5)/128.f)+1.f;
 }
 
+
+void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy, float* gz){
+	short sax=0;
+    short say=0;
+    short saz=0;
+    short sgx=0;
+    short sgy=0;
+    short sgz=0;;
+
+	getMotion6RawData(&sax, &say, &saz, &sgx, &sgy, &sgz);
+
+	*ax=(float)sax*getAccSensitivityInv();
+	*ay=(float)say*getAccSensitivityInv();
+	*az=(float)saz*getAccSensitivityInv();
+	*gx=(float)sgx*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
+	*gy=(float)sgy*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
+	*gz=(float)sgz*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
+	
+}
+
 void getMotion9(float* ax, float* ay, float* az, float* gx, float* gy, float* gz,float* mx, float* my, float* mz){
 	short sax=0;
     short say=0;
@@ -2737,19 +2780,19 @@ void getMotion9(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
     short smy=0;
     short smz=0;
 
-	getMotion6(&sax, &say, &saz, &sgx, &sgy, &sgz);
+	getMotion6RawData(&sax, &say, &saz, &sgx, &sgy, &sgz);
 	getMagnet(&smx, &smy, &smz);
 
-	*ax=(float)sax/8192.f;
-	*ay=(float)say/8192.f;
-	*az=(float)saz/8192.f;
-	*gx=(float)(sgx/16.4)* (float) M_PI/180.f; // rad/sec
-	*gy=(float)(sgy/16.4)* (float) M_PI/180.f; // rad/sec
-	*gz=(float)(sgz/16.4)* (float) M_PI/180.f; // rad/sec
+	*ax=(float)sax*getAccSensitivityInv();
+	*ay=(float)say*getAccSensitivityInv();
+	*az=(float)saz*getAccSensitivityInv();
+	*gx=(float)sgx*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
+	*gy=(float)sgy*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
+	*gz=(float)sgz*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
 	*mx=(float)smx*0.15*asaX; //uT
     *my=(float)smy*0.15*asaY;  //uT
     *mz=(float)smz*0.15*asaZ;  //uT
-
+	
 }
 
 

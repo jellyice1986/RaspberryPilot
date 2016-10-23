@@ -1,7 +1,4 @@
 
-#include "commonLib.h"
-
-
 #define TRANSMIT_TIMER 60000
 #define PACKET_FIELD_NUM 60
 #define PACKET_FIELD_LENGTH 20

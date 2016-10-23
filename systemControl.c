@@ -1,53 +1,85 @@
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
-
+#include "commonLib.h"
 #include "systemControl.h"
 
 static bool flySystemIsEnableflag;
 
-
-
 void signalEvent(int sig);
 
 /**
-* Init paramtes and check states of raspberry pi system 
+* Init Raspberry Pi
+*
+* @param 
+*		void  
+*
+* @return 
+*		bool
+*
 */
 bool piSystemInit() {
 
-	if (getuid() != 0) //wiringPi requires root privileges
+	if (getuid() != 0)
 			{
-		printf("Error: wiringPi must be run as root.\n");
+		_ERROR("(%s-%d) wiringPi must be run as root\n",__func__,__LINE__);
 		return false;
 	}
 
 	if (wiringPiSetup() == -1) {
-		printf("Error:wiringPi setup failed.\n");
+		_ERROR("(%s-%d) wiringPi setup failed\n",__func__,__LINE__);
 		return false;
 	}
+	
+	(void)signal(SIGINT, signalEvent);
+	(void) signal(SIGQUIT, signalEvent);
+	(void) signal(SIGABRT, signalEvent);
 	disenableFlySystem();
+
 	return true;
 }
 
 
 /**
-*  set piSystemIsEnable to true, means remote controlle CAN start flying.
+* set piSystemIsEnable become true to indicate that RaspberryPilot CAN start flying
+*
+* @param 
+*		void  
+*
+* @return 
+*		bool
+*
 */
 void enableFlySystem() {
 	flySystemIsEnableflag = true;
 }
 
 /**
-*  set piSystemIsEnable to true, means remote controlle CAN NOT start flying.
+* set piSystemIsEnable become false to indicate that RaspberryPilot CAN NOT start flying
+*
+* @param 
+*		void  
+*
+* @return 
+*		bool
+*
 */
 void disenableFlySystem() {
 	flySystemIsEnableflag = false;
 }
 
-
 /**
-*  check whether means remote controlle can start flying or not.
+*
+*  check whether RaspberryPilot can start flying or not.
+*
+* @param 
+*		void  
+*
+* @return 
+*		bool
+*
 */
 bool flySystemIsEnable() {
 	return flySystemIsEnableflag;
@@ -55,18 +87,23 @@ bool flySystemIsEnable() {
 
 
 /**
-*  check whether means remote controlle can start flying or not.
+*
+* signal event handeler
+*
+* @param 
+*		void  
+*
+* @return 
+*		bool
+*
 */
 void signalEvent(int sig) {
 	setupAllMotorPoewrLevel(getMinPowerLevel(), getMinPowerLevel(),
 			getMinPowerLevel(), getMinPowerLevel());
 	disenableFlySystem();
+	usleep(2000000);
 	exit(EXIT_SUCCESS);
 }
 
-void setSystemSignalEvent(){
-	(void)signal(SIGINT, signalEvent);
-	(void) signal(SIGQUIT, signalEvent);
-	(void) signal(SIGABRT, signalEvent);
-}
+
 

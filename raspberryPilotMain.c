@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <sys/time.h>
-
-
+#include "commonLib.h"
 #include "motorControl.h"
 #include "systemControl.h"
 #include "pid.h"
@@ -12,25 +11,36 @@
 #include "flyControler.h"
 #include "verticalHeightHold.h"
 #include "mpu6050.h"
-#include "safeMachenism.h"
-
+#include "ms5611.h"
+#include "pca9685.h"
+#include "securityMechanism.h"
 #ifndef MPU_DMP	
-	#include "ahrs.h"
+#include "ahrs.h"
 #endif
-
-
 
 #ifdef MPU_DMP
-#define ADJUST_TIMER 2000 // 2 usec *+ DMP period
+#define MAIN_DELAY_TIMER 2000 
 #else
-#define ADJUST_TIMER 500  
+#define MAIN_DELAY_TIMER 500  
 #endif
 
+bool raspberryPilotInit();
+
+/**
+* RaspberryPilot man function
+*
+* @param 
+*		void  
+*
+* @return 
+*		int
+*
+*/
 int main() {
 
 	struct timeval tv;
-	long last_us = 0;
-	long last_s = 0;
+	struct timeval tv2;
+	struct timeval tv3;
 	short count = 0;
 	float yrpAttitude[3];
 	float pryRate[3];
@@ -38,58 +48,21 @@ int main() {
 	float xyzGravity[3];
 	float xyzMagnet[3];
 	int mpuResult=0;
-	void scanI2cDevice();
-	
-	printf("0x11 -> %d\n",checkI2cDeviceIsExist(0x11));
-	printf("0x77 -> %d\n",checkI2cDeviceIsExist(0x77));
-	printf("0x68 -> %d\n",checkI2cDeviceIsExist(0x68));
-	
-	setSystemSignalEvent();
-	setLeaveFlyControlerFlag(false);
-	flyControlerInit();
-	initPacketAccCounter();
 
-	if (false==piSystemInit() ) {
-			return -1;
+	if(!raspberryPilotInit()){
+		return false;
 	}
 	
-	if (false == mpu6050Init()) {
-		printf("Init DMP failed!\n");
-		return -1;
-	}
-	
-#if 0
-	if (false==initVerticalHeightHold() ) {
-				return -1;
-	}
+	while (!getLeaveFlyControlerFlag()) {
 
-#endif	
-
-	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
-		printf("controlMotorMutex init failed\n");
-		return -1;
-	}
-
-	if(false==radioControlInit()){
-		printf("radioControler init failed\n");
-		return -1;
-	}
-	
-	pidInit();
-
-#ifndef MPU_DMP	
-	ahrsInit();
-#endif
-
-	while (true!=getLeaveFlyControlerFlag()) {
-
-#if 0 /*check cycle time of while*/
+#if 0 /*debug: check cycle time of this loop*/
 		gettimeofday(&tv,NULL);
-		printf("duration=%d us\n",(tv.tv_sec-last_s)*1000000+(tv.tv_usec-last_us));
-		last_us=tv.tv_usec;
-		last_s=tv.tv_sec;
+		printf("duration=%d us\n",(tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
+		tv2.tv_usec=tv.tv_usec;
+		tv2.tv_sec=tv.tv_sec;
 #endif
 		mpuResult= getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xyzGravity,xyzMagnet);
+
 		if (0 == mpuResult
 #ifdef MPU_DMP_YAW
 			|| 1 == mpuResult || 2 == mpuResult
@@ -98,39 +71,41 @@ int main() {
 			
 #if 0 /*check cycle time of dmp*/
 			gettimeofday(&tv,NULL);
-			printf("duration=%d us\n",(tv.tv_sec-last_s)*1000000+(tv.tv_usec-last_us));	
-			last_us=tv.tv_usec;
-			last_s=tv.tv_sec;
+			printf("duration=%d us\n",(tv.tv_sec-tv3.tv_sec)*1000000+(tv.tv_usec-tv3.tv_usec));	
+			tv3.tv_usec=tv.tv_usec;
+			tv3.tv_sec=tv.tv_sec;
+
 #endif
 			count++;
-			
+
+#ifdef	FEATURE_VH
 			recordVerticalSpeed(xyzAcc,xyzGravity);
 			//printf("Vertical Speed=%4.3f\n",getVerticalSpeed());
-
-			setZAxisDegree(xyzGravity[2]);
-			//printf("Z Axis Degree=%3.3f\n",getZAxisDegree());
-
+#else
+			setZAxisSlope(xyzGravity[2]);
+			//printf("Z Axis Degree=%3.3f\n",getZAxisSlope());
+#endif
 
 #ifdef MPU_DMP_YAW
 			if(0 == mpuResult)
 #endif
 			setYaw(yrpAttitude[0]);
 			setPitch(yrpAttitude[2]);
-			setRoll(yrpAttitude[1]);			
+			setRoll(yrpAttitude[1]);
 			setYawGyro(-pryRate[2]);
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
 			
-			_DEBUG(DEBUG_ATTI,"ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",getRoll(),getPitch(),getYaw());
-			_DEBUG(DEBUG_GYRO,"GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", getRollGyro(),getPitchGyro(),getYawGyro());
-			_DEBUG(DEBUG_ACC,"ACC: x=%3.3f y=%3.3f z=%3.3f\n",xyzAcc[0],xyzAcc[1],xyzAcc[2]);
+			_DEBUG(DEBUG_ATTI,"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__,getRoll(),getPitch(),getYaw());
+			_DEBUG(DEBUG_GYRO,"(%s-%d) GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__, getRollGyro(),getPitchGyro(),getYawGyro());
+			_DEBUG(DEBUG_ACC,"(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",__func__,__LINE__,xyzAcc[0],xyzAcc[1],xyzAcc[2]);
 						
 			if (count >= getAdjustPeriod()) {
 				if(true==flySystemIsEnable()){
-					pthread_mutex_lock(&controlMotorMutex);
 					
-					if(getPacketAccCounter()!=MAX_COUNTER){
-						if  (getPidSp(&yawAttitudePidSettings) != 321.0/*getThrottlePowerLevel() > getMinPowerLevel()*/) {
+					pthread_mutex_lock(&controlMotorMutex);
+					if(getPacketCounter()!=MAX_COUNTER){
+						if  (getPidSp(&yawAttitudePidSettings) != 321.0) {
 							adjustMotor();
 						}else{
 							setupAllMotorPoewrLevel(getMinPowerLevel(),
@@ -139,35 +114,84 @@ int main() {
 							setThrottlePowerLevel(getMinPowerLevel());
 						}
 					}else{
-						//safe machenism while connection is broken
-						int throttleValue=max(getMinPowerLevel(),getThrottlePowerLevel()-5);
-						setPidSp(&rollAttitudePidSettings,0.f);
-						setPidSp(&pitchAttitudePidSettings,0.f);
-						
-						setupAllMotorPoewrLevel(throttleValue,
-							throttleValue, throttleValue,
-							throttleValue);
-						setThrottlePowerLevel(throttleValue);
+						//security mechanism is triggered while connection is broken
+						triggerSecurityMechanism();
 					}
-					/*
-					printf("getPacketAccCounter=%d rollsp=%3.3f, pitch=%3.3f, getThrottlePowerLevel=%d\n",
-						getPacketAccCounter(),
-						getPidSp(&rollAttitudePidSettings),
-						getPidSp(&pitchAttitudePidSettings),
-						getThrottlePowerLevel());
-					*/
 					pthread_mutex_unlock(&controlMotorMutex);
 				}
 				
 				count = 0;
+				
 			}
 
 		}
 
-		usleep(ADJUST_TIMER);
+		usleep(MAIN_DELAY_TIMER);
 	}
 
 	return 0;
 }
 
+/**
+* Init RaspberryPilot
+*
+* @param 
+*		void  
+*
+* @return 
+*		bool
+*
+*/
+bool raspberryPilotInit(){
+
+	flyControlerInit();
+	securityMechanismInit();
+
+	if (!piSystemInit()) {
+		_ERROR("(%s-%d) Init Raspberry Pi failed!\n",__func__,__LINE__);
+		return false;
+	}
+		
+	if (!mpu6050Init()) {
+		_ERROR("(%s-%d) Init MPU6050 failed!\n",__func__,__LINE__);
+		return false;
+	}
+	if(!pca9685Init()){
+		_ERROR("(%s-%d) Init PCA9685 failed!\n",__func__,__LINE__);
+		return false;
+	}
+		
+#ifdef FEATURE_VH
+	if(checkI2cDeviceIsExist(MS5611_ADDR)){
+		_DEBUG(DEBUG_NORMAL,"MS5611 exist\n",__func__,__LINE__);
+	}else{
+		_ERROR("(%s-%d) MS5611 dowsn't exist\n",__func__,__LINE__);
+		//return false;
+	}
+	
+	if (!initVerticalHeightHold() ) {
+		return false;
+	}
+#endif	
+	
+	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
+		_ERROR("(%s-%d) controlMotorMutex init failed\n",__func__,__LINE__);
+		return false;
+	}
+	
+	if(!radioControlInit()){
+		_ERROR("(%s-%d) radioControler init failed\n",__func__,__LINE__);
+		return false;
+	}
+		
+	pidInit();
+	
+#ifndef MPU_DMP	
+	ahrsInit();
+#endif
+
+	_DEBUG(DEBUG_NORMAL,"Raspberry Pilot init down\n",__func__,__LINE__);
+	return true;
+
+}
 

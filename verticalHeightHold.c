@@ -1,8 +1,13 @@
+
+#ifdef FEATURE_VH
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <math.h>
 
+
+#include "commonLib.h"
 #include "ms5611.h"
 #include "verticalHeightHold.h"
 
@@ -64,7 +69,7 @@ float recordVerticalSpeed(float *xyzAcc, float *xyzGravity){
 	//printf("aX=%f, aY=%f, aZ=%f, gvX=%f, gvY=%f, gvZ=%f\n",xyzAcc[0],xyzAcc[1],xyzAcc[2],xyzGravity[0],xyzGravity[1],xyzGravity[2]);
 	//printf("vSpeed=%f\n",vSpeed*100.f);
 	// Estimate vertical speed based on Acc - fused with baro to reduce drift
-	vSpeed = constrain(vSpeed, -vSpeedLimit, vSpeedLimit);
+	vSpeed = LIMIT_MIN_MAX_VALUE(vSpeed, -vSpeedLimit, vSpeedLimit);
 	//printf("vSpeed=%f, ",vSpeed*100);
 	vSpeed = vSpeed * vBiasAlpha + vSpeedASL * (1.f - vBiasAlpha);
 	//printf(" vSpeedASL=%f\n",vSpeedASL*100);
@@ -126,7 +131,7 @@ void *getDataFromMs5611Thread(void *arg){
 		//printf("interval=%f\n",(((tv.tv_sec-last_s)*1000000+(tv.tv_usec-last_us))*0.000001));
         //last_us=tv.tv_usec;
         //last_s=tv.tv_sec;
-       // usleep(10000);
+        usleep(10000);
 	}
 }
 
@@ -135,4 +140,5 @@ float sensfusion6GetAccZWithoutGravity(float *xyzAcc, float *xyzGravity)
 {
   return ((xyzAcc[0]*xyzGravity[0] + xyzAcc[1]*xyzGravity[1] + xyzAcc[2]*xyzGravity[2]) - 1.0);
 }
+#endif
 

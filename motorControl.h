@@ -1,12 +1,12 @@
 
-typedef enum{
+
 /**
  *	  2 CCW2  CW2 3
  *			X
  *	  1 CW1  CCW1 0
  *			H
  */
-
+typedef enum{
  SOFT_PWM_CCW1,
  SOFT_PWM_CW1,
  SOFT_PWM_CCW2,
@@ -30,8 +30,8 @@ unsigned short getMinPowerLevel();
 unsigned short getMaxPowerLeve();
 unsigned short getAdjustPowerLeveRange();
 void setAdjustPowerLeveRange(int v);
-unsigned short getAdjustPowerLimit();
-void setAdjustPowerLimit(int v);
-float getMotorGain(short index);
-void setMotorGain(short index, float value);
+unsigned short getPidAdjustPowerLimit();
+void setPidAdjustPowerLimit(int v);
+float getMotorGain(unsigned char index);
+void setMotorGain(unsigned char index, float value);
 

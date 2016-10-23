@@ -6,8 +6,8 @@ RM = rm -f
 PWD	= ${shell pwd}
 OBJ_DIR = ${PWD}
 CFLAGS = -DMPU6050_9AXIS -DMPU_DMP_YAW
-OBJS =    commonLib.o i2c.o pca9685.o safeMachenism.o ahrs.o motorControl.o mpu6050.o ms5611.o verticalHeightHold.o systemControl.o pid.o radioControl.o flyControler.o raspberryPilotMain.o
-HEADERS = commonLib.h i2c.h pca9685.h safeMachenism.h ahrs.h motorControl.h mpu6050.h ms5611.h verticalHeightHold.h systemControl.h pid.h radioControl.h flyControler.h
+OBJS =    commonLib.o i2c.o pca9685.o securityMechanism.o ahrs.o motorControl.o mpu6050.o ms5611.o verticalHeightHold.o systemControl.o pid.o radioControl.o flyControler.o raspberryPilotMain.o
+HEADERS = commonLib.h i2c.h pca9685.h securityMechanism.h ahrs.h motorControl.h mpu6050.h ms5611.h verticalHeightHold.h systemControl.h pid.h radioControl.h flyControler.h
 
 all: $(OBJS) $(HEADERS)
 	@echo -e "\033[32m Make RaspberryPilot all...\033[0m"
