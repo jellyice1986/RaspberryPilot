@@ -17,7 +17,7 @@
 *
 * @return 
 *		bool
-
+*
 */
 bool checkI2cDeviceIsExist(unsigned char devAddr){
 
