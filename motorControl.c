@@ -1,7 +1,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
 #include "commonLib.h"
 #include "pca9685.h"
 #include "motorControl.h"
