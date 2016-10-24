@@ -104,16 +104,10 @@ int getPacketCounter(){
 *
 */
 void triggerSecurityMechanism(){
-
-	int throttleValue=max(getMinPowerLevel(),getThrottlePowerLevel()-5);
-
+	
 	setPidSp(&rollAttitudePidSettings,0.f);
 	setPidSp(&pitchAttitudePidSettings,0.f);
-			
-	setupAllMotorPoewrLevel(throttleValue,
-			throttleValue, throttleValue,
-			throttleValue);
-	setThrottlePowerLevel(throttleValue);
+	setThrottlePowerLevel(max(getMinPowerLevel(),getThrottlePowerLevel()-5));
 }
 
 
