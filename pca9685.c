@@ -107,35 +107,33 @@ void setPWMFreq(unsigned short freq) {
  *    
  * =======================================
  *
- *	|<----------- 0 to 4095 ------------>|
+ *  |<----------- 0 to 4095 ------------>|
  *
- *  	       		--------------------
- *    Low      		| High                         |  Low
- *  	-------------------------------------
- * 	^      		^                               ^
- *    Delay Time    	On Time (16 bits)       Off Time (16 bits)
+ *  	       	---------------------
+ *     Low      | High              |  Low
+ *  --------------------------------------
+ *  ^      	^                   ^
+ *  Delay Time  On Time             Off Time
  *
  * ========================================
  *
  *   Example:
  *   If on Time=0, off Time=2014 then the PWM signal is as below
  *
- *  	--------------------
- *    | High                         |  Low
- *  	-------------------------------------
- * 	^      		             ^
- *    0 (On Time)       	      2014 (Off Time) 
+ *    --------------------
+ *    |     High         |  Low
+ *    -------------------------------------
+ *    ^      		 ^
+ *    0 (On Time)       2014 (Off Time) 
  *
  * @param channel
- * 		channel index
+ * 	 channel index
  *
  * @param value
- * 		PWM value from 0 to 4095
+ * 	 PWM value from 0 to 4095
  */
 void setPWM(unsigned char channel, unsigned short value) {
 
-	//printf("channel = %d, value = %d\n",channel,value);
-	
 	if (!PCA9685_initSuccess) {
 		_ERROR("(%s-%d)  PCA9685_initSuccess=%d\n",__func__,__LINE__,PCA9685_initSuccess);
 		return;
