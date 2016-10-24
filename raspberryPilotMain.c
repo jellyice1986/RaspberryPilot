@@ -190,7 +190,7 @@ bool raspberryPilotInit(){
 	ahrsInit();
 #endif
 
-	_DEBUG(DEBUG_NORMAL,"Raspberry Pilot init down\n",__func__,__LINE__);
+	_DEBUG(DEBUG_NORMAL,"Raspberry Pilot init done\n",__func__,__LINE__);
 	return true;
 
 }
