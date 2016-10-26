@@ -7,7 +7,7 @@ void setZAxisSlope(float slope);
 void setLeaveFlyControlerFlag(bool v);
 bool getLeaveFlyControlerFlag();
 void flyControlerInit();
-void adjustMotor();
+void motorControler();
 void setYawCenterPoint(float point);
 float getYawCenterPoint();
 float yawTransform(float originPoint);

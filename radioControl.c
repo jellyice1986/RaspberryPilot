@@ -342,8 +342,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		if (parameter == 0) {
 			parameter = 1;
 		}
-		setPidAdjustPowerLimit(parameter);
-		printf("PID Adjustment Limit: %d\n", getPidAdjustPowerLimit());
+		setPidOutputLimitation(parameter);
+		printf("PID Output Limitation: %d\n", getPidOutputLimitation());
 		/***/
 		parameterF = atof(packet[SETUP_FACTOR_GYRO_LIMIT]);
 		if (parameterF == 0.) {

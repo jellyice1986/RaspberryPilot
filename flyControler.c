@@ -155,7 +155,7 @@ void getRatePidOutput(float *rollRateOutput, float *pitchRateOutput,
  *		value
  *
  */
-void adjustMotor() {
+void motorControler() {
 
 	float rollRateOutput = 0.f;
 	float rollCcw1 = 0.f;
@@ -255,13 +255,13 @@ void adjustMotor() {
 	yawCw2 = -yawRateOutput;
 
 	outCcw1 =
-			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCcw1+pitchCcw1+yawCcw1,-getPidAdjustPowerLimit(),getPidAdjustPowerLimit());
+			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCcw1+pitchCcw1+yawCcw1,-getPidOutputLimitation(),getPidOutputLimitation());
 	outCcw2 =
-			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCcw2+pitchCcw2+yawCcw2,-getPidAdjustPowerLimit(),getPidAdjustPowerLimit());
+			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCcw2+pitchCcw2+yawCcw2,-getPidOutputLimitation(),getPidOutputLimitation());
 	outCw1 =
-			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCw1+pitchCw1+yawCw1,-getPidAdjustPowerLimit(),getPidAdjustPowerLimit());
+			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCw1+pitchCw1+yawCw1,-getPidOutputLimitation(),getPidOutputLimitation());
 	outCw2 =
-			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCw2+pitchCw2+yawCw2,-getPidAdjustPowerLimit(),getPidAdjustPowerLimit());
+			((float) getThrottlePowerLevel()+ throttleOffset) + LIMIT_MIN_MAX_VALUE(rollCw2+pitchCw2+yawCw2,-getPidOutputLimitation(),getPidOutputLimitation());
 
 	outCcw1 =
 			getMotorGain(SOFT_PWM_CCW1) * LIMIT_MIN_MAX_VALUE(outCcw1, minLimit, maxLimit);
@@ -461,6 +461,9 @@ void setAngularLimit(float angular) {
 float getAngularLimit() {
 	return angularLimit;
 }
+
+
+
 
 
 #ifdef FEATURE_VH

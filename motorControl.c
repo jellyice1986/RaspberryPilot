@@ -6,7 +6,7 @@
 #include "motorControl.h"
 
 #define DEFAULT_ADJUST_POWER_RANGE 500  
-#define DEFAULT_PID_ADJUST_POWER_LIMIT 500
+#define DEFAULT_PID_OUTPUT_LIMITATION 500
 #define PWM_DUTY_CYCLE  500				//HZ
 #define PWM_MAX_DC 500 					//HZ   2ms
 #define PWM_MIN_DC 1000 				//HZ  1ms
@@ -19,7 +19,7 @@ static unsigned short motorPowerLevel_CCW1;
 static unsigned short motorPowerLevel_CCW2;
 static unsigned short ThrottlePowertlevel;
 static unsigned short adjustPowerLevelRange=DEFAULT_ADJUST_POWER_RANGE;
-static unsigned short pidAdjustPowerLimit=DEFAULT_PID_ADJUST_POWER_LIMIT;
+static unsigned short pidOutputLimitation=DEFAULT_PID_OUTPUT_LIMITATION;
 static float motor_0_gain;
 static float motor_1_gain;
 static float motor_2_gain;
@@ -294,9 +294,9 @@ void setAdjustPowerLeveRange(int v) {
 *		limitation of PID controler output
 *
 */
-unsigned short getPidAdjustPowerLimit() {
+unsigned short getPidOutputLimitation() {
 
-	return pidAdjustPowerLimit;
+	return pidOutputLimitation;
 }
 
 /*
@@ -308,9 +308,9 @@ unsigned short getPidAdjustPowerLimit() {
 * @return 
 *		void
 */
-void setPidAdjustPowerLimit(int v) {
+void setPidOutputLimitation(int v) {
 
-	pidAdjustPowerLimit = (unsigned short) v;
+	pidOutputLimitation = (unsigned short) v;
 }
 
 

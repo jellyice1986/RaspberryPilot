@@ -10,15 +10,6 @@ double deadband(double value, const double threshold)
   {
     value = 0;
   }
-  
-  else if (value > 0)
-  {
-    value -= threshold;
-  }
-  else if (value < 0)
-  {
-    value += threshold;
-  }
   return value;
 }
 

@@ -31,8 +31,8 @@ unsigned short getMinPowerLevel();
 unsigned short getMaxPowerLeve();
 unsigned short getAdjustPowerLeveRange();
 void setAdjustPowerLeveRange(int v);
-unsigned short getPidAdjustPowerLimit();
-void setPidAdjustPowerLimit(int v);
+unsigned short getPidOutputLimitation();
+void setPidOutputLimitation(int v);
 float getMotorGain(unsigned char index);
 void setMotorGain(unsigned char index, float value);
 

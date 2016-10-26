@@ -1715,13 +1715,14 @@ void setFullScaleAccelRange(unsigned char range) {
  */
 void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,
 		short* gz) {
-	readBytes(devAddr, MPU6050_RA_ACCEL_XOUT_H, 14, buffer);
+	readBytes(devAddr, MPU6050_RA_ACCEL_XOUT_H, 6, buffer);
 	*ax = (((short) buffer[0]) << 8) | buffer[1];
 	*ay = (((short) buffer[2]) << 8) | buffer[3];
 	*az = (((short) buffer[4]) << 8) | buffer[5];
-	*gx = (((short) buffer[8]) << 8) | buffer[9];
-	*gy = (((short) buffer[10]) << 8) | buffer[11];
-	*gz = (((short) buffer[12]) << 8) | buffer[13];
+	readBytes(devAddr, MPU6050_RA_GYRO_XOUT_H, 6, buffer);
+	*gx = (((short) buffer[0]) << 8) | buffer[1];
+	*gy = (((short) buffer[2]) << 8) | buffer[3];
+	*gz = (((short) buffer[4]) << 8) | buffer[5];
 }
 
 /** Get sleep mode status.

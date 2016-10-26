@@ -106,7 +106,7 @@ int main() {
 					pthread_mutex_lock(&controlMotorMutex);
 					if(getPacketCounter()!=MAX_COUNTER){
 						if  (getPidSp(&yawAttitudePidSettings) != 321.0) {
-							adjustMotor();
+							motorControler();
 						}else{
 							setupAllMotorPoewrLevel(getMinPowerLevel(),
 								getMinPowerLevel(), getMinPowerLevel(),
