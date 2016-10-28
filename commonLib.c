@@ -4,7 +4,6 @@
 #include <math.h>
 #include "commonLib.h"
 
-
 /**
 * dead band processor
 *
