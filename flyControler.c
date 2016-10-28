@@ -363,6 +363,7 @@ float getYawCenterPoint(){
 
 /**
 * transform yaw value by YawCenterPoint
+*
 * @param originPoint
 *               a real yaw value
 *
