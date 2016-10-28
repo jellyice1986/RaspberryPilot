@@ -1,6 +1,6 @@
 
 typedef struct {
-	char name[10]; //name of structure, it is usually used for debuging. 
+	char name[10]; //name of pid entity
 	float pv; //process value
 	float sp; //set point, it is usually changed by remote controller
 	float spShift; //sp shift, it is usually used to calibrate zero point
@@ -9,7 +9,6 @@ typedef struct {
 	float igain; //Ki
 	float iLimit; //limitation of integral
 	float dgain; //Kd
-	float dt; //period
 	float err;//current error
 	struct timeval last_tv;
 	float last_error; //last error  of pid calculation
