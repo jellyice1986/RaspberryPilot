@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "commonLib.h"
 #include "motorControl.h"
 #include "pid.h"
 #include "securityMechanism.h"
@@ -104,7 +105,7 @@ int getPacketCounter(){
 *
 */
 void triggerSecurityMechanism(){
-	
+
 	setPidSp(&rollAttitudePidSettings,0.f);
 	setPidSp(&pitchAttitudePidSettings,0.f);
 	setThrottlePowerLevel(max(getMinPowerLevel(),getThrottlePowerLevel()-5));

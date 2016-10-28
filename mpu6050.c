@@ -1004,7 +1004,7 @@ bool mpu6050Init() {
 	dmpReady = false;
 	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 	usleep(1000);
-    setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
+    setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
 	usleep(1000);
 
 	// load and configure the DMP
@@ -1057,7 +1057,7 @@ bool mpu6050Init() {
         usleep(1000);
 		setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 		usleep(1000);
-    	setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
+    	setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
 		usleep(1000);
 		setXGyroOffsetUser(0);
 		usleep(1000);
@@ -2962,8 +2962,8 @@ unsigned char dmpInitialize() {
 			printf("Disabling all standby flags...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS , MPU6050_RA_PWR_MGMT_2, 0x00);
 
-			printf("Setting accelerometer sensitivity to +/- 4g...\n");
-			setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
+			printf("Setting accelerometer sensitivity to +/- 8g...\n");
+			setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
 
 			printf("Setting motion detection threshold to 2...\n");
 			setMotionDetectionThreshold(2);

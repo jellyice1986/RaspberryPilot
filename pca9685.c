@@ -107,12 +107,12 @@ void setPWMFreq(unsigned short freq) {
  *    
  * =======================================
  *
- *  |<----------- 0 to 4095 ------------>|
+ *	|<----------- 0 to 4095 ------------>|
  *
  *  	       	---------------------
- *     Low      | High              |  Low
+ *    Low      		| High                         |  Low
  *  --------------------------------------
- *  ^      	^                   ^
+ * 	^      		^                               ^
  *  Delay Time  On Time             Off Time
  *
  * ========================================
@@ -120,17 +120,17 @@ void setPWMFreq(unsigned short freq) {
  *   Example:
  *   If on Time=0, off Time=2014 then the PWM signal is as below
  *
- *    --------------------
- *    |     High         |  Low
- *    -------------------------------------
- *    ^      		 ^
- *    0 (On Time)       2014 (Off Time) 
+ *  	--------------------
+ *    | High                         |  Low
+ *  	-------------------------------------
+ * 	^      		             ^
+ *    0 (On Time)       	      2014 (Off Time) 
  *
  * @param channel
- * 	 channel index
+ * 		channel index
  *
  * @param value
- * 	 PWM value from 0 to 4095
+ * 		PWM value from 0 to 4095
  */
 void setPWM(unsigned char channel, unsigned short value) {
 

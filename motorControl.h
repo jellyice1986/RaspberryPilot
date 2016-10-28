@@ -2,10 +2,10 @@
 
 /**
  * motor definition
- *	  2 CCW2  CW2  3
- *		X
- *	  1 CW1   CCW1 0
- *		H
+ *	  2 CCW2  CW2 3
+ *			X
+ *	  1 CW1  CCW1 0
+ *			H
  */
 typedef enum{
  SOFT_PWM_CCW1,

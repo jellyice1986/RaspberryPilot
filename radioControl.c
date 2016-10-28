@@ -275,9 +275,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&yawAttitudePidSettings);
 				resetPidRecord(&rollRatePidSettings);
 				resetPidRecord(&pitchRatePidSettings);
+#ifdef FEATURE_VH				
 				resetPidRecord(&yawRatePidSettings);
 				resetPidRecord(&verticalHeightSettings);
 				resetPidRecord(&verticalSpeedSettings);
+#endif				
 				setYawCenterPoint(0);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
@@ -529,6 +531,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&yawRatePidSettings, parameterF);
 		printf("Rate Yaw D Gain=%4.6f\n", getDGain(&yawRatePidSettings));
 
+#ifdef FEATURE_VH
 		//Vertical Height P gain	
 		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
 		setPGain(&verticalHeightSettings, parameterF);
@@ -564,7 +567,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
 		setDGain(&verticalSpeedSettings, parameterF);
 		printf("Vertical Speed D Gain=%4.6f\n", getDGain(&verticalSpeedSettings));
-		
+#endif		
 		break;
 	}
 

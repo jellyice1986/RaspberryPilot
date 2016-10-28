@@ -101,6 +101,7 @@ void signalEvent(int sig) {
 	setupAllMotorPoewrLevel(getMinPowerLevel(), getMinPowerLevel(),
 			getMinPowerLevel(), getMinPowerLevel());
 	disenableFlySystem();
+	_DEBUG(DEBUG_NORMAL,"exit RaspberryPilot\n");
 	usleep(2000000);
 	exit(EXIT_SUCCESS);
 }

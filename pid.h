@@ -1,8 +1,4 @@
 
-#include "commonLib.h"
-#include <sys/time.h>
-
-
 typedef struct {
 	char name[10]; //name of structure, it is usually used for debuging. 
 	float pv; //process value
@@ -31,7 +27,7 @@ extern PID_STRUCT verticalSpeedSettings;
 void pidInit(void);
 float pidCalculation(PID_STRUCT *pid, float process_point,const bool updateError);
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
-		float set_point, float shift, float ilimit,float dt);
+		float set_point, float shift, float ilimit);
 void resetPidRecord(PID_STRUCT *pid);
 void setPidError(PID_STRUCT *pi, float value);
 float getPidSperror(PID_STRUCT *pi) ;
