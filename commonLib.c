@@ -16,12 +16,21 @@
 * @return
 *		output
 */
-double deadband(double value, const double threshold)
-{
+float deadband(float value, const float threshold){
+
   if (fabs(value) < threshold)
   {
     value = 0;
   }
+  else if (value > 0)
+  {
+    value -= threshold;
+  }
+  else if (value < 0)
+  {
+    value += threshold;
+  }
+  
   return value;
 }
 

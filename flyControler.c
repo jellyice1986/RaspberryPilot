@@ -6,20 +6,11 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 #include "commonLib.h"
-#include "verticalHeightHold.h"
 #include "motorControl.h"
 #include "systemControl.h"
 #include "mpu6050.h"
 #include "pid.h"
 #include "flyControler.h"
-
-#ifdef FEATURE_VH
-void getVerticalHeightPidOutput () ;
-void getVerticalSpeedPidOutput(float verticalHeightOutput,	float *verticalSpeedOutput);
-float getThrottleOffsetByVHH();
-void convertThrottleByVHH();
-void convertThrottleByVHH2();
-#endif
 
 #define DEFAULT_ADJUST_PERIOD 1
 #define DEFAULT_GYRO_LIMIT 50
@@ -184,14 +175,8 @@ void motorControler() {
 	float minLimit = 0.f;
 	float throttleOffset = 0.f;
 	
-#ifdef FEATURE_VH
-	if(true==getVerticalHeightHoldEnable()){
-		throttleOffset=getThrottleOffsetByVHH();
-	}
-#else	
 	//have to check whether it is useful or not
 	//throttleOffset=getThrottleOffset();
-#endif
 	
 	maxLimit = (float) min(
 			(getThrottlePowerLevel() + throttleOffset) + getAdjustPowerLeveRange(),
@@ -463,109 +448,3 @@ float getAngularLimit() {
 	return angularLimit;
 }
 
-
-
-
-
-#ifdef FEATURE_VH
-static float altHoldErrMax          = 300.0;   // max cap on current estimated altitude vs target altitude in cm
-static float errDeadband            = 0.00;  // error (target - altitude) deadband
-static float vSpeedAccFac           = -48.f;  // multiplier
-static float pidAlpha               = 0.8;   // PID Smoothing //TODO: shouldnt need to do this
-static float pidAslFac              = 1; // relates meters asl to thrust
-static float altHoldPIDVal=0.f;
-static bool initVHH=0.f;
-static float altHoldErr=0.f;  
-static float altHoldTarget          = 0.f;    // Target altitude
-static unsigned short altHoldMinThrust    = 2014; // minimum hover thrust - not used yet
-static unsigned short altHoldBaseThrust   = 43000; // approximate throttle needed when in perfect hover. More weight/older battery can use a higher value
-static unsigned short altHoldMaxThrust    = 4014; // max altitude hold thrust
-static float alphaVHH=0.4;
-static float safeRange=0.7;
-
-void getVerticalHeightPidOutput () {
-	verticalHeightOutput = pidCalculation(&verticalHeightSettings, getVerticalHeight(),true);
-	//verticalHeightOutput = LIMIT_MIN_MAX_VALUE(verticalHeightOutput,-500, 500);
-  // TODO
-}
-
-void getVerticalSpeedPidOutput(float verticalHeightOutput,	float *verticalSpeedOutput) {
-	//TODO	
-	setPidSp(&verticalSpeedSettings, verticalHeightOutput);
-	*verticalSpeedOutput = pidCalculation(&verticalSpeedSettings, getVerticalSpeed(),true);
-	//printf("getVerticalSpeed=%f\n",getVerticalSpeed());//In cm
-}
-void setInitVHH(bool v){
-	initVHH=v;
-}
-
-bool getInitVHH(void){
-	return initVHH;
-}
-
-float getThrottleOffsetByVHH(){
-
-		float pidOutput=0.f;
-		
-		setPidSp(&verticalSpeedSettings, 0);
-		pidOutput = pidCalculation(&verticalSpeedSettings, getVerticalSpeed(),true);
-		LIMIT_MIN_MAX_VALUE(pidOutput,-200,200);
-		//printf("pidOutput=%f\n",pidOutput);
-		return pidOutput;
-}
-
-void convertThrottleByVHH(){
-
-	float heightHoldErr=0.f;
-	float pidOutput=0.f;
-	float throttle=0.f;
-
-	if(true==getInitVHH()){
-		throttle=0.f;
-	}
-	if(true==getVerticalHeightHoldEnable()){
-		heightHoldErr = LIMIT_MIN_MAX_VALUE(deadband(getPidSp(&verticalHeightSettings)-getVerticalHeight(), errDeadband),
-								  -altHoldErrMax, altHoldErrMax);
-		setPidError(&verticalHeightSettings, heightHoldErr);
-
-		verticalHeightOutput = pidCalculation(&verticalHeightSettings, getVerticalHeight(),false);
-
-		getVerticalSpeedPidOutput(verticalHeightOutput,	&pidOutput);
-
-		//throttle= alphaVHH*getThrottlePowerLevel()+(1-alphaVHH)*(getThrottlePowerLevel()+pidOutput);
-		throttle=getThrottlePowerLevel()+pidOutput;
-		throttle= max(getMinPowerLevel(), min(getMaxPowerLeve()-500,throttle));
-		//printf("throttle=%f\n",throttle);
-		setThrottlePowerLevel((unsigned short)throttle);
-}
-}
-
-void convertThrottleByVHH2(){
-	//TODO
-
-	if(true==getInitVHH()){
-
-		setInitVHH(false);
-		altHoldPIDVal=0.f;
-		 // Reset altHoldPID
-    	//altHoldPIDVal = pidCalculation(&verticalHeightSettings, getVerticalHeight(), false));
-	}
-
-	if(true==getVerticalHeightHoldEnable()){
-			unsigned short actuatorThrust=0;
-
-			// Compute error (current - target), limit the error
-			altHoldErr = LIMIT_MIN_MAX_VALUE(deadband(getPidSp(&verticalHeightSettings)-getVerticalHeight(), errDeadband),
-								  -altHoldErrMax, altHoldErrMax);
-			setPidError(&verticalHeightSettings, altHoldErr);
-
-			altHoldPIDVal = (pidAlpha) * altHoldPIDVal + (1.f - pidAlpha) * ((getVerticalSpeed() * vSpeedAccFac) +
-				pidCalculation(&verticalHeightSettings, getVerticalHeight(), false));
-
-			actuatorThrust =  max(getMinPowerLevel(), min(getMaxPowerLeve(),getMinPowerLevel()+(unsigned short)(altHoldPIDVal*pidAslFac)));
-			setThrottlePowerLevel(actuatorThrust);
-			//printf("altHoldErr=%f altHoldPIDVal=%f (getVerticalSpeed() * vSpeedAccFac)=%f getThrottlePowerLevel()=%d,getVerticalHeight()=%f\n",altHoldErr,altHoldPIDVal,(getVerticalSpeed() * vSpeedAccFac),getThrottlePowerLevel(),getVerticalHeight());
-	}
-	
-}
-#endif

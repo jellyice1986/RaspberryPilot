@@ -64,32 +64,6 @@ PID_STRUCT rollRatePidSettings;
 PID_STRUCT pitchRatePidSettings;
 PID_STRUCT yawRatePidSettings;
 
-#ifdef FEATURE_VH
-/**
- * Default PID parameter for vertical height
- */
-#define DEFAULT_VERTICAL_HEIGHT_P_GAIN 0.0
-#define DEFAULT_VERTICAL_HEIGHT_I_GAIN 0.0
-#define DEFAULT_VERTICAL_HEIGHT_D_GAIN 0.0
-#define DEFAULT_VERTICAL_HEIGHT_I_LIMIT 0.0
-#define DEFAULT_VERTICAL_HEIGHT_SP 0.0
-#define DEFAULT_VERTICAL_HEIGHT_SHIFT 0.0
-PID_STRUCT verticalHeightSettings;
-
-/**
- * Default PID parameter for vertical speed
- */
-#define DEFAULT_VERTICAL_SPEED_P_GAIN 0.0
-#define DEFAULT_VERTICAL_SPEED_I_GAIN 0.0
-#define DEFAULT_VERTICAL_SPEED_D_GAIN 0.0
-#define DEFAULT_VERTICAL_SPEED_I_LIMIT 0.0
-#define DEFAULT_VERTICAL_SPEED_SP 0.0
-#define DEFAULT_VERTICAL_SPEED_SHIFT  0.0
-
-PID_STRUCT verticalSpeedSettings;
-#endif
-
-
 /**
 *  Init  PID controler   
 *
@@ -143,23 +117,6 @@ void pidInit() {
 	resetPidRecord(&pitchRatePidSettings);
 	resetPidRecord(&yawRatePidSettings);
 
-#ifdef FEATURE_VH
-	//init PID controler for vertical height
-	pidTune(&verticalHeightSettings, DEFAULT_VERTICAL_HEIGHT_P_GAIN,
-	DEFAULT_VERTICAL_HEIGHT_I_GAIN, DEFAULT_VERTICAL_HEIGHT_D_GAIN,
-	DEFAULT_VERTICAL_HEIGHT_SP, DEFAULT_VERTICAL_HEIGHT_SHIFT,
-	DEFAULT_VERTICAL_HEIGHT_I_LIMIT);
-	setName(&verticalHeightSettings, "VH");
-	resetPidRecord(&verticalHeightSettings);
-
-	//init PID controler for vertical speed
-	pidTune(&verticalSpeedSettings, DEFAULT_VERTICAL_SPEED_P_GAIN,
-	DEFAULT_VERTICAL_SPEED_I_GAIN, DEFAULT_VERTICAL_SPEED_D_GAIN,
-	DEFAULT_VERTICAL_SPEED_SP, DEFAULT_VERTICAL_SPEED_SHIFT,
-	DEFAULT_VERTICAL_SPEED_I_LIMIT);
-	setName(&verticalSpeedSettings, "VS");
-	resetPidRecord(&verticalSpeedSettings);
-#endif
 }
 
 /**

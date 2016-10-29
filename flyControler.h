@@ -18,9 +18,3 @@ void setAngularLimit(float angular);
 void setAdjustPeriod(unsigned short period);
 unsigned short getAdjustPeriod();
 
-#ifdef FEATURE_VH
-void setInitVHH(bool v);
-bool getInitVHH(void);
-#endif
-
-

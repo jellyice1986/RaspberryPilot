@@ -9,7 +9,6 @@
 #include "pid.h"
 #include "radioControl.h"
 #include "flyControler.h"
-#include "verticalHeightHold.h"
 #include "mpu6050.h"
 #include "ms5611.h"
 #include "pca9685.h"
@@ -78,13 +77,7 @@ int main() {
 #endif
 			count++;
 
-#ifdef	FEATURE_VH
-			recordVerticalSpeed(xyzAcc,xyzGravity);
-			//printf("Vertical Speed=%4.3f\n",getVerticalSpeed());
-#else
 			setZAxisSlope(xyzGravity[2]);
-			//printf("Z Axis Degree=%3.3f\n",getZAxisSlope());
-#endif
 
 #ifdef MPU_DMP_YAW
 			if(0 == mpuResult)
@@ -160,13 +153,7 @@ bool raspberryPilotInit(){
 		_ERROR("(%s-%d) Init PCA9685 failed!\n",__func__,__LINE__);
 		return false;
 	}
-		
-#ifdef FEATURE_VH
-	if (!initVerticalHeightHold() ) {
-		//return false;
-	}
-#endif	
-	
+			
 	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
 		_ERROR("(%s-%d) controlMotorMutex init failed\n",__func__,__LINE__);
 		return false;

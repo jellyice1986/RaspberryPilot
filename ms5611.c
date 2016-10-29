@@ -27,7 +27,6 @@
 #define CONST_PF 				0.1902630958f //(1/5.25588f)
 #define CONST_PF2 				153.8461538461538f //(1/0.0065)
 
-
 void readCalibrationDataFromProm();
 void sendPressCmdD1();
 float readPress();
@@ -42,7 +41,6 @@ static unsigned short osr;
 static unsigned short calibration[6];
 static float deltaTemp;   //dt
 static float temperature;
-
 
 /**
 * Init MS5611
@@ -80,7 +78,7 @@ bool ms5611Init(){
 * 		void
 *
 * @return 
-*		altitude
+*		altitude (cm)
 *
 */
 float getAltitude(){
@@ -88,6 +86,7 @@ float getAltitude(){
 	float altitude=0.0;
 	float tmp=0;
 	float press=0;
+	static test=0;
 
 	//send cmd D2 and read tmp
 	sendTempCmdD2();
@@ -100,7 +99,7 @@ float getAltitude(){
 	press=readPress();
 
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
-	altitude =((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f) * (tmp + 273.15f))*CONST_PF2;
+	altitude =((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f) * (tmp + 273.15f))*CONST_PF2*100.f;
 
 	_DEBUG(DEBUG_ALTITUDE,"altitude=%.2f, mbar=%.2f, temp=%.2f\n",altitude,press,tmp);
 	

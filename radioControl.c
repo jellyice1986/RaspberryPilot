@@ -9,7 +9,6 @@
 #include "motorControl.h"
 #include "systemControl.h"
 #include "mpu6050.h"
-#include "verticalHeightHold.h"
 #include "radioControl.h"
 #include "securityMechanism.h"
 
@@ -292,9 +291,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 			
 			pthread_mutex_lock(&controlMotorMutex);
 
-#ifdef FEATURE_VH
-			if(false==getVerticalHeightHoldEnable())
-#endif
 			setThrottlePowerLevel(parameter);
 			
 			if (getMinPowerLevel() == parameter) {
@@ -303,11 +299,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&yawAttitudePidSettings);
 				resetPidRecord(&rollRatePidSettings);
 				resetPidRecord(&pitchRatePidSettings);
-#ifdef FEATURE_VH				
-				resetPidRecord(&yawRatePidSettings);
-				resetPidRecord(&verticalHeightSettings);
-				resetPidRecord(&verticalSpeedSettings);
-#endif				
 				setYawCenterPoint(0);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
@@ -316,10 +307,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 					_DEBUG(DEBUG_NORMAL,"START Flying\n");
 					setYawCenterPoint(getYaw());
 					setPidSp(&yawAttitudePidSettings, 0);
-#ifdef FEATURE_VH				
-					setStartRisenVerticalHeight(getVerticalHeight());					
-					setInitVHH(true);
-#endif
 				}
 				setPidSp(&rollAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
@@ -328,9 +315,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 						LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
 								getAngularLimit()));
 				setYawCenterPoint(getYawCenterPoint()+(yawShiftValue*1.0));
-#ifdef FEATURE_VH				
-				setPidSp(&verticalHeightSettings,(float)getStartRisenVerticalHeight()+(throttlePercentage*(float)getMaxRisenVerticalHeight()));
-#endif
 			}
 			pthread_mutex_unlock(&controlMotorMutex);
 
@@ -427,10 +411,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		_DEBUG(DEBUG_NORMAL,"Motor 3 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CW2));
 		/***/
 		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
-#ifdef FEATURE_VH		
-		setVerticalHeightHoldEnable((bool)parameter);
-		_DEBUG(DEBUG_NORMAL,"Vertical Height Hold Enable: %s\n", getVerticalHeightHoldEnable()==true?"true":"false");
-#endif
 		/***/
 		break;
 
@@ -558,43 +538,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&yawRatePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL,"Rate Yaw D Gain=%4.6f\n", getDGain(&yawRatePidSettings));
 
-#ifdef FEATURE_VH
-		//Vertical Height P gain	
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
-		setPGain(&verticalHeightSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Height P Gain=%4.6f\n", getPGain(&verticalHeightSettings));		
-		//Vertical Height I gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I]);
-		setIGain(&verticalHeightSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Height I Gain=%4.6f\n", getIGain(&verticalHeightSettings));
-		//Vertical Height I outputLimit
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I_LIMIT]);
-		setILimit(&verticalHeightSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Height I Output Limit=%4.6f\n",
-		getILimit(&verticalHeightSettings));
-		//Vertical Height D gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_D]);
-		setDGain(&verticalHeightSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Height D Gain=%4.6f\n", getDGain(&verticalHeightSettings));
-
-		//Vertical Speed P gain	
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_P]);
-		setPGain(&verticalSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Speed P Gain=%4.6f\n", getPGain(&verticalSpeedSettings));
-		//Vertical Speed I gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I]);
-		setIGain(&verticalSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Speed I Gain=%4.6f\n", getIGain(&verticalSpeedSettings));
-		//Vertical Speed I outputLimit
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I_LIMIT]);
-		setILimit(&verticalSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Speed I Output Limit=%4.6f\n",
-		getILimit(&verticalSpeedSettings));
-		//Vertical Height D gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
-		setDGain(&verticalSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL,"Vertical Speed D Gain=%4.6f\n", getDGain(&verticalSpeedSettings));
-#endif		
 		break;
 
 		default:
