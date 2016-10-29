@@ -35,15 +35,15 @@ static float sensfusion6GetAccZWithoutGravity(float *xyzAcc, float *xyzGravity);
 
 bool initVerticalHeightHold(){
 
-	if (false==ms5611Init() ) {
+	if (!ms5611Init() ) {
 		return false;
 	}
 
 	if (pthread_create(&ms5611ThreadId, NULL, getDataFromMs5611Thread, 0)) {
-			printf("ms5611 create failed\n");
+			_DEBUG(DEBUG_NORMAL,"ms5611 create failed\n");
 			return false;
 	} else {
-			printf("start ms5611 thread...\n");
+			_DEBUG(DEBUG_NORMAL,"start ms5611 thread...\n");
 	}
 	
 	setVerticalHeightHoldEnable(false);

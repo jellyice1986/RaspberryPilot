@@ -96,7 +96,7 @@ int main() {
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
 			
-			_DEBUG(DEBUG_ATTI,"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__,getRoll(),getPitch(),getYaw());
+			_DEBUG(DEBUG_ATTITUDE,"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__,getRoll(),getPitch(),getYaw());
 			_DEBUG(DEBUG_GYRO,"(%s-%d) GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__, getRollGyro(),getPitchGyro(),getYawGyro());
 			_DEBUG(DEBUG_ACC,"(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",__func__,__LINE__,xyzAcc[0],xyzAcc[1],xyzAcc[2]);
 						
@@ -162,15 +162,8 @@ bool raspberryPilotInit(){
 	}
 		
 #ifdef FEATURE_VH
-	if(checkI2cDeviceIsExist(MS5611_ADDR)){
-		_DEBUG(DEBUG_NORMAL,"MS5611 exist\n",__func__,__LINE__);
-	}else{
-		_ERROR("(%s-%d) MS5611 dowsn't exist\n",__func__,__LINE__);
-		//return false;
-	}
-	
 	if (!initVerticalHeightHold() ) {
-		return false;
+		//return false;
 	}
 #endif	
 	
