@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-
 #include "commonLib.h"
 #include "i2c.h"
 #include "ms5611.h"
@@ -52,7 +51,6 @@ bool ms5611Init(){
 	resetMs5611();
 	usleep(10000);
 	readCalibrationDataFromProm();
-	printf("%d %d %d %d %d %d\n",calibration[0],calibration[1],calibration[2],calibration[3],calibration[4],calibration[5]);
 	return true;
 }
 
@@ -97,10 +95,15 @@ void readCalibrationDataFromProm(){
 	calibration[4]=((unsigned short)data[0] << 8) | data[1];
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR+10,2,data);
 	calibration[5]=((unsigned short)data[0] << 8) | data[1];
-	}
+	printf("%d %d %d %d %d %d\n",calibration[0],calibration[1],calibration[2],calibration[3],calibration[4],calibration[5]);
+}
 
 void sendPressCmdD1(){
 	writeByte(MS5611_ADDR_CSB_LOW, getPressD1Cmd(), true);
+}
+
+void sendTempCmdD2(){
+	writeByte(MS5611_ADDR_CSB_LOW, getTempD2Cmd(), true);
 }
 
 double readPress(){
@@ -137,10 +140,6 @@ double readPress(){
 	//printf("rawPressure=%ld, offset=%f, offset2=%f, sens=%f, sens2=%f, pressureUnscaled=%f\n",rawPressure,offset,offset2,sens,sens2,pressureUnscaled);
 		return  pressureUnscaled;//mbar 
 	
-}
-
-void sendTempCmdD2(){
-	writeByte(MS5611_ADDR_CSB_LOW, getTempD2Cmd(), true);
 }
 
 double readTemp(){

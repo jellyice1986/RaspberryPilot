@@ -999,6 +999,9 @@ bool mpu6050Init() {
 	devAddr = MPU6050_DEFAULT_ADDRESS;
 	scaleGyroRange=0;
 	scaleAccRange=0;
+	xGyroOffset=12;  //pitch
+	yGyroOffset=-46;  // row
+	zGyroOffset=-10; //row
 
 #if  defined(MPU_DMP) || defined(MPU_DMP_YAW)	
 	dmpReady = false;
@@ -2916,7 +2919,6 @@ unsigned char dmpInitialize() {
 			setYGyroOffsetTC(ygOffset);
 			setZGyroOffsetTC(zgOffset);
 
-			xGyroOffset=yGyroOffset=zGyroOffset=0;
 			printf("Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",
 					xGyroOffset, yGyroOffset, zGyroOffset);
 			setXGyroOffsetUser(xGyroOffset);
