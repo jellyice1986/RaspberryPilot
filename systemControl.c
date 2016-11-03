@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <signal.h>
+#include <wiringPi.h>
 #include "commonLib.h"
+#include "motorControl.h"
 #include "systemControl.h"
 
 static bool flySystemIsEnableflag;

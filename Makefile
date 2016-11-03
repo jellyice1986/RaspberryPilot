@@ -5,7 +5,7 @@ AR = $(CROSS_COMPILE)ar
 RM = rm
 PWD	= ${shell pwd}
 OBJ_DIR = ${PWD}
-CFLAGS +=  -Wall
+SUBDIR = Module
 LIB_PATH = -L$(PWD)/Module/bin
 LIB = -lModule_RaspberryPilot -lwiringPi -lm -lpthread
 OBJS = \
@@ -28,9 +28,9 @@ INCLUDES = \
 	-I${PWD}/Module/VL53l0x/core/inc \
 	-I${PWD}/Module/VL53l0x/platform/inc
 
-SUBDIR = Module
 
 include $(PWD)/config.mk
+RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS) -Wall
 
 .PHONY: all
 all: $(SUBDIR) $(OBJS)
@@ -39,7 +39,7 @@ all: $(SUBDIR) $(OBJS)
 
 %.o: $(OBJ_DIR)/%.c
 	@echo "\033[32mCompiling RaspberryPilot $@...\033[0m"	
-	$(CC) -c -o $(OBJ_DIR)/$@ $< $(CFLAGS) $(INCLUDES) $(LIB) $(LIB_PATH) 
+	$(CC) -c -o $(OBJ_DIR)/$@ $< $(RASPBERRYPILOT_CFLAGS) $(INCLUDES) $(LIB) $(LIB_PATH) 
 
 .PHONY: $(SUBDIR)
 $(SUBDIR):

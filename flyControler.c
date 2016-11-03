@@ -174,10 +174,12 @@ void motorControler() {
 	float maxLimit = 0.f;
 	float minLimit = 0.f;
 	float throttleOffset = 0.f;
+
 	
 	//have to check whether it is useful or not
 	//throttleOffset=getThrottleOffset();
-	
+
+
 	maxLimit = (float) min(
 			(getThrottlePowerLevel() + throttleOffset) + getAdjustPowerLeveRange(),
 			getMaxPowerLeve());

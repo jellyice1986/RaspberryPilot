@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <math.h>
 #include "commonLib.h"
 #include "mpu6050.h"

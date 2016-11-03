@@ -23,22 +23,16 @@
 #define DEBUG_RATE_PID_OUTPUT  			DEBUG_NONE//|0x00000080
 #define DEBUG_MASK 						(DEBUG_NORMAL|DEBUG_GYRO|DEBUG_ACC|DEBUG_ATTITUDE|DEBUG_ALTITUDE|\
 										DEBUG_IMUUPDATE_INTVAL|DEBUG_ATTITUDE_PID_OUTPUT|DEBUG_RATE_PID_OUTPUT)
-#define _DEBUG(type,str,arg...) \
-	if(LOG_ENABLE && DEBUG_ENABLE && ((type) & DEBUG_MASK)) \
-		printf(str,## arg)
+#define _DEBUG(type,str,arg...) do{ if(LOG_ENABLE && DEBUG_ENABLE && ((type) & DEBUG_MASK)) printf(str,## arg);}while(0)
 
 #define DEBUG_HOVER_ENABLE 	  		   true
 #define DEBUG_HOVER_NORMAL             DEBUG_NONE|0x00000001
 #define DEBUG_HOVER_SPEED              DEBUG_NONE|0x00000002
 #define DEBUG_HOVER_FILTERED_ALTITUDE  DEBUG_NONE|0x00000004
 #define DEBUG_HOVER_MASK 			   (DEBUG_HOVER_NORMAL|DEBUG_HOVER_SPEED|DEBUG_HOVER_FILTERED_ALTITUDE)
-#define _DEBUG_HOVER(type,str,arg...) \
-		if(LOG_ENABLE && DEBUG_HOVER_ENABLE && ((type) & DEBUG_HOVER_MASK)) \
-			printf(str,## arg)
+#define _DEBUG_HOVER(type,str,arg...) do{ if(LOG_ENABLE && DEBUG_HOVER_ENABLE && ((type) & DEBUG_HOVER_MASK)) printf(str,## arg);}while(0)
 
-#define _ERROR(str,arg...) \
-	if(LOG_ENABLE) \
-		printf(str,## arg)
+#define _ERROR(str,arg...) do{ if(LOG_ENABLE) printf(str,## arg);}while(0)
 
 float deadband(float value, const float threshold);
 

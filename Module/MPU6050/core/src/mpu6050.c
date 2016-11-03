@@ -1,3 +1,6 @@
+
+
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -359,32 +362,10 @@ static float rollGyro;
 static float asaX;
 static float asaY;
 static float asaZ;
-static float m_ax=0;
-static float m_ay=0;
-static float m_az=0;
-static float m_gx=0;
-static float m_gy=0;
-static float m_gz=0;
-static float m_mx=0;
-static float m_my=0;
-static float m_mz=0;
-static float alpha_ax=0.f;
-static float alpha_ay=0.f;
-static float alpha_az=0.f;
-static float alpha_gx=0.f;
-static float alpha_gy=0.f;
-static float alpha_gz=0.f;
-static float alpha_mx=0.f;
-static float alpha_my=0.f;
-static float alpha_mz=0.f; 
-
-
 
 bool testConnection();
 unsigned char getDeviceID();
-unsigned char autoCalGyroOffset();
 void meansensors();
-void calibration();
 void getAcceleration(short *x, short *y, short *z);
 float convertMpu6050Acceleration(short sampleValue);
 unsigned char getClockSource();
@@ -400,7 +381,7 @@ void setMemoryBank(unsigned char bank, unsigned char prefetchEnabled,
 void setMemoryStartAddress(unsigned char address);
 unsigned char readMemoryByte();
 char getXGyroOffset();
-char setXGyroOffset(char offset);
+void setXGyroOffset(char offset);
 char getYGyroOffset();
 void setYGyroOffset(char offset);
 char getZGyroOffset();
@@ -1194,46 +1175,6 @@ float getAccSensitivityInv(){
 	}
 }
 
-unsigned char autoCalGyroOffset() {
-	int state = 0;
-
-	xGyroOffset = 0;
-	yGyroOffset = 0;
-	zGyroOffset = 0;
-	cal_mean_gx = 0;
-	cal_mean_gy = 0;
-	cal_mean_gz = 0;
-
-	setXGyroOffsetUser(xGyroOffset);
-	setYGyroOffsetUser(yGyroOffset);
-	setZGyroOffsetUser(zGyroOffset);
-	delay(1000);
-	if (state == 0) {
-		printf("Reading sensors for first time...\n");
-		meansensors();
-		state++;
-		delay(300);
-	}
-
-	if (state == 1) {
-		printf("Calculating offsets...\n");
-		calibration();
-		state++;
-		delay(300);
-	}
-
-	if (state == 2) {
-		meansensors();
-		printf("Gyro auto calibration DONE\n");
-		printf("mean gx=%2.4f, gy=%2.4f gz=%2.4f\n", cal_mean_gx, cal_mean_gy,
-				cal_mean_gz);
-		printf("offset gx=%d, gy=%d gz=%d\n", xGyroOffset, yGyroOffset,
-				zGyroOffset);
-		//while (1);
-	}
-
-}
-
 void meansensors() {
 	long i = 0;
 	float buff_gx = 0, buff_gy = 0, buff_gz = 0;
@@ -1266,125 +1207,6 @@ void meansensors() {
 	printf("mean gx=%2.4f, gy=%2.4f gz=%2.4f\n", cal_mean_gx, cal_mean_gy,
 			cal_mean_gz);
 
-}
-
-void calibration() {
-
-	xGyroOffset = -cal_mean_gx / 4.0;
-	yGyroOffset = -cal_mean_gy / 4.0;
-	zGyroOffset = -cal_mean_gz / 4.0;
-
-	float minGx = cal_mean_gx;
-	float minGy = cal_mean_gy;
-	float minGz = cal_mean_gz;
-	char minXCounter = 0;
-	char minYCounter = 0;
-	char minZCounter = 0;
-	char xcounter = 0;
-	char ycounter = 0;
-	char zcounter = 0;
-	char counter = 0;
-
-	while (1) {
-		int ready = 0;
-		setXGyroOffsetUser(xGyroOffset);
-		setYGyroOffsetUser(yGyroOffset);
-		setZGyroOffsetUser(zGyroOffset);
-
-		meansensors();
-
-		if (fabs(cal_mean_gx) <= AUTO_CAL_GYRO_DEADZONE || minXCounter >= 5
-				|| counter > 100) {
-			ready++;
-			//printf("gx done\n");
-		} else {
-			if (fabs(cal_mean_gx) <= fabs(minGx)) {
-				if (fabs(cal_mean_gx) == fabs(minGx))
-					minXCounter++;
-				else
-					minXCounter = 0;
-				minGx = cal_mean_gx;
-
-			}
-
-			xGyroOffset =
-					xGyroOffset
-							- (short) (
-									fabs(
-											cal_mean_gx
-													/ (AUTO_CAL_GYRO_DEADZONE
-															+ 1)) < 1 ?
-											1 :
-											(cal_mean_gx
-													/ (AUTO_CAL_GYRO_DEADZONE
-															+ 1)));
-		}
-
-		if (fabs(cal_mean_gy) <= AUTO_CAL_GYRO_DEADZONE || minYCounter >= 5
-				|| counter > 100) {
-			ready++;
-			//printf("gy done\n");
-		} else {
-			if (fabs(cal_mean_gy) <= fabs(minGy)) {
-				if (fabs(cal_mean_gy) == fabs(minGy))
-					minYCounter++;
-				else
-					minYCounter = 0;
-				minGy = cal_mean_gy;
-			}
-
-			yGyroOffset =
-					yGyroOffset
-							- (short) (
-									fabs(
-											cal_mean_gy
-													/ (AUTO_CAL_GYRO_DEADZONE
-															+ 1)) < 1 ?
-											1 :
-											(cal_mean_gy
-													/ (AUTO_CAL_GYRO_DEADZONE
-															+ 1)));
-		}
-
-		if (fabs(cal_mean_gz) <= AUTO_CAL_GYRO_DEADZONE || minZCounter >= 5
-				|| counter > 100) {
-			ready++;
-			//printf("gz done\n");
-		} else {
-			if (fabs(cal_mean_gz) <= fabs(minGz)) {
-				if (fabs(cal_mean_gz) == fabs(minGz))
-					minZCounter++;
-				else
-					minZCounter = 0;
-				minGz = cal_mean_gz;
-			}
-
-			zGyroOffset =
-					zGyroOffset
-							- (short) (
-									fabs(
-											cal_mean_gz
-													/ ( AUTO_CAL_GYRO_DEADZONE
-															+ 1)) < 1 ?
-											1 :
-											(cal_mean_gz
-													/ (AUTO_CAL_GYRO_DEADZONE
-															+ 1)));
-		}
-		printf("offset gx=%d, gy=%d gz=%d\n", xGyroOffset, yGyroOffset,
-				zGyroOffset);
-
-		counter++;
-		printf("counter=%d\n", counter);
-		if (ready == 3)
-			break;
-	}
-
-	if (counter > 100) {
-		xGyroOffset = 0;
-		yGyroOffset = 0;
-		zGyroOffset = 0;
-	}
 }
 
 /** Verify the I2C connection.
@@ -1782,7 +1604,7 @@ char getXGyroOffset() {
 	return buffer[0];
 }
 
-char setXGyroOffset(char offset) {
+void setXGyroOffset(char offset) {
 	writeBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
 }
@@ -2490,17 +2312,19 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 
 	float q[4];		    // [w, x, y, z]         quaternion container
 	float gravity[3];   // [x, y, z]            gravity 
-	short acc[3];  		// [x, y, z] acc
-	short rate[3];  	// [x, y, z] rate
 	unsigned char	result=0;
  
-#if defined(MPU_DMP)|| defined(MPU_DMP_YAW)	
+#if defined(MPU_DMP)|| defined(MPU_DMP_YAW)
+
+	short acc[3];  		// [x, y, z] acc
+	short rate[3];  	// [x, y, z] rate
 	unsigned short fifoCount = 0;
 
 	memset(q, 0, sizeof(q));
 	memset(gravity, 0, sizeof(gravity));
-	memset(yprAttitude, 0, sizeof(yprAttitude));
 	memset(acc, 0, sizeof(acc));
+	memset(rate, 0, sizeof(rate));
+	memset(yprAttitude, 0, sizeof(float)*3);
 
 	// if programming failed, don't try to do anything
 	if (!dmpReady)
@@ -2549,18 +2373,13 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	float gy=0.f;
 	float gz=0.f;
 	float yawtmp=0.f;
+	
 	if(0==result){
 		yawtmp=yprAttitude[0];
 	}
-	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-	m_ax=alpha_ax*m_ax+(1-alpha_ax)*ax;
-	m_ay=alpha_ay*m_ay+(1-alpha_ay)*ay;
-	m_az=alpha_az*m_az+(1-alpha_az)*az;
-	m_gx=alpha_gx*m_gx+(1-alpha_gx)*gx;
-	m_gy=alpha_gy*m_gy+(1-alpha_gy)*gy;
-	m_gz=alpha_gz*m_gz+(1-alpha_gz)*gz;
 	
-	IMUupdate(m_gx, m_gy,m_gz,m_ax,m_ay,m_az,q);
+	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+	IMUupdate(gx, gy,gz,ax,ay,az,q);
     dmpGetGravity(gravity, q);
 	dmpGetYawPitchRoll(yprAttitude, q, gravity);
     yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
@@ -2571,12 +2390,12 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	xyzGravity[0]=gravity[0];
 	xyzGravity[1]=gravity[1];
 	xyzGravity[2]=gravity[2];
-	yprRate[0]=m_gx*  RA_TO_DE;
-	yprRate[1]=m_gy*  RA_TO_DE;
-	yprRate[2]=m_gz*  RA_TO_DE;
-	xyzAcc[0]=m_ax;
-	xyzAcc[1]=m_ay;
-	xyzAcc[2]=m_az;
+	yprRate[0]=gx*  RA_TO_DE;
+	yprRate[1]=gy*  RA_TO_DE;
+	yprRate[2]=gz*  RA_TO_DE;
+	xyzAcc[0]=ax;
+	xyzAcc[1]=ay;
+	xyzAcc[2]=az;
 #endif
 	return result;
 #else
@@ -2586,38 +2405,9 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		float gx=0;
 		float gy=0;
 		float gz=0;
-		float mx=0;
-		float my=0;
-		float mz=0;
 
-		getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
-
-		m_ax=alpha_ax*m_ax+(1-alpha_ax)*ax;
-		m_ay=alpha_ay*m_ay+(1-alpha_ay)*ay;
-		m_az=alpha_az*m_az+(1-alpha_az)*az;
-		m_gx=alpha_gx*m_gx+(1-alpha_gx)*gx;
-		m_gy=alpha_gy*m_gy+(1-alpha_gy)*gy;
-		m_gz=alpha_gz*m_gz+(1-alpha_gz)*gz;
-
-		struct timeval tv;
-		static struct timeval tv_last={0};
-		
-		gettimeofday(&tv,NULL);
-
-		if(tv_last.tv_sec!=0){
-			if((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)>=10000){
-				m_mx=alpha_mx*m_mx+(1-alpha_mx)*mx;
-				m_my=alpha_my*m_my+(1-alpha_my)*my;
-				m_mz=alpha_mz*m_mz+(1-alpha_mz)*mz;
-				tv_last.tv_usec=tv.tv_usec;
-				tv_last.tv_sec=tv.tv_sec;
-			}
-		}else{
-			tv_last.tv_usec=tv.tv_usec;
-			tv_last.tv_sec=tv.tv_sec;
-		}
-	
-		IMUupdate(m_gx, m_gy,m_gz,m_ax,m_ay,m_az,q);
+		getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+		IMUupdate(gx, gy,gz,ax,ay,az,q);
         dmpGetGravity(gravity, q);
 		dmpGetYawPitchRoll(yprAttitude, q, gravity);
 
@@ -2627,15 +2417,15 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		xyzGravity[0]=gravity[0];
 		xyzGravity[1]=gravity[1];
 		xyzGravity[2]=gravity[2];
-		yprRate[0]=m_gx* RA_TO_DE;
-		yprRate[1]=m_gy* RA_TO_DE;
-		yprRate[2]=m_gz* RA_TO_DE;
-		xyzAcc[0]=m_ax;
-		xyzAcc[1]=m_ay;
-		xyzAcc[2]=m_az;
-		xyzMagnet[0]=m_my;
-		xyzMagnet[1]=m_mx;
-		xyzMagnet[2]=-m_mz;
+		yprRate[0]=gx* RA_TO_DE;
+		yprRate[1]=gy* RA_TO_DE;
+		yprRate[2]=gz* RA_TO_DE;
+		xyzAcc[0]=ax;
+		xyzAcc[1]=ay;
+		xyzAcc[2]=az;
+		xyzMagnet[0]=0.f;
+		xyzMagnet[1]=0.f;
+		xyzMagnet[2]=0.f;
 		return 0;
 #endif
 }
@@ -2801,10 +2591,11 @@ void getMotion9(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
 
 
 unsigned char dmpInitialize() {
+	
 	// reset device
 	printf("\n\nResetting MPU6050 9 AXIS ...\n");
 	reset();
-	delay(30); // wait after reset
+	usleep(120000); // wait after reset
 
 	// disable sleep mode
 	printf("Disabling sleep mode...\n");

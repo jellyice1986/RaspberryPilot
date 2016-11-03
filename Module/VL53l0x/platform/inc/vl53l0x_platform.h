@@ -37,9 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-int VL53L0X_i2c_init(char * devPath, int devAddr);
-int32_t VL53L0X_i2c_close(void);
-
 /**
  * @file vl53l0_platform.h
  *

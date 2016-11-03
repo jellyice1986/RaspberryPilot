@@ -1,4 +1,5 @@
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -55,7 +56,7 @@ static float temperature;
 bool ms5611Init(){
 		
 	if(checkI2cDeviceIsExist(MS5611_ADDR_CSB_LOW)){
-		_DEBUG(DEBUG_NORMAL,"MS5611 exist\n",__func__,__LINE__);
+		_DEBUG(DEBUG_NORMAL,"(%s-%d) S5611 exist\n",__func__,__LINE__);
 	}else{
 		_ERROR("(%s-%d) MS5611 dowsn't exist\n",__func__,__LINE__);
 		return false;
@@ -86,7 +87,6 @@ float getAltitude(){
 	float altitude=0.0;
 	float tmp=0;
 	float press=0;
-	static test=0;
 
 	//send cmd D2 and read tmp
 	sendTempCmdD2();

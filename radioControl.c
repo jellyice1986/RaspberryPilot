@@ -1,8 +1,12 @@
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <wiringSerial.h>
 #include "commonLib.h"
 #include "flyControler.h"
 #include "pid.h"
@@ -20,6 +24,8 @@ void *radioReceiveThread(void *arg);
 void *radioTransmitThread(void *arg);
 short processRadioMessages(int fd, char *buf, short lenth);
 bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+
+#define CHECK_RECEIVER_PERIOD 0
 
 /**
 * init paramtes and states for radio
@@ -111,7 +117,6 @@ void *radioTransmitThread(void *arg) {
 		
 		if ('#'!=message[strlen(message)-1]){
 			_DEBUG(DEBUG_NORMAL,("buffer overflow\n"));
-			return;
 		}else{
 			serialPuts(fd, message);
 			increasePacketCounter();
@@ -121,6 +126,7 @@ void *radioTransmitThread(void *arg) {
 		usleep(TRANSMIT_TIMER);
 	}
 
+	pthread_exit((void *)1234);
 }
 
 /**
@@ -138,7 +144,7 @@ void *radioReceiveThread(void *arg) {
 	int fd = *(int *) arg;
 	char buf[300];
 	char getChar;
-	char count = 0;
+	unsigned char count = 0;
 
 	memset(buf, '\0', sizeof(buf));
 
@@ -171,6 +177,8 @@ void *radioReceiveThread(void *arg) {
 		}
 		usleep(500);
 	}
+
+	pthread_exit((void *)1234);
 }
 
 
@@ -202,7 +210,7 @@ bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PAC
 	cmd[i-1]='\0';
 	i=1;
 	token = strtok(cmd, ":");
-	strncpy(container[0],token,sizeof(token));
+	strncpy(container[0],token,strlen(token));
 
 	if(token==NULL) return false;
 		
@@ -211,7 +219,7 @@ bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PAC
 		if(token==NULL){
 			break; 
 		}else{
-			strncpy(container[i],token,sizeof(token));
+			strncpy(container[i],token,strlen(token));
 			i++;
 		}
 	}while(true);
@@ -238,12 +246,14 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	float pitchSpShift = 0;
 	float yawShiftValue=0;
 	float throttlePercentage=0;
+#if CHECK_RECEIVER_PERIOD	
 	struct timeval tv;
 	struct timeval tv_last;
+#endif
 
 	resetPacketCounter();
 
-	if(!extractPacketInfo(buf,lenth,packet)) return;
+	if(!extractPacketInfo(buf,lenth,packet)) return false;
 
 
 	switch (atoi(packet[0])) {
@@ -265,9 +275,9 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		case HEADER_CONTROL_MOTION:
 		//control packet
 		
-#if 0 /*check cycle time*/
+#if CHECK_RECEIVER_PERIOD
 				gettimeofday(&tv,NULL);
-				printf("duration=%d us\n",(tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec));
+				_DEBUG("duration=%d us\n",(tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec));
 				tv_last.tv_usec=tv.tv_usec;
 				tv_last.tv_sec=tv.tv_sec;
 #endif
@@ -545,6 +555,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		_DEBUG(DEBUG_NORMAL,"unknow packet\n");
 
 	}
+
+	return true;
 
 }
 

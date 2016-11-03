@@ -3,15 +3,12 @@ CC = $(CROSS_COMPILE)gcc
 AR = $(CROSS_COMPILE)ar
 PWD	= ${shell pwd}
 RM = rm
-
-include $(PWD)/../config.mk
-
-MODULE_CFLAGS += $(CFLAGS) -O0 -g -c -Wall
-
 OUTPUT_DIR = bin
 OBJ_DIR = obj
-
 TARGET_LIB = $(OUTPUT_DIR)/libModule_RaspberryPilot.a
+
+include $(PWD)/../config.mk
+MODULE_CFLAGS += $(DEFAULT_CFLAGS) -O0 -Wall
 
 LIB_SRCS = \
 	pca9685.c\
@@ -45,12 +42,14 @@ LIB_OBJS  = $(LIB_SRCS:%.c=$(OBJ_DIR)/%.o)
 all: ${TARGET_LIB}
 
 $(TARGET_LIB): $(LIB_OBJS)
+	@echo "\033[32mCompiling RaspberryPilot $@...\033[0m"
 	mkdir -p $(dir $@)
 	$(AR) -rcs $@ $^
 
 $(OBJ_DIR)/%.o:%.c
+	@echo "\033[32mCompiling RaspberryPilot $@...\033[0m"
 	mkdir -p $(dir $@)
-	$(CC) $(MODULE_CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -g -c $(MODULE_CFLAGS) $(INCLUDES) $< -o $@
 
 .PHONY: clean
 clean:

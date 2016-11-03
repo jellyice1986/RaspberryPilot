@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <sys/time.h>
+#include <pthread.h>
+#include <unistd.h>
 #include "commonLib.h"
 #include "motorControl.h"
 #include "systemControl.h"
@@ -23,6 +25,10 @@
 #define MAIN_DELAY_TIMER 500  
 #endif
 
+#define CHECK_CYCLE_TIME_1 0
+#define CHECK_CYCLE_TIME_2 0
+
+
 bool raspberryPilotInit();
 
 /**
@@ -37,9 +43,12 @@ bool raspberryPilotInit();
 */
 int main() {
 
+#if CHECK_CYCLE_TIME_1 |CHECK_CYCLE_TIME_2
 	struct timeval tv;
 	struct timeval tv2;
 	struct timeval tv3;
+#endif
+
 	short count = 0;
 	float yrpAttitude[3];
 	float pryRate[3];
@@ -54,7 +63,7 @@ int main() {
 	
 	while (!getLeaveFlyControlerFlag()) {
 
-#if 0 /*debug: check cycle time of this loop*/
+#if CHECK_CYCLE_TIME_1 /*debug: check cycle time of this loop*/
 		gettimeofday(&tv,NULL);
 		printf("duration=%d us\n",(tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
 		tv2.tv_usec=tv.tv_usec;
@@ -68,12 +77,11 @@ int main() {
 #endif
 		) {
 			
-#if 0 /*check cycle time of dmp*/
+#if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
 			gettimeofday(&tv,NULL);
 			printf("duration=%d us\n",(tv.tv_sec-tv3.tv_sec)*1000000+(tv.tv_usec-tv3.tv_usec));	
 			tv3.tv_usec=tv.tv_usec;
 			tv3.tv_sec=tv.tv_sec;
-
 #endif
 			count++;
 
@@ -170,7 +178,7 @@ bool raspberryPilotInit(){
 	ahrsInit();
 #endif
 
-	_DEBUG(DEBUG_NORMAL,"Raspberry Pilot init done\n",__func__,__LINE__);
+	_DEBUG(DEBUG_NORMAL,"(%s-%d) Raspberry Pilot init done\n",__func__,__LINE__);
 	return true;
 
 }
