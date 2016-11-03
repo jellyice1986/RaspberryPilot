@@ -28,7 +28,6 @@ INCLUDES = \
 	-I${PWD}/Module/VL53l0x/core/inc \
 	-I${PWD}/Module/VL53l0x/platform/inc
 
-
 include $(PWD)/config.mk
 RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS) -Wall
 

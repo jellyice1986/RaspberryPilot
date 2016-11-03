@@ -11,9 +11,10 @@ include $(PWD)/../config.mk
 MODULE_CFLAGS += $(DEFAULT_CFLAGS) -O0 -Wall
 
 LIB_SRCS = \
-	pca9685.c\
-	mpu6050.c\
+	pca9685.c \
+	mpu6050.c \
 	ms5611.c\
+	vl53l0x.c \
 	vl53l0x_api_calibration.c \
 	vl53l0x_api_core.c \
 	vl53l0x_api_ranging.c \

@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright © 2015, STMicroelectronics International N.V.
+Copyright ?2015, STMicroelectronics International N.V.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,9 @@ typedef struct {
 
     /*!< user specific field */
     uint8_t   I2cDevAddr;                /*!< i2c device address user specific field */
-    int   fd;
+    uint8_t   comms_type;                /*!< Type of comms : VL53L0X_COMMS_I2C or VL53L0X_COMMS_SPI */
+    uint16_t  comms_speed_khz;           /*!< Comms speed [kHz] : typically 400kHz for I2C           */
+
 } VL53L0X_Dev_t;
 
 
