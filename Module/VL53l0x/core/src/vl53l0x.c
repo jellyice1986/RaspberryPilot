@@ -185,16 +185,17 @@ void print_pal_error(VL53L0X_Error Status){
 	
 }
 
-
-bool getMeasurementData(VL53L0X_Dev_t *pDevice,unsigned short *millimeter){
+bool vl53l0xGetMeasurementData(unsigned short *millimeter){
 	
 	VL53L0X_Error Status = VL53L0X_ERROR_NONE;
 	VL53L0X_RangingMeasurementData_t    RangingMeasurementData;
 	
+	VL53L0X_Dev_t *pDevice=&vl53l0xDevice;
+	
 	Status = VL53L0X_PerformSingleRangingMeasurement(pDevice,
             		&RangingMeasurementData);
 					
-	*millimeter=RangingMeasurementData.RangeDMaxMilliMeter;
+	*millimeter=RangingMeasurementData.RangeMilliMeter;
 	
 	return ((Status == VL53L0X_ERROR_NONE)?true:false);
 }
