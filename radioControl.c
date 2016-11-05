@@ -81,7 +81,7 @@ void *radioTransmitThread(void *arg) {
 	char message[150];
 	int fd = *(int *) arg;
 	
-	while (!(true==getLeaveFlyControlerFlag())) {
+	while (!getLeaveFlyControlerFlag()) {
 
 		//    2 CCW2  CW2 3
 		//          X

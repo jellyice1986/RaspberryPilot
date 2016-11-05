@@ -16,6 +16,7 @@ OBJS = \
 	motorControl.o \
 	systemControl.o \
 	pid.o \
+	altHold.o \
 	radioControl.o \
 	flyControler.o \
 	raspberryPilotMain.o

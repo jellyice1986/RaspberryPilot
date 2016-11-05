@@ -30,8 +30,6 @@ static unsigned short adjustPeriod;
 static float angularLimit;
 static float gyroLimit;
 static float yawCenterPoint;
-static float cosz;
-
 
 /**
 * Init paramtes and states for flyControler 
@@ -52,7 +50,6 @@ void flyControlerInit(){
 	setMotorGain(SOFT_PWM_CW1, 1);
 	setMotorGain(SOFT_PWM_CCW2, 1);
 	setMotorGain(SOFT_PWM_CW2, 1);
-	setZAxisSlope(0.0);
 	rollAttitudeOutput = 0;
 	pitchAttitudeOutput = 0;
 	yawAttitudeOutput = 0;
@@ -265,34 +262,6 @@ void motorControler() {
 }
 
 /**
-* record the angular of Z axis    
-*
-* @param slope
-* 		  angular   
-*
-* @return 
-*		void
-*		
-*/
-void setZAxisSlope(float slope){
-	cosz=slope;
-}
-
-/**
-* get the  angular of Z axis    
-*
-* @param 
-* 		void   
-*
-* @return 
-*		angular
-*		
-*/
-float getZAxisSlope(){
-	return cosz;
-}
-
-/**
 *  calculate throttle offset,  keep the height by applying the offset to motors
 *
 * @param 
@@ -302,8 +271,11 @@ float getZAxisSlope(){
 *		offset
 *		
 */
+#if 0
 float getThrottleOffset() {
-	float offset = 0;
+
+	float offset = 0.f;
+	
 	if (getZAxisSlope() <= 0.0) {
 		//inverted or vertical
 		offset = 0.0;
@@ -311,8 +283,10 @@ float getThrottleOffset() {
 		offset = (((1.0 - getZAxisSlope()) >= 0.3) ? 0.3 : 1.0 - getZAxisSlope())
 				* ((float) (getThrottlePowerLevel() - getMinPowerLevel()));
 	}
+
 	return offset;
 }
+#endif
 
 /**
 * quadcopter will record the yaw before flying, this value will be a center point for yaw PID attitude controler

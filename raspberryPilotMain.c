@@ -14,6 +14,7 @@
 #include "mpu6050.h"
 #include "ms5611.h"
 #include "pca9685.h"
+#include "altHold.h"
 #include "securityMechanism.h"
 #ifndef MPU_DMP	
 #include "ahrs.h"
@@ -85,8 +86,6 @@ int main() {
 #endif
 			count++;
 
-			setZAxisSlope(xyzGravity[2]);
-
 #ifdef MPU_DMP_YAW
 			if(0 == mpuResult)
 #endif
@@ -96,10 +95,16 @@ int main() {
 			setYawGyro(-pryRate[2]);
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
+			setXAcc(xyzAcc[0]);
+			setYAcc(xyzAcc[1]);
+			setZAcc(xyzAcc[2]);
+			setXGravity(xyzGravity[0]);
+			setYGravity(xyzGravity[1]);
+			setZGravity(xyzGravity[2]);
 			
 			_DEBUG(DEBUG_ATTITUDE,"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__,getRoll(),getPitch(),getYaw());
 			_DEBUG(DEBUG_GYRO,"(%s-%d) GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",__func__,__LINE__, getRollGyro(),getPitchGyro(),getYawGyro());
-			_DEBUG(DEBUG_ACC,"(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",__func__,__LINE__,xyzAcc[0],xyzAcc[1],xyzAcc[2]);
+			_DEBUG(DEBUG_ACC,"(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",__func__,__LINE__,getXAcc(),getYAcc(),getZAcc());
 						
 			if (count >= getAdjustPeriod()) {
 				if(true==flySystemIsEnable()){
@@ -160,6 +165,10 @@ bool raspberryPilotInit(){
 	if(!pca9685Init()){
 		_ERROR("(%s-%d) Init PCA9685 failed!\n",__func__,__LINE__);
 		return false;
+	}
+	
+	if(!initAltHold()){
+		_ERROR("(%s-%d) Init altHold failed!\n",__func__,__LINE__);
 	}
 			
 	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {

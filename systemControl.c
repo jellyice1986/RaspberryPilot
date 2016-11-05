@@ -7,6 +7,7 @@
 #include <wiringPi.h>
 #include "commonLib.h"
 #include "motorControl.h"
+#include "flyControler.h"
 #include "systemControl.h"
 
 static bool flySystemIsEnableflag;
@@ -75,7 +76,7 @@ void disenableFlySystem() {
 
 /**
 *
-*  check whether RaspberryPilot can start flying or not.
+*  check whether RaspberryPilot can start flying or not
 *
 * @param 
 *		void  
@@ -104,6 +105,7 @@ void signalEvent(int sig) {
 	setupAllMotorPoewrLevel(getMinPowerLevel(), getMinPowerLevel(),
 			getMinPowerLevel(), getMinPowerLevel());
 	disenableFlySystem();
+	setLeaveFlyControlerFlag(true);
 	_DEBUG(DEBUG_NORMAL,"exit RaspberryPilot\n");
 	usleep(2000000);
 	exit(EXIT_SUCCESS);

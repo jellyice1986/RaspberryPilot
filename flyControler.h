@@ -2,8 +2,6 @@
 
 extern pthread_mutex_t controlMotorMutex;
 
-float getZAxisSlope();
-void setZAxisSlope(float slope);
 void setLeaveFlyControlerFlag(bool v);
 bool getLeaveFlyControlerFlag();
 void flyControlerInit();

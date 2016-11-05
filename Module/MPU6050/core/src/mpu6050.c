@@ -21,6 +21,7 @@
 #define AUTO_CAL_GYRO_DEADZONE 0.1
 #define MPU6050_ADDRESS_AD0_LOW     0x68 // address pin low (GND), default for InvenSense evaluation board
 #define MPU6050_ADDRESS_AD0_HIGH    0x69 // address pin high (VCC)
+#define MPU6050_ADDRESS     		MPU6050_ADDRESS_AD0_LOW 
 #define MPU9150_RA_MAG_ADDRESS		0x0C
 #define MPU6050_DEFAULT_ADDRESS     MPU6050_ADDRESS_AD0_LOW  //MPU6050_ADDRESS_AD0_LOW
 #define MPU6050_RA_XG_OFFS_TC       0x00 //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
@@ -359,6 +360,12 @@ static float roll;
 static float yawGyro;
 static float pitchGyro;
 static float rollGyro;
+static float xAcc;
+static float yAcc;
+static float zAcc;
+static float xGravity;
+static float yGravity;
+static float zGravity;
 static float asaX;
 static float asaY;
 static float asaZ;
@@ -1271,6 +1278,54 @@ float getRollGyro() {
 	return rollGyro;
 }
 
+void setXGravity(float x_gravity) {
+	xGravity= x_gravity;
+}
+
+void setYGravity(float y_gravity) {
+	yGravity= y_gravity;
+}
+
+void setZGravity(float z_gravity) {
+	zGravity= z_gravity;
+}
+
+float getXGravity() {
+	return xGravity;
+}
+
+float getYGravity() {
+	return yGravity;
+}
+
+float getZGravity() {
+	return zGravity;
+}
+
+void setXAcc(float x_acc) {
+	xAcc = x_acc;
+}
+
+void setYAcc(float y_acc) {
+	yAcc = y_acc;
+}
+
+void setZAcc(float z_acc) {
+	zAcc = z_acc;
+}
+
+float getXAcc() {
+	return xAcc;
+}
+
+float getYAcc() {
+	return yAcc;
+}
+
+
+float getZAcc() {
+	return zAcc;
+}
 
 // GYRO_*OUT_* registers
 
