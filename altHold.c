@@ -25,9 +25,10 @@ static float altHoldAccSpeedDeadband	= 3.f;
 static float altHoldSpeed 			= 0.f;
 static float altHoldAccSpeed 		= 0.f;
 static float altHoldAltSpeed 		= 0.f;
-static float altHoldAccSpeedGain 		= 0.3f;
-static float altHoldAltSpeedGain 		= 3.f;
+static float altHoldAccSpeedGain 	= 0.3f;
+static float altHoldAltSpeedGain 	= 3.f;
 static bool altHoldIsReady			= false;
+static bool enableAltHold			= false;
 static unsigned short maxAlt		= 50; //cm
 static unsigned short startAlt   	= 0; //cm
 static struct timeval tv_last;
@@ -53,12 +54,13 @@ void updateSpeedByAcceleration();
 */
 bool initAltHold(){
 
+	setAltHoldIsReady(false);
+	
 	switch(MODULE_TYPE){
 		case ALTHOLD_MODULE_VL53L0X:
 		
 			if(!vl53l0xInit()){
 				_DEBUG(DEBUG_NORMAL,"vl53l0x Init failed\n");
-				setAltHoldIsReady(false);
 				return false;
 			}
 			
@@ -70,14 +72,12 @@ bool initAltHold(){
 		case ALTHOLD_MODULE_MS5611:
 		
 			//unavailable
-			setAltHoldIsReady(false);
 			return false;
 			
 		break;
 		
 		default:
 		
-			setAltHoldIsReady(false);
 			return false;
 			
 		break;
@@ -94,6 +94,35 @@ bool initAltHold(){
 
 	return true;
 }
+
+/**
+* get the flag to indicate whether enable althold or not
+*
+* @param
+* 		void
+*
+* @return 
+*		altHold is ready or not
+*		
+*/
+bool getEnableAltHold(){
+	return enableAltHold;
+}
+
+/**
+* set the flag to indicate whether enable althold or not
+*
+* @param
+* 		altHold is ready or not
+*
+* @return 
+*		void
+*		
+*/
+void setEnableAltHold(bool v){
+	enableAltHold=v;
+}
+
 
 /**
 * get the flag to indicate whether althold is ready or not

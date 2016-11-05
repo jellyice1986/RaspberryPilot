@@ -14,6 +14,7 @@
 #include "systemControl.h"
 #include "mpu6050.h"
 #include "radioControl.h"
+#include "altHold.h"
 #include "securityMechanism.h"
 
 static int serialFd;
@@ -420,7 +421,9 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setMotorGain(SOFT_PWM_CW2, parameterF);
 		_DEBUG(DEBUG_NORMAL,"Motor 3 Gain: %5.3f\n", getMotorGain(SOFT_PWM_CW2));
 		/***/
-		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
+		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);		
+		setEnableAltHold((bool)parameter);
+		_DEBUG(DEBUG_NORMAL,"Enable aAltHold: %s\n", getEnableAltHold()==true?"true":"false");
 		/***/
 		break;
 
@@ -548,7 +551,43 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&yawRatePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL,"Rate Yaw D Gain=%4.6f\n", getDGain(&yawRatePidSettings));
 
-		break;
+		//Vertical Height P gain	
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
+		setPGain(&altHoldAltSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Height P Gain=%4.6f\n", getPGain(&altHoldAltSettings));		
+		//Vertical Height I gain
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I]);
+		setIGain(&altHoldAltSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Height I Gain=%4.6f\n", getIGain(&altHoldAltSettings));
+		//Vertical Height I outputLimit
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I_LIMIT]);
+		setILimit(&altHoldAltSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Height I Output Limit=%4.6f\n",
+		getILimit(&altHoldAltSettings));
+		//Vertical Height D gain
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_D]);
+		setDGain(&altHoldAltSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Height D Gain=%4.6f\n", getDGain(&altHoldAltSettings));
+
+		//Vertical Speed P gain	
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_P]);
+		setPGain(&altHoldlSpeedSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Speed P Gain=%4.6f\n", getPGain(&altHoldlSpeedSettings));
+		//Vertical Speed I gain
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I]);
+		setIGain(&altHoldlSpeedSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Speed I Gain=%4.6f\n", getIGain(&altHoldlSpeedSettings));
+		//Vertical Speed I outputLimit
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I_LIMIT]);
+		setILimit(&altHoldlSpeedSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Speed I Output Limit=%4.6f\n",
+		getILimit(&altHoldlSpeedSettings));
+		//Vertical Height D gain
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
+		setDGain(&altHoldlSpeedSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL,"Vertical Speed D Gain=%4.6f\n", getDGain(&altHoldlSpeedSettings));	
+	
+	        break;
 
 		default:
 			

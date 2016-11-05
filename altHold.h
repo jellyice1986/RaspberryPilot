@@ -7,4 +7,6 @@ typedef enum{
 
 bool initAltHold();
 bool getAltHoldIsReady();
+bool getEnableAltHold();
+void setEnableAltHold(bool v);
 

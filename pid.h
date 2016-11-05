@@ -20,8 +20,8 @@ extern PID_STRUCT yawAttitudePidSettings;
 extern PID_STRUCT rollRatePidSettings;
 extern PID_STRUCT pitchRatePidSettings;
 extern PID_STRUCT yawRatePidSettings;
-extern PID_STRUCT verticalHeightSettings;
-extern PID_STRUCT verticalSpeedSettings;
+extern PID_STRUCT altHoldAltSettings;
+extern PID_STRUCT altHoldlSpeedSettings;
 
 void pidInit(void);
 float pidCalculation(PID_STRUCT *pid, float process_point,const bool updateError);

@@ -65,6 +65,29 @@ PID_STRUCT pitchRatePidSettings;
 PID_STRUCT yawRatePidSettings;
 
 /**
+ * Default PID parameter for AltHold altitude
+ */
+#define DEFAULT_ALTHOLD_ALT_P_GAIN 0.0
+#define DEFAULT_ALTHOLD_ALT_I_GAIN 0.0
+#define DEFAULT_ALTHOLD_ALT_D_GAIN 0.0
+#define DEFAULT_ALTHOLD_ALT_I_LIMIT 0.0
+#define DEFAULT_ALTHOLD_ALT_SP 0.0
+#define DEFAULT_ALTHOLD_ALT_SHIFT 0.0
+PID_STRUCT altHoldAltSettings;
+
+/**
+ * Default PID parameter for AltHold vertical speed
+ */
+#define DEFAULT_ALTHOLD_SPEED_P_GAIN 0.0
+#define DEFAULT_ALTHOLD_SPEED_I_GAIN 0.0
+#define DEFAULT_ALTHOLD_SPEED_D_GAIN 0.0
+#define DEFAULT_ALTHOLD_SPEED_I_LIMIT 0.0
+#define DEFAULT_ALTHOLD_SPEED_SP 0.0
+#define DEFAULT_ALTHOLD_SPEED_SHIFT  0.0
+
+PID_STRUCT altHoldlSpeedSettings;
+
+/**
 *  Init  PID controler   
 *
 * @param
@@ -117,6 +140,21 @@ void pidInit() {
 	resetPidRecord(&pitchRatePidSettings);
 	resetPidRecord(&yawRatePidSettings);
 
+	//init PID controler for vertical height
+	pidTune(&altHoldAltSettings, DEFAULT_ALTHOLD_ALT_P_GAIN,
+	DEFAULT_ALTHOLD_ALT_I_GAIN, DEFAULT_ALTHOLD_ALT_D_GAIN,
+	DEFAULT_ALTHOLD_ALT_SP, DEFAULT_ALTHOLD_ALT_SHIFT,
+	DEFAULT_ALTHOLD_ALT_I_LIMIT);
+	setName(&altHoldAltSettings, "VH");
+	resetPidRecord(&altHoldAltSettings);
+
+	//init PID controler for vertical speed
+	pidTune(&altHoldlSpeedSettings, DEFAULT_ALTHOLD_SPEED_P_GAIN,
+	DEFAULT_ALTHOLD_SPEED_I_GAIN, DEFAULT_ALTHOLD_SPEED_D_GAIN,
+	DEFAULT_ALTHOLD_SPEED_SP, DEFAULT_ALTHOLD_SPEED_SHIFT,
+	DEFAULT_ALTHOLD_SPEED_I_LIMIT);
+	setName(&altHoldlSpeedSettings, "VS");
+	resetPidRecord(&altHoldlSpeedSettings);
 }
 
 /**
