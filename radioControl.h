@@ -2,7 +2,7 @@
 #define TRANSMIT_TIMER 			60000
 #define SERIAL_BAUDRATE 		57600
 #define PACKET_FIELD_NUM 		60
-#define PACKET_FIELD_LENGTH 	20
+#define PACKET_FIELD_LENGTH 	50
 
 typedef enum{
 	HEADER_BEGIN,

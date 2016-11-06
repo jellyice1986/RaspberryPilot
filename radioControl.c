@@ -199,7 +199,8 @@ void *radioReceiveThread(void *arg) {
 *		bool
 *
 */
-bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH])
+{
 
 	int i=0;
 	char *token=NULL;
@@ -211,7 +212,7 @@ bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PAC
 	cmd[i-1]='\0';
 	i=1;
 	token = strtok(cmd, ":");
-	strncpy(container[0],token,strlen(token));
+	strcpy(container[0],token);
 
 	if(token==NULL) return false;
 		
@@ -220,7 +221,7 @@ bool extractPacketInfo(char *buf,int lenth, char container[PACKET_FIELD_NUM][PAC
 		if(token==NULL){
 			break; 
 		}else{
-			strncpy(container[i],token,strlen(token));
+			strcpy(container[i],token);
 			i++;
 		}
 	}while(true);
@@ -246,7 +247,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	float rollSpShift = 0;
 	float pitchSpShift = 0;
 	float yawShiftValue=0;
-	float throttlePercentage=0;
+	float throttlePercentage=0.f;
 #if CHECK_RECEIVER_PERIOD	
 	struct timeval tv;
 	struct timeval tv_last;
@@ -286,18 +287,33 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		rollSpShift = atof(packet[CONTROL_MOTION_ROLL_SP_SHIFT]);
 		pitchSpShift = atof(packet[CONTROL_MOTION_PITCH_SP_SHIFT]);
 		yawShiftValue = atof(packet[CONTROL_MOTION_YAW_SHIFT_VALUE]);
-		throttlePercentage=atof(packet[CONTROL_MOTION_THROTTLE]) / 100.f;
-		parameter = getMinPowerLevel()
+		throttlePercentage=atof(packet[CONTROL_MOTION_THROTTLE]);
+
+		if(getAltHoldIsReady()&& getEnableAltHold()){
+
+			//ALTHOLD:
+			//1.get  target altitude and set it into pid controler
+			//2. convert throttlePercentage to power level by target altitude
+			
+			setPidSp(&altHoldAltSettings, convertTargetAltFromeRemoteControle((unsigned short) throttlePercentage));
+			parameter=getDefaultPowerLevelWithTargetAlt();
+			
+
+		}else{
+		
+			throttlePercentage=throttlePercentage * 0.01f;
+			parameter = getMinPowerLevel()
 				+ (int) (throttlePercentage
 						* (float) (getMaxPowerLeve()
 								- getMinPowerLevel())); 
-		
+		}
+
 		if (parameter > getMaxPowerLeve()
 				|| parameter < getMinPowerLevel()) {
 			_DEBUG(DEBUG_NORMAL,"invilid throttle level\n");
 			break;
 		}
-		
+
 		if (true==flySystemIsEnable()) {
 			
 			pthread_mutex_lock(&controlMotorMutex);
@@ -314,6 +330,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
 			} else {
+	
 				if (getPidSp(&yawAttitudePidSettings) == 321.0) {
 					_DEBUG(DEBUG_NORMAL,"START Flying\n");
 					setYawCenterPoint(getYaw());

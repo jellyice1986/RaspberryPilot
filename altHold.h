@@ -7,6 +7,12 @@ typedef enum{
 
 bool initAltHold();
 bool getAltHoldIsReady();
+bool altHoldUpdate();
 bool getEnableAltHold();
+float getCurrentAltHoldAltitude();
+float getCurrentAltHoldSpeed();
 void setEnableAltHold(bool v);
+unsigned short convertTargetAltFromeRemoteControle(unsigned short v);
+unsigned short getDefaultPowerLevelWithTargetAlt();
+
 

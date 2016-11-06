@@ -56,6 +56,7 @@ int main() {
 	float xyzAcc[3];
 	float xyzGravity[3];
 	float xyzMagnet[3];
+	bool updateAltHoldOffset=false;
 	int mpuResult=0;
 
 	if(!raspberryPilotInit()){
@@ -70,6 +71,9 @@ int main() {
 		tv2.tv_usec=tv.tv_usec;
 		tv2.tv_sec=tv.tv_sec;
 #endif
+
+		updateAltHoldOffset=altHoldUpdate();
+
 		mpuResult= getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xyzGravity,xyzMagnet);
 
 		if (0 == mpuResult
@@ -108,11 +112,10 @@ int main() {
 						
 			if (count >= getAdjustPeriod()) {
 				if(true==flySystemIsEnable()){
-					
 					pthread_mutex_lock(&controlMotorMutex);
 					if(getPacketCounter()!=MAX_COUNTER){
 						if  (getPidSp(&yawAttitudePidSettings) != 321.0) {
-							motorControler();
+							motorControler(updateAltHoldOffset);
 						}else{
 							setupAllMotorPoewrLevel(getMinPowerLevel(),
 								getMinPowerLevel(), getMinPowerLevel(),

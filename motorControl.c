@@ -5,14 +5,6 @@
 #include "pca9685.h"
 #include "motorControl.h"
 
-#define DEFAULT_ADJUST_POWER_RANGE 500  
-#define DEFAULT_PID_OUTPUT_LIMITATION 500
-#define PWM_DUTY_CYCLE  500				//HZ
-#define PWM_MAX_DC 500 					//HZ   2ms
-#define PWM_MIN_DC 1000 				//HZ  1ms
-#define MAX_POWER_LEVEL 4096    		//4096*(PWM_DUTY_CYCLE/PWM_MAX_DC)
-#define MIN_POWER_LEVEL 2048 			//(4096*(PWM_DUTY_CYCLE/PWM_MAX_DC))
-
 static unsigned short motorPowerLevel_CW1;
 static unsigned short motorPowerLevel_CW2;
 static unsigned short motorPowerLevel_CCW1;

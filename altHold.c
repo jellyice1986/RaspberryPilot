@@ -7,12 +7,12 @@
 #include "commonLib.h"
 #include "flyControler.h"
 #include "vl53l0x.h"
+#include "motorControl.h"
 #include "mpu6050.h"
 #include "altHold.h"
 
 #define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
 
-static pthread_t altHoldThreadId;
 static float aslRaw					= 0.f;
 static float asl					= 0.f;
 static float aslLong				= 0.f;
@@ -28,9 +28,10 @@ static float altHoldAltSpeed 		= 0.f;
 static float altHoldAccSpeedGain 	= 0.3f;
 static float altHoldAltSpeedGain 	= 3.f;
 static bool altHoldIsReady			= false;
-static bool enableAltHold			= false;
+static bool enableAltHold			= true;
 static unsigned short maxAlt		= 50; //cm
 static unsigned short startAlt   	= 0; //cm
+float factorForPowerLevelAndAlt		=4.2f;
 static struct timeval tv_last;
 
 static void setAltHoldIsReady(bool v);
@@ -83,13 +84,6 @@ bool initAltHold(){
 		break;
 	}
 
-	if (pthread_create(&altHoldThreadId, NULL, altHoldThread, 0)) {
-			_DEBUG(DEBUG_NORMAL,"altHold thread create failed\n");
-			return false;
-	} else {
-			_DEBUG(DEBUG_NORMAL,"start altHold thread...\n");
-	}
-	
 	setAltHoldIsReady(true);
 
 	return true;
@@ -235,23 +229,44 @@ float getAccWithoutGravity(){
 void updateSpeedByAcceleration(){
 
 	if(getAltHoldIsReady()){
-
-		struct timeval tv;
-
-		gettimeofday(&tv,NULL);
-
-		if(0!=tv_last.tv_sec){
-			altHoldAccSpeed=altHoldAccSpeed*altHoldAccSpeedAlpha+(1.f-altHoldAccSpeedAlpha)*deadband(getAccWithoutGravity()*100.f,altHoldAccSpeedDeadband)*altHoldAccSpeedGain;	
-			_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED,"(%s-%d) altHoldAccSpeed=%.3f\n",__func__,__LINE__,altHoldAccSpeed);
-		}
 		
-		tv_last.tv_usec=tv.tv_usec;
-		tv_last.tv_sec=tv.tv_sec;
+		altHoldAccSpeed=altHoldAccSpeed*altHoldAccSpeedAlpha+(1.f-altHoldAccSpeedAlpha)*deadband(getAccWithoutGravity()*100.f,altHoldAccSpeedDeadband)*altHoldAccSpeedGain;	
+		_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED,"(%s-%d) altHoldAccSpeed=%.3f\n",__func__,__LINE__,altHoldAccSpeed);
 	}
+	
 }
 
 /**
-* thread of AltHolt, this thread update altitude and vertical speed periodically
+* get current altitude
+*
+* @param
+* 		void
+*
+* @return 
+*		altitude (cm)
+*		
+*/
+float getCurrentAltHoldAltitude(){
+	return asl;
+}
+
+/**
+* get current speed
+*
+* @param
+* 		void
+*
+* @return 
+*		speed (cm/sec)
+*		
+*/
+float getCurrentAltHoldSpeed(){
+	return altHoldSpeed;
+}
+
+
+/**
+*  AltHold updates altitude and vertical speed
 *
 * @param
 * 		arg
@@ -260,51 +275,107 @@ void updateSpeedByAcceleration(){
 *		pointer
 *		
 */
-void *altHoldThread(void *arg){
+bool altHoldUpdate(){
 
 	unsigned short data=0;
 	bool result=false;
-		
-	while(!getLeaveFlyControlerFlag()){
-		
-		switch(MODULE_TYPE){
+	static struct timeval tv;
+
+	if(getAltHoldIsReady()&& getEnableAltHold()){
+
+		gettimeofday(&tv,NULL);
+
+		if(0==tv_last.tv_sec){
 			
-			case ALTHOLD_MODULE_VL53L0X:
-		
-				result=vl53l0xGetMeasurementData(&data);
-				aslRaw=(float)data*0.1f;
-			
-			break;
-		
-			case ALTHOLD_MODULE_MS5611:
-			//unavailable
-				result=false;
-			break;
-		
-			default:
-				result=false;
-			break;
+			tv_last.tv_usec=tv.tv_usec;
+			tv_last.tv_sec=tv.tv_sec;
+
+			return false;
 		}
 		
-		if(result){
-
-			updateSpeedByAcceleration();
-
-			asl = asl * aslAlpha + aslRaw * (1.f - aslAlpha);
-			aslLong = aslLong * aslLongAlpha + aslRaw * (1.f - aslLongAlpha);
-			altHoldAltSpeed=deadband((asl-aslLong), altHoldSpeedDeadband)*altHoldAltSpeedGain;
-			altHoldSpeed = altHoldAltSpeed * altHoldSpeedAlpha +  altHoldAccSpeed* (1.f - altHoldSpeedAlpha);
-
-			_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n",__func__,__LINE__,altHoldAltSpeed);
-			_DEBUG_HOVER(DEBUG_HOVER_SPEED,"(%s-%d) altHoldSpeed=%.3f\n",__func__,__LINE__,altHoldSpeed);
-			_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE,"(%s-%d) aslRaw=%.3f\n",__func__,__LINE__,aslRaw);
-			_DEBUG_HOVER(DEBUG_HOVER_FILTERED_ALTITUDE,"(%s-%d) asl=%.3f aslLong=%.3f\n",__func__,__LINE__,asl,aslLong);
-			
-		}
+		if(((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec))>=30000){
 		
-		usleep(25000);
+			switch(MODULE_TYPE){
+			
+				case ALTHOLD_MODULE_VL53L0X:
+		
+					result=vl53l0xGetMeasurementData(&data);
+					aslRaw=(float)data*0.1f;
+			
+				break;
+		
+				case ALTHOLD_MODULE_MS5611:
+					//unavailable
+					result=false;
+				break;
+		
+				default:
+					result=false;
+				break;
+			}
+		
+			if(result){
+
+				updateSpeedByAcceleration();
+
+				asl = asl * aslAlpha + aslRaw * (1.f - aslAlpha);
+				aslLong = aslLong * aslLongAlpha + aslRaw * (1.f - aslLongAlpha);
+				altHoldAltSpeed=deadband((asl-aslLong), altHoldSpeedDeadband)*altHoldAltSpeedGain;
+				altHoldSpeed = altHoldAltSpeed * altHoldSpeedAlpha +  altHoldAccSpeed* (1.f - altHoldSpeedAlpha);
+
+				_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n",__func__,__LINE__,altHoldAltSpeed);
+				_DEBUG_HOVER(DEBUG_HOVER_SPEED,"(%s-%d) altHoldSpeed=%.3f\n",__func__,__LINE__,altHoldSpeed);
+				_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE,"(%s-%d) aslRaw=%.3f\n",__func__,__LINE__,aslRaw);
+				_DEBUG_HOVER(DEBUG_HOVER_FILTERED_ALTITUDE,"(%s-%d) asl=%.3f aslLong=%.3f\n",__func__,__LINE__,asl,aslLong);
+			
+			}
+		
+			tv_last.tv_usec=tv.tv_usec;
+			tv_last.tv_sec=tv.tv_sec;
+		
+		}
 	}
 	
-	pthread_exit((void *)1234);
+	return result;
+	
 }
+
+unsigned short targetAlt=0;
+
+/**
+*  convert the percentage of throttle  which is receive from 
+*  remote controler into targer altitude
+*
+* @param
+* 		 percentage of throttle (1 to 100)
+*
+* @return 
+*		target altitude
+*		
+*/
+unsigned short convertTargetAltFromeRemoteControle(unsigned short v){
+
+	targetAlt=LIMIT_MIN_MAX_VALUE(LIMIT_MIN_MAX_VALUE(v,0,100)*5,0,getMaxAlt());
+	return targetAlt;
+}
+	
+/**
+*  get a defeault power level with a altitude, you should make the factor and your Raspberry Pilot match well
+*
+* @param
+* 		 altitude
+*
+* @return 
+*		power level
+*		
+*/
+unsigned short getDefaultPowerLevelWithTargetAlt(){
+
+	unsigned short ret=0;
+	
+	ret= LIMIT_MIN_MAX_VALUE(MIN_POWER_LEVEL+(unsigned short)((float)targetAlt*factorForPowerLevelAndAlt),MIN_POWER_LEVEL,MAX_POWER_LEVEL);
+		
+	return ret;	
+}
+
 

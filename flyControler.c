@@ -10,6 +10,7 @@
 #include "systemControl.h"
 #include "mpu6050.h"
 #include "pid.h"
+#include "altHold.h"
 #include "flyControler.h"
 
 #define DEFAULT_ADJUST_PERIOD 1
@@ -18,6 +19,10 @@
 
 static float getThrottleOffset();
 static void getAttitudePidOutput();
+void getAltHoldAltPidOutput ();
+void getAltHoldSpeedPidOutput(	float *altHoldSpeedOutput);
+float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
+
 
 pthread_mutex_t controlMotorMutex;
 
@@ -25,11 +30,13 @@ static bool leaveFlyControler;
 static float rollAttitudeOutput;
 static float pitchAttitudeOutput;
 static float yawAttitudeOutput;
-static float verticalHeightOutput;
+static float altHoltAltOutput;
 static unsigned short adjustPeriod;
 static float angularLimit;
 static float gyroLimit;
 static float yawCenterPoint;
+static float maxThrottleOffset;
+
 
 /**
 * Init paramtes and states for flyControler 
@@ -42,6 +49,7 @@ static float yawCenterPoint;
 *
 */
 void flyControlerInit(){
+
 	setLeaveFlyControlerFlag(false);
 	setAdjustPeriod(DEFAULT_ADJUST_PERIOD);
 	setGyroLimit(DEFAULT_GYRO_LIMIT);
@@ -53,7 +61,8 @@ void flyControlerInit(){
 	rollAttitudeOutput = 0;
 	pitchAttitudeOutput = 0;
 	yawAttitudeOutput = 0;
-	verticalHeightOutput=0;
+	altHoltAltOutput=0;
+	maxThrottleOffset=200;
 }
 
 /**
@@ -137,13 +146,13 @@ void getRatePidOutput(float *rollRateOutput, float *pitchRateOutput,
  *  this function adjust motors by PID output
  *
  * @param
- * 		void
+ * 		whether update altHold offset or not
  *
  * @return 
- *		value
+ *		void
  *
  */
-void motorControler() {
+void motorControler(bool updateAltHoldOffset) {
 
 	float rollRateOutput = 0.f;
 	float rollCcw1 = 0.f;
@@ -172,10 +181,12 @@ void motorControler() {
 	float minLimit = 0.f;
 	float throttleOffset = 0.f;
 
-	
-	//have to check whether it is useful or not
-	//throttleOffset=getThrottleOffset();
-
+	if(getAltHoldIsReady() && getEnableAltHold()){
+		throttleOffset=getThrottleOffsetByAltHold(updateAltHoldOffset);
+	}else{
+		//have to check whether it is useful or not
+		//throttleOffset=getThrottleOffset();
+	}
 
 	maxLimit = (float) min(
 			(getThrottlePowerLevel() + throttleOffset) + getAdjustPowerLeveRange(),
@@ -415,12 +426,69 @@ void setAngularLimit(float angular) {
 * get the maxumum of angular that  your quadcopter can get   
 *
 * @param 
-*		void
+*		whetjer update altHold offset or not
 *
 * @return 
 *		the limitation of angular
 */
 float getAngularLimit() {
+
 	return angularLimit;
+}
+
+/**
+* get output from altitude pid controler  
+*
+* @param 
+*		void
+*
+* @return 
+*		void
+*/
+void getAltHoldAltPidOutput () {
+	
+	altHoltAltOutput = pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude(),true);
+	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f\n",getCurrentAltHoldAltitude());
+	//_DEBUG(DEBUG_NORMAL,"altHoltAltOutput=%f\n",altHoltAltOutput);
+}
+
+/**
+* get output from speed pid controler  
+*
+* @param 
+*		output
+*
+* @return 
+*		void
+*/
+void getAltHoldSpeedPidOutput(	float *altHoldSpeedOutput) {
+
+	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
+	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings, getCurrentAltHoldSpeed(),true);
+	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldSpeed=%f\n",getCurrentAltHoldSpeed());
+	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
+}
+
+/**
+* get throttle offset by altHold mechanism  
+*
+* @param 
+*		void
+*
+* @return 
+*		void
+*/
+float getThrottleOffsetByAltHold(bool updateAltHoldOffset){
+
+	static float output=0;
+
+	if(updateAltHoldOffset){
+		
+		getAltHoldAltPidOutput();
+		getAltHoldSpeedPidOutput(&output);
+		output=LIMIT_MIN_MAX_VALUE(output,-maxThrottleOffset,maxThrottleOffset);
+	}
+	//_DEBUG(DEBUG_NORMAL,"output =%f\n",output);
+	return output;
 }
 
