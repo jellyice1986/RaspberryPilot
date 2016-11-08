@@ -292,10 +292,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		if(getAltHoldIsReady()&& getEnableAltHold()){
 
 			//ALTHOLD:
-			//1.get  target altitude and set it into pid controler
+			//1. get target altitude and assign it to pid controler
 			//2. convert throttlePercentage to power level by target altitude
 			
-			setPidSp(&altHoldAltSettings, convertTargetAltFromeRemoteControle((unsigned short) throttlePercentage));
+			setPidSp(&altHoldAltSettings, convertTargetAltFromeRemoteControler((unsigned short) throttlePercentage));
 			parameter=getDefaultPowerLevelWithTargetAlt();
 			
 

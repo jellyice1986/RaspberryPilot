@@ -51,6 +51,7 @@ static float maxThrottleOffset;
 void flyControlerInit(){
 
 	setLeaveFlyControlerFlag(false);
+	disenableFlySystem();
 	setAdjustPeriod(DEFAULT_ADJUST_PERIOD);
 	setGyroLimit(DEFAULT_GYRO_LIMIT);
 	setAngularLimit(DEFAULT_ANGULAR_LIMIT);
@@ -152,7 +153,7 @@ void getRatePidOutput(float *rollRateOutput, float *pitchRateOutput,
  *		void
  *
  */
-void motorControler(bool updateAltHoldOffset) {
+void motorControler() {
 
 	float rollRateOutput = 0.f;
 	float rollCcw1 = 0.f;
@@ -182,7 +183,7 @@ void motorControler(bool updateAltHoldOffset) {
 	float throttleOffset = 0.f;
 
 	if(getAltHoldIsReady() && getEnableAltHold()){
-		throttleOffset=getThrottleOffsetByAltHold(updateAltHoldOffset);
+		throttleOffset=getThrottleOffsetByAltHold(updateAltHold());
 	}else{
 		//have to check whether it is useful or not
 		//throttleOffset=getThrottleOffset();

@@ -56,7 +56,6 @@ int main() {
 	float xyzAcc[3];
 	float xyzGravity[3];
 	float xyzMagnet[3];
-	bool updateAltHoldOffset=false;
 	int mpuResult=0;
 
 	if(!raspberryPilotInit()){
@@ -71,8 +70,6 @@ int main() {
 		tv2.tv_usec=tv.tv_usec;
 		tv2.tv_sec=tv.tv_sec;
 #endif
-
-		updateAltHoldOffset=altHoldUpdate();
 
 		mpuResult= getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xyzGravity,xyzMagnet);
 
@@ -115,7 +112,7 @@ int main() {
 					pthread_mutex_lock(&controlMotorMutex);
 					if(getPacketCounter()!=MAX_COUNTER){
 						if  (getPidSp(&yawAttitudePidSettings) != 321.0) {
-							motorControler(updateAltHoldOffset);
+							motorControler();
 						}else{
 							setupAllMotorPoewrLevel(getMinPowerLevel(),
 								getMinPowerLevel(), getMinPowerLevel(),
@@ -159,21 +156,26 @@ bool raspberryPilotInit(){
 	if (!piSystemInit()) {
 		_ERROR("(%s-%d) Init Raspberry Pi failed!\n",__func__,__LINE__);
 		return false;
+	}		
+	usleep(20000);
+
+	if(!initAltHold()){
+		_ERROR("(%s-%d) Init altHold failed!\n",__func__,__LINE__);
 	}
-		
+	usleep(20000);
+
 	if (!mpu6050Init()) {
 		_ERROR("(%s-%d) Init MPU6050 failed!\n",__func__,__LINE__);
 		return false;
 	}
+	usleep(20000);
+	
 	if(!pca9685Init()){
 		_ERROR("(%s-%d) Init PCA9685 failed!\n",__func__,__LINE__);
 		return false;
 	}
-	
-	if(!initAltHold()){
-		_ERROR("(%s-%d) Init altHold failed!\n",__func__,__LINE__);
-	}
-			
+	usleep(20000);	
+
 	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
 		_ERROR("(%s-%d) controlMotorMutex init failed\n",__func__,__LINE__);
 		return false;

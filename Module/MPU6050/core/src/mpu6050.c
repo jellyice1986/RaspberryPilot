@@ -480,6 +480,7 @@ unsigned char dmpGetMag(short *data, const unsigned char* packet);
 #define MPU6050_DMP_CODE_SIZE       1962    // dmpMemory[]
 #define MPU6050_DMP_CONFIG_SIZE     232     // dmpConfig[]
 #define MPU6050_DMP_UPDATES_SIZE    140     // dmpUpdates[]
+#define MPU9150_MPU9250_RA_MAG_ADDRESS		0x0C
 
 /* ================================================================================================ *
  | Default MotionApps v4.1 48-byte FIFO packet structure:                                           |
@@ -2388,7 +2389,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	// get current FIFO count
 	fifoCount = getFIFOCount();
 
-	if (fifoCount == 1024) {
+	if (fifoCount >= 1024) {
 		// reset so we can continue cleanly
 		resetFIFO();
 		result=1;
@@ -2413,7 +2414,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 		xyzAcc[2]=(float)acc[2]*getAccSensitivityInv();
 		yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
 		yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
-#endif
+#endif	
 		yprAttitude[0] = yprAttitude[0] * RA_TO_DE;
 		result=0;
 	} else {
@@ -2644,11 +2645,10 @@ void getMotion9(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
 	
 }
 
-
 unsigned char dmpInitialize() {
 	
 	// reset device
-	printf("\n\nResetting MPU6050 9 AXIS ...\n");
+	printf("Resetting MPU6050 9 AXIS ...\n");
 	reset();
 	usleep(120000); // wait after reset
 
@@ -2699,16 +2699,16 @@ unsigned char dmpInitialize() {
 
 	printf("Setting magnetometer mode to power-down...\n");
 	//mag -> setMode(0);
-	writeByte(0x0E, 0x0A, 0x00);
+	writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x00);
 
 	printf("Setting magnetometer mode to fuse access...\n");
 	//mag -> setMode(0x0F);
-	writeByte(0x0E, 0x0A, 0x0F);
+	writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x0F);
 
 	printf("Reading mag magnetometer factory calibration...\n");
 	char asax, asay, asaz;
 	//mag -> getAdjustment(&asax, &asay, &asaz);
-	readBytes(0x0E, 0x10, 3, buffer);
+	readBytes(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x10, 3, buffer);
 	asax = (int8_t) buffer[0];
 	asay = (int8_t) buffer[1];
 	asaz = (int8_t) buffer[2];
@@ -2716,7 +2716,7 @@ unsigned char dmpInitialize() {
 
 	printf("Setting magnetometer mode to power-down...\n");
 	//mag -> setMode(0);
-	writeByte(0x0E, 0x0A, 0x00);
+	writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x00);
 
 	// load DMP code into memory banks
 	printf("Writing DMP code to MPU memory banks (%d bytes)\n",
@@ -2826,18 +2826,18 @@ unsigned char dmpInitialize() {
 			setZeroMotionDetectionDuration(0);
 
 			printf("Setting AK8975 to single measurement mode...\n");
-			//mag -> setMode(1);
-			writeByte(0x0E, 0x0A, 0x01);
-
-			// setup AK8975 (0x0E) as Slave 0 in read mode
+			//mag -> setMode(1);	
+			writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x01);
+			
+			// setup AK8975 (MPU9150_MPU9250_RA_MAG_ADDRESS) as Slave 0 in read mode
 			printf("Setting up AK8975 read slave 0...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV0_ADDR, 0x8E);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV0_REG, 0x01);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV0_CTRL, 0xDA);
 
-			// setup AK8975 (0x0E) as Slave 2 in write mode
+			// setup AK8975 (MPU9150_MPU9250_RA_MAG_ADDRESS) as Slave 2 in write mode
 			printf("Setting up AK8975 write slave 2...\n");
-			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_ADDR, 0x0E);
+			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_ADDR, MPU9150_MPU9250_RA_MAG_ADDRESS);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_REG, 0x0A);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_CTRL, 0x81);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_DO, 0x01);

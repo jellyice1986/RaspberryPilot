@@ -8,5 +8,5 @@
 # Description: RaspberryPilot
 ### END INIT INFO
 
-sleep 10;
+sleep 15;
 sudo  /home/pi/TestCode/FlyControler/RaspberryPilot &

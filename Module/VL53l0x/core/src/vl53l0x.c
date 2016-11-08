@@ -14,7 +14,7 @@
 static VL53L0X_Dev_t vl53l0xDevice;
 static bool vl53l0xIsReady=false;
 
-static VL53L0X_Error singleRangingLongRangeInit(VL53L0X_Dev_t *pDevice);
+static VL53L0X_Error singleRangingLongRangeInit();
 static void print_pal_error(VL53L0X_Error Status);
 
 bool vl53l0xInit(){
@@ -25,12 +25,12 @@ bool vl53l0xInit(){
     VL53L0X_DeviceInfo_t                DeviceInfo;
     VL53L0X_Dev_t *pVl53l0xDevice = &vl53l0xDevice;
 	int32_t status_int;
-	 
-	pVl53l0xDevice->I2cDevAddr      = VL53L0X_ADDRESS;
-	
+
+	pVl53l0xDevice->I2cDevAddr		= VL53L0X_ADDRESS;
+
 	/*
-     *  Get the version of the VL53L0X API running in the firmware
-     */
+     	  *  Get the version of the VL53L0X API running in the firmware
+         */
 
     if(Status == VL53L0X_ERROR_NONE)
     {
@@ -40,8 +40,8 @@ bool vl53l0xInit(){
     }
 	
 	 /*
-     *  Verify the version of the VL53L0X API running in the firmware
-     */
+     	   *  Verify the version of the VL53L0X API running in the firmware
+          */
 
     if(Status == VL53L0X_ERROR_NONE)
     {
@@ -82,25 +82,27 @@ bool vl53l0xInit(){
         }
         print_pal_error(Status);
     }
-	
+
 	//single Ranging Long Range
 	if(Status == VL53L0X_ERROR_NONE)
-		 Status = singleRangingLongRangeInit(pVl53l0xDevice);
+		 Status = singleRangingLongRangeInit();
 	
 	vl53l0xIsReady=((Status == VL53L0X_ERROR_NONE)?true:false);
-	
+
 	return vl53l0xIsReady;
 	
 }
 
 
-VL53L0X_Error singleRangingLongRangeInit(VL53L0X_Dev_t *pDevice){
-	
+VL53L0X_Error singleRangingLongRangeInit(){
+
     VL53L0X_Error Status = VL53L0X_ERROR_NONE;
     uint32_t refSpadCount;
     uint8_t isApertureSpads;
     uint8_t VhvSettings;
     uint8_t PhaseCal;
+    VL53L0X_Dev_t *pDevice=&vl53l0xDevice;
+
 
     if(Status == VL53L0X_ERROR_NONE)
     {
@@ -108,7 +110,7 @@ VL53L0X_Error singleRangingLongRangeInit(VL53L0X_Dev_t *pDevice){
         Status = VL53L0X_StaticInit(pDevice); // Device Initialization
         print_pal_error(Status);
     }
-    
+
     if(Status == VL53L0X_ERROR_NONE)
     {
         printf ("Call of VL53L0X_PerformRefCalibration\n");
@@ -136,10 +138,11 @@ VL53L0X_Error singleRangingLongRangeInit(VL53L0X_Dev_t *pDevice){
     }
 
     // Enable/Disable Sigma and Signal check
-	
- /*   if (Status == VL53L0X_ERROR_NONE) {
+ 	/*  
+ 	if (Status == VL53L0X_ERROR_NONE) {
         Status = VL53L0X_SetSequenceStepEnable(pDevice,VL53L0X_SEQUENCESTEP_DSS, 1);
-    }*/	
+    	}
+    	*/	
 	
     if (Status == VL53L0X_ERROR_NONE) {
         Status = VL53L0X_SetLimitCheckEnable(pDevice,

@@ -5,7 +5,7 @@ extern pthread_mutex_t controlMotorMutex;
 void setLeaveFlyControlerFlag(bool v);
 bool getLeaveFlyControlerFlag();
 void flyControlerInit();
-void motorControler(bool updateAltHoldOffset);
+void motorControler();
 void setYawCenterPoint(float point);
 float getYawCenterPoint();
 float yawTransform(float originPoint);

@@ -40,7 +40,6 @@ bool piSystemInit() {
 	(void)signal(SIGINT, signalEvent);
 	(void) signal(SIGQUIT, signalEvent);
 	(void) signal(SIGABRT, signalEvent);
-	disenableFlySystem();
 
 	return true;
 }
