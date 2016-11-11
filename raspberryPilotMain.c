@@ -163,24 +163,20 @@ bool raspberryPilotInit(){
 		_ERROR("(%s-%d) Init Raspberry Pi failed!\n",__func__,__LINE__);
 		return false;
 	}		
-	usleep(20000);
 
 	if(!initAltHold()){
 		_ERROR("(%s-%d) Init altHold failed!\n",__func__,__LINE__);
 	}
-	usleep(20000);
 
 	if (!mpu6050Init()) {
 		_ERROR("(%s-%d) Init MPU6050 failed!\n",__func__,__LINE__);
 		return false;
 	}
-	usleep(20000);
 	
 	if(!pca9685Init()){
 		_ERROR("(%s-%d) Init PCA9685 failed!\n",__func__,__LINE__);
 		return false;
 	}
-	usleep(20000);	
 
 	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
 		_ERROR("(%s-%d) controlMotorMutex init failed\n",__func__,__LINE__);

@@ -377,12 +377,11 @@ void *altHoldUpdate(void *arg){
 				_DEBUG_HOVER(DEBUG_HOVER_SPEED,"(%s-%d) altHoldSpeed=%.3f\n",__func__,__LINE__,altHoldSpeed);
 				_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE,"(%s-%d) aslRaw=%.3f\n",__func__,__LINE__,aslRaw);
 				_DEBUG_HOVER(DEBUG_HOVER_FILTERED_ALTITUDE,"(%s-%d) asl=%.3f aslLong=%.3f\n",__func__,__LINE__,asl,aslLong);
-		
-			}
-			
+				
 		}else{
 			usleep(500);
 		}
+	}
 	}
 
 	pthread_exit((void *)1234);
