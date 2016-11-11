@@ -1,8 +1,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "commonLib.h"
 #include "pca9685.h"
+#include "flyControler.h"
 #include "motorControl.h"
 
 static unsigned short motorPowerLevel_CW1;
@@ -32,9 +34,11 @@ void motorInit() {
 
 	resetPca9685();
 	setPWMFreq(PWM_DUTY_CYCLE);
+	pthread_mutex_lock(&controlMotorMutex);	
 	setupAllMotorPoewrLevel(MIN_POWER_LEVEL, MIN_POWER_LEVEL, MIN_POWER_LEVEL,
 			MIN_POWER_LEVEL);
 	setThrottlePowerLevel(MIN_POWER_LEVEL);
+	pthread_mutex_unlock(&controlMotorMutex);
 }
 
 

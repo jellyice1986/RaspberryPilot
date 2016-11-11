@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 #include <wiringPi.h>
 #include "commonLib.h"
 #include "motorControl.h"
@@ -40,6 +41,7 @@ bool piSystemInit() {
 	(void)signal(SIGINT, signalEvent);
 	(void) signal(SIGQUIT, signalEvent);
 	(void) signal(SIGABRT, signalEvent);
+	(void) signal(SIGALRM, signalEvent);
 
 	return true;
 }
@@ -101,8 +103,8 @@ bool flySystemIsEnable() {
 *
 */
 void signalEvent(int sig) {
-	setupAllMotorPoewrLevel(getMinPowerLevel(), getMinPowerLevel(),
-			getMinPowerLevel(), getMinPowerLevel());
+	setupAllMotorPoewrLevel(0,0,0,0);
+	setThrottlePowerLevel(0);
 	disenableFlySystem();
 	setLeaveFlyControlerFlag(true);
 	_DEBUG(DEBUG_NORMAL,"exit RaspberryPilot\n");

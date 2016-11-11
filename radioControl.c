@@ -326,6 +326,9 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&yawAttitudePidSettings);
 				resetPidRecord(&rollRatePidSettings);
 				resetPidRecord(&pitchRatePidSettings);
+				resetPidRecord(&altHoldAltSettings);
+				resetPidRecord(&altHoldlSpeedSettings);
+	
 				setYawCenterPoint(0);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
@@ -353,8 +356,9 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		//halt raspberry pi
 		
 		pthread_mutex_lock(&controlMotorMutex);
-		setupAllMotorPoewrLevel(getMinPowerLevel(), getMinPowerLevel(),
-				getMinPowerLevel(), getMinPowerLevel());
+		setupAllMotorPoewrLevel(0,0,0,0);
+		setThrottlePowerLevel(0);
+		disenableFlySystem();
 		setLeaveFlyControlerFlag(true);
 		pthread_mutex_unlock(&controlMotorMutex);
 		system("sudo halt");

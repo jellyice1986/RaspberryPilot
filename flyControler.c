@@ -59,11 +59,11 @@ void flyControlerInit(){
 	setMotorGain(SOFT_PWM_CW1, 1);
 	setMotorGain(SOFT_PWM_CCW2, 1);
 	setMotorGain(SOFT_PWM_CW2, 1);
-	rollAttitudeOutput = 0;
-	pitchAttitudeOutput = 0;
-	yawAttitudeOutput = 0;
-	altHoltAltOutput=0;
-	maxThrottleOffset=200;
+	rollAttitudeOutput = 0.f;
+	pitchAttitudeOutput = 0.f;
+	yawAttitudeOutput = 0.f;
+	altHoltAltOutput=0.f;
+	maxThrottleOffset=1000.f;
 }
 
 /**

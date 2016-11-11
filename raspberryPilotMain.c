@@ -108,8 +108,10 @@ int main() {
 			_DEBUG(DEBUG_ACC,"(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",__func__,__LINE__,getXAcc(),getYAcc(),getZAcc());
 						
 			if (count >= getAdjustPeriod()) {
-				if(true==flySystemIsEnable()){
+				
 					pthread_mutex_lock(&controlMotorMutex);
+				if(flySystemIsEnable()){
+	
 					if(getPacketCounter()!=MAX_COUNTER){
 						if  (getPidSp(&yawAttitudePidSettings) != 321.0) {
 							motorControler();
@@ -123,8 +125,12 @@ int main() {
 						//security mechanism is triggered while connection is broken
 						triggerSecurityMechanism();
 					}
-					pthread_mutex_unlock(&controlMotorMutex);
+					
+				}else{
+					setupAllMotorPoewrLevel(0,0,0,0);
+					setThrottlePowerLevel(0);
 				}
+					pthread_mutex_unlock(&controlMotorMutex);
 				
 				count = 0;
 				

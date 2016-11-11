@@ -19,7 +19,7 @@ static float asl						= 0.f;
 static float aslLong					= 0.f;
 static float aslAlpha               	= 0.3f;   	// Short term smoothing
 static float aslLongAlpha           	= 0.6f;   	// Long term smoothing
-static float altHoldAccSpeedAlpha 		= 0.8f;
+static float altHoldAccSpeedAlpha 		= 0.5f;
 static float altHoldSpeedAlpha  		= 0.6f; 
 static float altHoldSpeedDeadband   	= 0.f;
 static float altHoldAccSpeedDeadband	= 3.f;
@@ -28,7 +28,7 @@ static float altHoldAccSpeed 			= 0.f;
 static float altHoldAltSpeed 			= 0.f;
 static float altHoldAccSpeedGain 		= 0.3f;
 static float altHoldAltSpeedGain 		= 3.f;
-static float factorForPowerLevelAndAlt	= 4.2f;
+static float factorForPowerLevelAndAlt	= 15.f;
 static bool altHoldIsReady				= false;
 static bool enableAltHold				= false;
 static bool altholdIsUpdate				= false;
@@ -71,7 +71,7 @@ bool initAltHold(){
 				return false;
 			}
 			
-			setMaxAlt(60);//In cm
+			setMaxAlt(150);//cm
 			setStartAlt(0);//cm
 			
 		break;
@@ -339,7 +339,7 @@ void *altHoldUpdate(void *arg){
 		tv2.tv_sec=tv.tv_sec;
 #endif		
 
-		if(getAltHoldIsReady()&& getEnableAltHold()){
+		if(getAltHoldIsReady()){
 		
 			switch(MODULE_TYPE){
 			
@@ -381,7 +381,7 @@ void *altHoldUpdate(void *arg){
 			}
 			
 		}else{
-			usleep(30000);
+			usleep(500);
 		}
 	}
 
