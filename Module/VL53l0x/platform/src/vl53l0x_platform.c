@@ -6,7 +6,6 @@
 #include "vl53l0x_platform.h"
 #include "vl53l0x_api.h"
 
-
 VL53L0X_Error VL53L0X_LockSequenceAccess(VL53L0X_DEV Dev){
     VL53L0X_Error Status = VL53L0X_ERROR_NONE;
     return Status;

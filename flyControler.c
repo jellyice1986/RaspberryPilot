@@ -23,7 +23,6 @@ void getAltHoldAltPidOutput ();
 void getAltHoldSpeedPidOutput(	float *altHoldSpeedOutput);
 float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
 
-
 pthread_mutex_t controlMotorMutex;
 
 static bool leaveFlyControler;
@@ -36,6 +35,7 @@ static float angularLimit;
 static float gyroLimit;
 static float yawCenterPoint;
 static float maxThrottleOffset;
+static float altitudePidOutputLimitation;
 
 
 /**
@@ -59,6 +59,7 @@ void flyControlerInit(){
 	setMotorGain(SOFT_PWM_CW1, 1);
 	setMotorGain(SOFT_PWM_CCW2, 1);
 	setMotorGain(SOFT_PWM_CW2, 1);
+	setAltitudePidOutputLimitation(15.f); // 15 cm/sec
 	rollAttitudeOutput = 0.f;
 	pitchAttitudeOutput = 0.f;
 	yawAttitudeOutput = 0.f;
@@ -438,6 +439,32 @@ float getAngularLimit() {
 }
 
 /**
+* set the limitation of output of altiude PID controler 
+*
+* @param 
+*		limitation
+*
+* @return 
+*		void
+*/	
+void setAltitudePidOutputLimitation(float v){
+	altitudePidOutputLimitation=v;
+}
+
+/**
+* get the limitation of output of altiude PID controler 
+*
+* @param 
+*		void
+*
+* @return 
+*		limitation
+*/
+float getAltitudePidOutputLimitation(void){
+	return altitudePidOutputLimitation;
+}
+
+/**
 * get output from altitude pid controler  
 *
 * @param 
@@ -448,7 +475,7 @@ float getAngularLimit() {
 */
 void getAltHoldAltPidOutput () {
 	
-	altHoltAltOutput = pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude(),true);
+	altHoltAltOutput = LIMIT_MIN_MAX_VALUE(pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude(),true),-getAltitudePidOutputLimitation(),getAltitudePidOutputLimitation());
 	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f\n",getCurrentAltHoldAltitude());
 	//_DEBUG(DEBUG_NORMAL,"altHoltAltOutput=%f\n",altHoltAltOutput);
 }

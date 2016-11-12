@@ -15,4 +15,6 @@ float getAngularLimit();
 void setAngularLimit(float angular);
 void setAdjustPeriod(unsigned short period);
 unsigned short getAdjustPeriod();
+void setAltitudePidOutputLimitation(float v);
+float getAltitudePidOutputLimitation(void);
 

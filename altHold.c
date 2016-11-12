@@ -108,6 +108,22 @@ bool initAltHold(){
 	return true;
 }
 
+
+/**
+* get current altitude
+*
+* @param
+* 		void
+*
+* @return 
+*		altHold 
+*		
+*/
+float getAsl(void){
+	return asl;
+}
+
+
 /**
 * get the flag to indicate whether enable althold or not
 *

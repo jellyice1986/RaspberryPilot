@@ -91,27 +91,29 @@ void *radioTransmitThread(void *arg) {
 
 		/** packet format
 		@
-		 roll attitude:
-		 pitch attitude:
-		 yaw sttitude:
-		 rollAttitudeSp:
-		 pitchAttitudeSp:
-		 yawAttitudeSp:
-		 roll gyro:
-		 pitch gyro:
-		 yaw gyro:
-		 center throttle:
-		 ccw1 throttle:
-		 cw1 throttle :
-		 ccw2 throttle:
-		 cw2 throttle:
+		 roll attitude: 0
+		 pitch attitude: 1
+		 yaw attitude: 2
+		 height: 3
+		 rollAttitudeSp: 4
+		 pitchAttitudeSp: 5
+		 yawAttitudeSp: 6
+		 heightSp: 7
+		 roll gyro: 8
+		 pitch gyro: 9
+		 yaw gyro: 10
+		 center throttle: 11
+		 ccw1 throttle: 12
+		 cw1 throttle : 13
+		 ccw2 throttle: 14
+		 cw2 throttle: 15
 		 #
 		 */
 		snprintf(message,sizeof(message),
-				"@%.1f:%.1f:%.1f:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
-				getRoll(), getPitch(), getYaw(), (int)getPidSp(&rollAttitudePidSettings),
+				"@%.1f:%.1f:%.1f:%.1f:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
+				getRoll(), getPitch(), getYaw(),getAsl(),(int)getPidSp(&rollAttitudePidSettings),
 				(int)getPidSp(&pitchAttitudePidSettings),  (int)(getYawCenterPoint()+getPidSp(&yawAttitudePidSettings)),
-				(int)getRollGyro(), (int)getPitchGyro(), (int)getYawGyro(),
+				(int)getPidSp(&altHoldAltSettings),(int)getRollGyro(), (int)getPitchGyro(), (int)getYawGyro(),
 				getThrottlePowerLevel(), getMotorPowerLevelCCW1(),
 				getMotorPowerLevelCW1(), getMotorPowerLevelCCW2(),
 				getMotorPowerLevelCW2());
@@ -445,6 +447,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);		
 		setEnableAltHold((bool)parameter);
 		_DEBUG(DEBUG_NORMAL,"Enable aAltHold: %s\n", getEnableAltHold()==true?"true":"false");
+		/***/
+		parameterF = atof(packet[SETUP_FACTOR_ALTHOLD_ALT_PID_OUTPUT_LIMITATION]);		
+		setAltitudePidOutputLimitation(parameterF);
+		_DEBUG(DEBUG_NORMAL,"getAltitudePidOutputLimitation: %5.3f\n", getAltitudePidOutputLimitation());
 		/***/
 		break;
 

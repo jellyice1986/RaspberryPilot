@@ -14,5 +14,7 @@ float getCurrentAltHoldSpeed();
 void setEnableAltHold(bool v);
 unsigned short convertTargetAltFromeRemoteControler(unsigned short v);
 unsigned short getDefaultPowerLevelWithTargetAlt();
+float getAsl(void);
+
 
 
