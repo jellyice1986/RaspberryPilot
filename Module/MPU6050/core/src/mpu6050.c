@@ -2389,11 +2389,11 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate, float *xyz
 	// get current FIFO count
 	fifoCount = getFIFOCount();
 
-	if (fifoCount >= 1024) {
+	if (fifoCount >dmpPacketSize) {
 		// reset so we can continue cleanly
 		resetFIFO();
 		result=1;
-	} else if (fifoCount >= dmpPacketSize) {
+	} else if (fifoCount == dmpPacketSize) {
 
 		getFIFOBytes(fifoBuffer, packetSize);
 		dmpGetQuaternion(q, fifoBuffer);

@@ -80,10 +80,12 @@ int main() {
 		) {
 			
 #if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
+			if(!mpuResult){
 			gettimeofday(&tv,NULL);
 			printf("duration=%d us\n",(tv.tv_sec-tv3.tv_sec)*1000000+(tv.tv_usec-tv3.tv_usec));	
 			tv3.tv_usec=tv.tv_usec;
 			tv3.tv_sec=tv.tv_sec;
+			}
 #endif
 			count++;
 
@@ -162,12 +164,8 @@ bool raspberryPilotInit(){
 	if (!piSystemInit()) {
 		_ERROR("(%s-%d) Init Raspberry Pi failed!\n",__func__,__LINE__);
 		return false;
-	}		
-
-	if(!initAltHold()){
-		_ERROR("(%s-%d) Init altHold failed!\n",__func__,__LINE__);
 	}
-
+		
 	if (!mpu6050Init()) {
 		_ERROR("(%s-%d) Init MPU6050 failed!\n",__func__,__LINE__);
 		return false;
@@ -177,6 +175,11 @@ bool raspberryPilotInit(){
 		_ERROR("(%s-%d) Init PCA9685 failed!\n",__func__,__LINE__);
 		return false;
 	}
+
+	if(!initAltHold()){
+		_ERROR("(%s-%d) Init altHold failed!\n",__func__,__LINE__);
+	}
+
 
 	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
 		_ERROR("(%s-%d) controlMotorMutex init failed\n",__func__,__LINE__);
