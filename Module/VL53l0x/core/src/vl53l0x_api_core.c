@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright © 2016, STMicroelectronics International N.V.
+ Copyright ?2016, STMicroelectronics International N.V.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -401,7 +401,7 @@ VL53L0X_Error VL53L0X_get_info_from_device(VL53L0X_DEV Dev, uint8_t option)
 		Status |= VL53L0X_WrByte(Dev, 0x00, 0x01);
 
 		Status |= VL53L0X_WrByte(Dev, 0xFF, 0x00);
-		Status |= VL53L0X_WrByte(Dev, 0x80, 0x00);
+		Status |= VL53L0X_WrByte(Dev, 0x80, 0x00);		
 	}
 
 	if ((Status == VL53L0X_ERROR_NONE) &&
@@ -469,7 +469,7 @@ VL53L0X_Error VL53L0X_get_info_from_device(VL53L0X_DEV Dev, uint8_t option)
 		VL53L0X_SETDEVICESPECIFICPARAMETER(Dev, ReadDataFromDeviceDone,
 				byte);
 	}
-
+ 
 	LOG_FUNCTION_END(Status);
 	return Status;
 }

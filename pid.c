@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -88,15 +87,15 @@ PID_STRUCT altHoldAltSettings;
 PID_STRUCT altHoldlSpeedSettings;
 
 /**
-*  Init  PID controler   
-*
-* @param
-* 		void   
-*
-* @return 
-*		 void
-*		
-*/
+ *  Init  PID controler
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		 void
+ *
+ */
 void pidInit() {
 
 	//init PID controler for attitude	
@@ -173,7 +172,7 @@ void pidInit() {
 float pidCalculation(PID_STRUCT *pid, float processValue,
 		const bool updateError) {
 
-	float pterm = 0, dterm = 0, iterm = 0, result = 0, timeDiff=0;
+	float pterm = 0, dterm = 0, iterm = 0, result = 0, timeDiff = 0;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
@@ -181,7 +180,8 @@ float pidCalculation(PID_STRUCT *pid, float processValue,
 	if (pid->last_tv.tv_sec != 0) {
 
 		pid->pv = processValue;
-		timeDiff=(float)((float)(tv.tv_sec-pid->last_tv.tv_sec)+(float)(tv.tv_usec-pid->last_tv.tv_usec)/1000000.f);
+		timeDiff = (float) ((float) (tv.tv_sec - pid->last_tv.tv_sec)
+				+ (float) (tv.tv_usec - pid->last_tv.tv_usec) / 1000000.f);
 
 		//P term
 		if (updateError) {
@@ -211,7 +211,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue,
 				getName(pid),timeDiff,result,pterm,iterm,pid->integral,dterm,pid->sp,pid->spShift,pid->pv,pid->err,pid->last_error);
 #endif
 	}
-	
+
 	pid->last_error = pid->err;
 	pid->last_tv.tv_sec = tv.tv_sec;
 	pid->last_tv.tv_usec = tv.tv_usec;
@@ -219,8 +219,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue,
 	return result;
 }
 
-
- /**
+/**
  * tune PID conrroler
  *
  * @param pid
@@ -250,7 +249,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue,
  */
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
 		float set_point, float shift, float iLimit) {
-		
+
 	pid->pgain = p_gain;
 	pid->igain = i_gain;
 	pid->iLimit = iLimit;
@@ -260,15 +259,15 @@ void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
 }
 
 /**
-*  reset PID record
-*
-* @param pid
-* 		PID record   
-*
-* @return 
-*		 void
-*		
-*/
+ *  reset PID record
+ *
+ * @param pid
+ * 		PID record
+ *
+ * @return
+ *		 void
+ *
+ */
 void resetPidRecord(PID_STRUCT *pid) {
 	pid->integral = 0.f;
 	pid->err = 0.f;
@@ -277,254 +276,250 @@ void resetPidRecord(PID_STRUCT *pid) {
 	pid->last_tv.tv_sec = 0;
 }
 
-
 /**
-*  set error to PID controler
-*
-* @param pi
-* 		PID entity
-*
-* @param value
-* 		error for PID controler 
-*
-* @return 
-*		 void
-*		
-*/
+ *  set error to PID controler
+ *
+ * @param pi
+ * 		PID entity
+ *
+ * @param value
+ * 		error for PID controler
+ *
+ * @return
+ *		 void
+ *
+ */
 void setPidError(PID_STRUCT *pi, float value) {
 	pi->err = value;
 }
 
-
 /**
-*  get error from PID record
-*
-* @param pi
-* 		PID entity
-*
-* @return 
-*		 error
-*		
-*/
+ *  get error from PID record
+ *
+ * @param pi
+ * 		PID entity
+ *
+ * @return
+ *		 error
+ *
+ */
 float getPidSperror(PID_STRUCT *pi) {
 	return pi->err;
 }
 
-
 /**
-*  set a shift for set point
-*
-* @param pi
-* 		PID entity
-*
-* @param value
-* 		value
-*
-* @return 
-*		 void
-*		
-*/
+ *  set a shift for set point
+ *
+ * @param pi
+ * 		PID entity
+ *
+ * @param value
+ * 		value
+ *
+ * @return
+ *		 void
+ *
+ */
 void setPidSpShift(PID_STRUCT *pi, float value) {
 	pi->spShift = value;
 }
 
 /**
-*  get  shift 
-*
-* @param pi
-* 		PID entity
-*
-* @return 
-*		 shift
-*		
-*/
+ *  get  shift
+ *
+ * @param pi
+ * 		PID entity
+ *
+ * @return
+ *		 shift
+ *
+ */
 float getPidSpShift(PID_STRUCT *pi) {
 	return pi->spShift;
 }
 
 /**
-*  set set point
-*
-* @param pid
-* 		PID entity
-*
-* @param set_point
-* 		set point
-*
-* @return 
-*		 void
-*		
-*/
+ *  set set point
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @param set_point
+ * 		set point
+ *
+ * @return
+ *		 void
+ *
+ */
 void setPidSp(PID_STRUCT *pid, float set_point) {
 	pid->sp = set_point;
 }
 
 /**
-*  get set point
-*
-* @param pid
-* 		PID entity
-*
-* @return 
-*		 set point
-*		
-*/
+ *  get set point
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @return
+ *		 set point
+ *
+ */
 float getPidSp(PID_STRUCT *pid) {
 	return pid->sp;
 }
 
-
 /**
-*  name a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @param name
-* 		name
-*
-* @return 
-*		 void
-*		
-*/
+ *  name a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @param name
+ * 		name
+ *
+ * @return
+ *		 void
+ *
+ */
 void setName(PID_STRUCT *pid, char *name) {
 	strcpy(pid->name, name);
 }
 
 /**
-*  get the name of a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @return 
-*		 name
-*		
-*/
+ *  get the name of a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @return
+ *		 name
+ *
+ */
 char *getName(PID_STRUCT *pid) {
 	return pid->name;
 }
 
 /**
-*  set P for a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @param gain
-* 		P item
-*
-* @return 
-*		 void
-*		
-*/
+ *  set P for a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @param gain
+ * 		P item
+ *
+ * @return
+ *		 void
+ *
+ */
 void setPGain(PID_STRUCT *pid, float gain) {
 	pid->pgain = gain;
 }
 
 /**
-*  get P from a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @return 
-*		 P item
-*		
-*/
+ *  get P from a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @return
+ *		 P item
+ *
+ */
 float getPGain(PID_STRUCT *pid) {
 	return pid->pgain;
 }
 
 /**
-*  set I for a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @param gain
-* 		I item
-*
-* @return 
-*		 void
-*		
-*/
+ *  set I for a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @param gain
+ * 		I item
+ *
+ * @return
+ *		 void
+ *
+ */
 void setIGain(PID_STRUCT *pid, float gain) {
 	pid->igain = gain;
 }
 
 /**
-*  get I from a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @return 
-*		 I item
-*		
-*/
+ *  get I from a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @return
+ *		 I item
+ *
+ */
 float getIGain(PID_STRUCT *pid) {
 	return pid->igain;
 }
 
 /**
-*  set I limitation for a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @param gain
-* 		I limitation
-*
-* @return 
-*		 void
-*		
-*/
+ *  set I limitation for a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @param gain
+ * 		I limitation
+ *
+ * @return
+ *		 void
+ *
+ */
 void setILimit(PID_STRUCT *pid, float v) {
 	pid->iLimit = v;
 }
 
 /**
-*  get limitation of I from a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @return 
-*		limitation of I item
-*		
-*/
+ *  get limitation of I from a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @return
+ *		limitation of I item
+ *
+ */
 float getILimit(PID_STRUCT *pid) {
 	return pid->iLimit;
 }
 
 /**
-*  set D for a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @param gain
-* 		D item
-*
-* @return 
-*		 void
-*		
-*/
+ *  set D for a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @param gain
+ * 		D item
+ *
+ * @return
+ *		 void
+ *
+ */
 void setDGain(PID_STRUCT *pid, float gain) {
 	pid->dgain = gain;
 }
 
 /**
-*  get D from a pid entity
-*
-* @param pid
-* 		PID entity
-*
-* @return 
-*		 D item
-*		
-*/
+ *  get D from a pid entity
+ *
+ * @param pid
+ * 		PID entity
+ *
+ * @return
+ *		 D item
+ *
+ */
 float getDGain(PID_STRUCT *pid) {
 	return pid->dgain;
 }

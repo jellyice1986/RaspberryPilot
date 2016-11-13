@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -12,55 +11,53 @@ static unsigned short motorPowerLevel_CW2;
 static unsigned short motorPowerLevel_CCW1;
 static unsigned short motorPowerLevel_CCW2;
 static unsigned short ThrottlePowertlevel;
-static unsigned short adjustPowerLevelRange=DEFAULT_ADJUST_POWER_RANGE;
-static unsigned short pidOutputLimitation=DEFAULT_PID_OUTPUT_LIMITATION;
+static unsigned short adjustPowerLevelRange = DEFAULT_ADJUST_POWER_RANGE;
+static unsigned short pidOutputLimitation = DEFAULT_PID_OUTPUT_LIMITATION;
 static float motor_0_gain;
 static float motor_1_gain;
 static float motor_2_gain;
 static float motor_3_gain;
 
-
 /**
-* init motors status
-*
-* @param 
-* 		void
-*
-* @return 
-*		void
-*
-*/
+ * init motors status
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		void
+ *
+ */
 void motorInit() {
 
 	resetPca9685();
 	setPWMFreq(PWM_DUTY_CYCLE);
-	pthread_mutex_lock(&controlMotorMutex);	
+	pthread_mutex_lock(&controlMotorMutex);
 	setupAllMotorPoewrLevel(MIN_POWER_LEVEL, MIN_POWER_LEVEL, MIN_POWER_LEVEL,
-			MIN_POWER_LEVEL);
+	MIN_POWER_LEVEL);
 	setThrottlePowerLevel(MIN_POWER_LEVEL);
 	pthread_mutex_unlock(&controlMotorMutex);
 }
 
-
 /**
-* Setup all motors power level
-*
-* @param CW1
-*		power for CW1
-* @param CW2
-*		power for CW2
-* @param CCW1
-*		power for CCW1
-* @param CCW2
-*		power for CCW2
-*
-* @return 
-*		void
-*
-*/
+ * Setup all motors power level
+ *
+ * @param CW1
+ *		power for CW1
+ * @param CW2
+ *		power for CW2
+ * @param CCW1
+ *		power for CCW1
+ * @param CCW2
+ *		power for CCW2
+ *
+ * @return
+ *		void
+ *
+ */
 void setupAllMotorPoewrLevel(unsigned short CW1, unsigned short CW2,
 		unsigned short CCW1, unsigned short CCW2) {
-		
+
 	setupCcw1MotorPoewrLevel(CCW1);
 	setupCcw2MotorPoewrLevel(CCW2);
 	setupCw1MotorPoewrLevel(CW1);
@@ -68,15 +65,15 @@ void setupAllMotorPoewrLevel(unsigned short CW1, unsigned short CW2,
 }
 
 /**
-* Set power level for motor CCW1
-*
-* @param CCW1
-*		Set power for CCW1
-*
-* @return 
-*		void
-*
-*/
+ * Set power level for motor CCW1
+ *
+ * @param CCW1
+ *		Set power for CCW1
+ *
+ * @return
+ *		void
+ *
+ */
 void setupCcw1MotorPoewrLevel(unsigned short CCW1) {
 
 	motorPowerLevel_CCW1 = CCW1;
@@ -84,15 +81,15 @@ void setupCcw1MotorPoewrLevel(unsigned short CCW1) {
 }
 
 /**
-* Set power level for motor CCW2
-*
-* @param CCW2
-*		Set power for CCW2
-*
-* @return 
-*		void
-*
-*/
+ * Set power level for motor CCW2
+ *
+ * @param CCW2
+ *		Set power for CCW2
+ *
+ * @return
+ *		void
+ *
+ */
 void setupCcw2MotorPoewrLevel(unsigned short CCW2) {
 
 	motorPowerLevel_CCW2 = CCW2;
@@ -100,15 +97,15 @@ void setupCcw2MotorPoewrLevel(unsigned short CCW2) {
 }
 
 /**
-* Set power level for motor CW1
-*
-* @param CW1
-*		Set power for CW1
-*
-* @return 
-*		void
-*
-*/
+ * Set power level for motor CW1
+ *
+ * @param CW1
+ *		Set power for CW1
+ *
+ * @return
+ *		void
+ *
+ */
 void setupCw1MotorPoewrLevel(unsigned short CW1) {
 
 	motorPowerLevel_CW1 = CW1;
@@ -116,15 +113,15 @@ void setupCw1MotorPoewrLevel(unsigned short CW1) {
 }
 
 /**
-* Set power level for motor CW2
-*
-* @param CW2
-*		Set power for CW2
-*
-* @return 
-*		void
-*
-*/
+ * Set power level for motor CW2
+ *
+ * @param CW2
+ *		Set power for CW2
+ *
+ * @return
+ *		void
+ *
+ */
 void setupCw2MotorPoewrLevel(unsigned short CW2) {
 
 	motorPowerLevel_CW2 = CW2;
@@ -132,184 +129,182 @@ void setupCw2MotorPoewrLevel(unsigned short CW2) {
 }
 
 /**
-* get power level of motor CW1
-*
-* @param 
-*		void
-*
-* @return
-*		 power of CW1
-*
-*/
+ * get power level of motor CW1
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		 power of CW1
+ *
+ */
 unsigned short getMotorPowerLevelCW1() {
 	return motorPowerLevel_CW1;
 }
 
 /**
-* get power level of motor CW2
-*
-* @param 
-*		void
-*
-* @return
-*		 power of CW2
-*
-*/
+ * get power level of motor CW2
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		 power of CW2
+ *
+ */
 unsigned short getMotorPowerLevelCW2() {
 	return motorPowerLevel_CW2;
 }
 
 /**
-* get power level of motor CCW1
-*
-* @param 
-*		void
-*
-* @return
-*		 power of CCW1
-*
-*/
+ * get power level of motor CCW1
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		 power of CCW1
+ *
+ */
 unsigned short getMotorPowerLevelCCW1() {
 	return motorPowerLevel_CCW1;
 }
 
 /**
-* get power level of motor CCW2
-*
-* @param 
-*		void
-*
-* @return
-*		 power of CCW2
-*
-*/
+ * get power level of motor CCW2
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		 power of CCW2
+ *
+ */
 unsigned short getMotorPowerLevelCCW2() {
 	return motorPowerLevel_CCW2;
 }
 
 /**
-* get current power level of throttle, motorPowerLevel_XXX= ThrottlePowertlevel+pid output
-*
-* @param 
-*		void
-*
-* @return
-*		 power of throttle
-*
-*/
+ * get current power level of throttle, motorPowerLevel_XXX= ThrottlePowertlevel+pid output
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		 power of throttle
+ *
+ */
 unsigned short getThrottlePowerLevel() {
 
 	return ThrottlePowertlevel;
 }
 
 /**
-* set current power level of throttle, this value is got from remote controler
-*
-* @param level
-*		 power of throttle
-*
-* @return
-*		 void
-*
-*/
+ * set current power level of throttle, this value is got from remote controler
+ *
+ * @param level
+ *		 power of throttle
+ *
+ * @return
+ *		 void
+ *
+ */
 void setThrottlePowerLevel(unsigned short level) {
 
 	ThrottlePowertlevel = level;
 }
 
 /*
-* Get minimum power level
-*
-* @param 
-*		 void
-*
-* @return 
-*	minimum power level
-*
-*/
+ * Get minimum power level
+ *
+ * @param
+ *		 void
+ *
+ * @return
+ *	minimum power level
+ *
+ */
 unsigned short getMinPowerLevel() {
 
 	return MIN_POWER_LEVEL;
 }
 
 /*
-*Get maximum power level
-*
-* @param 
-*		 void
-*
-* @return 
-*	maximum power level
-*/
+ *Get maximum power level
+ *
+ * @param
+ *		 void
+ *
+ * @return
+ *	maximum power level
+ */
 unsigned short getMaxPowerLeve() {
 
 	return MAX_POWER_LEVEL;
 }
 
 /*
-*	Get the range of adjusting of power level , the range of adjusting of mtor is as below
-*	maximum : min(getThrottlePowerLevel + getAdjustPowerLeveRange,getMaxPowerLeve)
-*	minimum : max(getThrottlePowerLevel - getAdjustPowerLeveRange,getMinPowerLevel)
-*
-* @param 
-*		 void
-*
-* @return 
-*		limitation of adjusting of power level
-*
-*/
+ *	Get the range of adjusting of power level , the range of adjusting of mtor is as below
+ *	maximum : min(getThrottlePowerLevel + getAdjustPowerLeveRange,getMaxPowerLeve)
+ *	minimum : max(getThrottlePowerLevel - getAdjustPowerLeveRange,getMinPowerLevel)
+ *
+ * @param
+ *		 void
+ *
+ * @return
+ *		limitation of adjusting of power level
+ *
+ */
 unsigned short getAdjustPowerLeveRange() {
 
 	return adjustPowerLevelRange;
 }
 
 /*
-*	the range of adjusting of power level , the range of adjusting of mtor is as below
-*	maximum : min(getThrottlePowerLevel + getAdjustPowerLeveRange,getMaxPowerLeve)
-*	minimum : max(getThrottlePowerLevel - getAdjustPowerLeveRange,getMinPowerLevel)
-*
-* @param 
-*		limitation of adjusting power level
-*
-* @return 
-*		void
+ *	the range of adjusting of power level , the range of adjusting of mtor is as below
+ *	maximum : min(getThrottlePowerLevel + getAdjustPowerLeveRange,getMaxPowerLeve)
+ *	minimum : max(getThrottlePowerLevel - getAdjustPowerLeveRange,getMinPowerLevel)
+ *
+ * @param
+ *		limitation of adjusting power level
+ *
+ * @return
+ *		void
 
-*/
+ */
 void setAdjustPowerLeveRange(int v) {
 
 	adjustPowerLevelRange = (unsigned short) v;
 }
 
 /*
-* Get the range of adjusting of power level that PID controler can adjust
-*
-* @param 
-*		void
-*
-* @return 
-*		limitation of PID controler output
-*
-*/
+ * Get the range of adjusting of power level that PID controler can adjust
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		limitation of PID controler output
+ *
+ */
 unsigned short getPidOutputLimitation() {
 
 	return pidOutputLimitation;
 }
 
 /*
-* Set the range of adjusting of power level that PID controler can adjust
-*
-* @param 
-*		limitation of PID controler output
-*
-* @return 
-*		void
-*/
+ * Set the range of adjusting of power level that PID controler can adjust
+ *
+ * @param
+ *		limitation of PID controler output
+ *
+ * @return
+ *		void
+ */
 void setPidOutputLimitation(int v) {
 
 	pidOutputLimitation = (unsigned short) v;
 }
-
-
 
 /**
  * set motor gain
@@ -378,5 +373,4 @@ float getMotorGain(unsigned char index) {
 	}
 	return value;
 }
-
 

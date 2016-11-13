@@ -1,4 +1,3 @@
-
 #define true (1==1)
 #define false (1==0)
 #define bool char

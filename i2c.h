@@ -1,5 +1,3 @@
-
-
 #define I2C_DEV_PATH "/dev/i2c-1"
 
 bool checkI2cDeviceIsExist(unsigned char devAddr);

@@ -1,5 +1,3 @@
-
-
 extern pthread_mutex_t controlMotorMutex;
 
 void setLeaveFlyControlerFlag(bool v);

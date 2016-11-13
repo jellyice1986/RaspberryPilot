@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -12,83 +11,82 @@
 #include "i2c.h"
 
 /**
-* check whather a I2C devide is existing or not
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @return 
-*		bool
-*
-*/
-bool checkI2cDeviceIsExist(unsigned char devAddr){
+ * check whather a I2C devide is existing or not
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @return
+ *		bool
+ *
+ */
+bool checkI2cDeviceIsExist(unsigned char devAddr) {
 
-	int fd=-1;
-	bool result=true;
-	unsigned char regAddr=0x01;
+	int fd = -1;
+	bool result = true;
+	unsigned char regAddr = 0x01;
 
 	fd = open(I2C_DEV_PATH, O_RDWR);
 	if (fd < 0) {
-		result=false;
+		result = false;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
-		result=false;
+		result = false;
 	}
 	if (write(fd, &regAddr, 1) != 1) {
-		result=false;
+		result = false;
 	}
-		
-	close(fd);		
+
+	close(fd);
 	return result;
 }
 
-
 /**
-* write a byte into the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param data
-* 		one bytes
-*
-* @return 
-*		success or failure
-*
-*/
+ * write a byte into the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param data
+ * 		one bytes
+ *
+ * @return
+ *		success or failure
+ *
+ */
 bool writeByte(unsigned char devAddr, unsigned char regAddr, unsigned char data) {
-	
+
 	return writeBytes(devAddr, regAddr, 1, &data);
 }
 
 /**
-* write a bit into the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param bitNum
-* 		the poisioion of the bit
-*
-* @param data
-* 		one bit
-*
-* @return 
-*		success or failure
-*
-*/
+ * write a bit into the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param bitNum
+ * 		the poisioion of the bit
+ *
+ * @param data
+ * 		one bit
+ *
+ * @return
+ *		success or failure
+ *
+ */
 bool writeBit(unsigned char devAddr, unsigned char regAddr,
 
-	unsigned char bitNum, unsigned char data) {
+unsigned char bitNum, unsigned char data) {
 
-	unsigned char mByte=0x00;
-	
+	unsigned char mByte = 0x00;
+
 	readByte(devAddr, regAddr, &mByte);
 	mByte = (data != 0) ? (mByte | (1 << bitNum)) : (mByte & ~(1 << bitNum));
 
@@ -96,38 +94,38 @@ bool writeBit(unsigned char devAddr, unsigned char regAddr,
 }
 
 /**
-* write serveral bits into the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param bitStart
-* 		the posioion of the start
-*
-* @param length
-* 		length of data
-*
-* @param data
-* 		serveral bits
-*
-* @return 
-*		success or failure
-*
-*/
+ * write serveral bits into the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param bitStart
+ * 		the posioion of the start
+ *
+ * @param length
+ * 		length of data
+ *
+ * @param data
+ * 		serveral bits
+ *
+ * @return
+ *		success or failure
+ *
+ */
 bool writeBits(unsigned char devAddr, unsigned char regAddr,
 		unsigned char bitStart, unsigned char length, unsigned char data) {
 
 	unsigned char b;
-	
+
 	if (readByte(devAddr, regAddr, &b) != 0) {
 		unsigned char mask = ((1 << length) - 1) << (bitStart - length + 1);
 		data <<= (bitStart - length + 1);
 		data &= mask;
-		b &= ~(mask); 
-		b |= data; 
+		b &= ~(mask);
+		b |= data;
 		return writeByte(devAddr, regAddr, b);
 	} else {
 		return false;
@@ -135,24 +133,24 @@ bool writeBits(unsigned char devAddr, unsigned char regAddr,
 }
 
 /**
-* write serveral bytes into the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param length
-* 		length of data
-*
-* @param data
-* 		serveral bits
-*
-* @return 
-*		success or failure
-*
-*/
+ * write serveral bytes into the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param length
+ * 		length of data
+ *
+ * @param data
+ * 		serveral bits
+ *
+ * @return
+ *		success or failure
+ *
+ */
 bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 		unsigned char length, unsigned char * data) {
 
@@ -175,7 +173,7 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 		close(fd);
 		return false;
 	}
-	
+
 	buf[0] = regAddr;
 	memcpy(buf + 1, data, length);
 	count = write(fd, buf, length + 1);
@@ -195,45 +193,45 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 }
 
 /**
-* write a word into the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param data
-* 		a word
-*
-* @return 
-*		success or failure
-*
-*/
+ * write a word into the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param data
+ * 		a word
+ *
+ * @return
+ *		success or failure
+ *
+ */
 bool writeWord(unsigned char devAddr, unsigned char regAddr,
 		unsigned short data) {
 	return writeWords(devAddr, regAddr, 1, &data);
 }
 
 /**
-* write serveral words into the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param length
-* 		length of data
-*
-* @param data
-* 		serveral words
-*
-* @return 
-*		success or failure
-*
-*/
+ * write serveral words into the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param length
+ * 		length of data
+ *
+ * @param data
+ * 		serveral words
+ *
+ * @return
+ *		success or failure
+ *
+ */
 bool writeWords(unsigned char devAddr, unsigned char regAddr,
 		unsigned char length, unsigned short* data) {
 
@@ -277,44 +275,44 @@ bool writeWords(unsigned char devAddr, unsigned char regAddr,
 }
 
 /**
-* read a byte from the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param data
-* 		a byte
-*
-* @return 
-*		data length
-*
-*/
+ * read a byte from the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param data
+ * 		a byte
+ *
+ * @return
+ *		data length
+ *
+ */
 char readByte(unsigned char devAddr, unsigned char regAddr, unsigned char *data) {
 	return readBytes(devAddr, regAddr, 1, data);
 }
 
 /**
-* read serveral bytes from the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param length
-* 		length of data
-*
-* @param data
-* 		a byte
-*
-* @return 
-*		data length
-*
-*/
+ * read serveral bytes from the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param length
+ * 		length of data
+ *
+ * @param data
+ * 		a byte
+ *
+ * @return
+ *		data length
+ *
+ */
 char readBytes(unsigned char devAddr, unsigned char regAddr,
 		unsigned char length, unsigned char *data) {
 
@@ -322,7 +320,7 @@ char readBytes(unsigned char devAddr, unsigned char regAddr,
 	int fd = open(I2C_DEV_PATH, O_RDWR);
 
 	if (fd < 0) {
-		_ERROR( "Failed to open device: \n");
+		_ERROR("Failed to open device: \n");
 		return (-1);
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
@@ -341,8 +339,7 @@ char readBytes(unsigned char devAddr, unsigned char regAddr,
 		close(fd);
 		return (-1);
 	} else if (count != length) {
-		_ERROR("Short read  from device, expected %d, got %d\n",
-				length, count);
+		_ERROR("Short read  from device, expected %d, got %d\n", length, count);
 		close(fd);
 		return (-1);
 	}
@@ -352,27 +349,27 @@ char readBytes(unsigned char devAddr, unsigned char regAddr,
 }
 
 /**
-* read serveral bits from the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param bitStart
-* 		the position of the start
-*
-* @param length
-* 		length of data
-*
-* @param data
-* 		serveral bits
-*
-* @return 
-*		data length
-*
-*/
+ * read serveral bits from the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param bitStart
+ * 		the position of the start
+ *
+ * @param length
+ * 		length of data
+ *
+ * @param data
+ * 		serveral bits
+ *
+ * @return
+ *		data length
+ *
+ */
 char readBits(unsigned char devAddr, unsigned char regAddr,
 		unsigned char bitStart, unsigned char length, unsigned char *data) {
 
@@ -387,30 +384,30 @@ char readBits(unsigned char devAddr, unsigned char regAddr,
 }
 
 /**
-* read a bit from the register on a i2c device 
-*
-* @param devAddr
-* 		i2c address of device
-*
-* @param regAddr
-* 		address of register
-*
-* @param bitNum
-* 		the position of the bit
-*
-* @param length
-* 		length of data
-*
-* @param data
-* 		 a bit
-*
-* @return 
-*		data length
-*
-*/
+ * read a bit from the register on a i2c device
+ *
+ * @param devAddr
+ * 		i2c address of device
+ *
+ * @param regAddr
+ * 		address of register
+ *
+ * @param bitNum
+ * 		the position of the bit
+ *
+ * @param length
+ * 		length of data
+ *
+ * @param data
+ * 		 a bit
+ *
+ * @return
+ *		data length
+ *
+ */
 char readBit(unsigned char devAddr, unsigned char regAddr, unsigned char bitNum,
 		unsigned char *data) {
-		
+
 	unsigned char b;
 	unsigned char count = readByte(devAddr, regAddr, &b);
 	*data = b & (1 << bitNum);

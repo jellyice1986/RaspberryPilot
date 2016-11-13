@@ -1,4 +1,3 @@
-
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
@@ -21,24 +20,24 @@
 #define PCA9685_PRE_SCALE 		0xFE			//prescaler for output frequency
 #define PCA9685_CLOCK_FREQ 		25000000.f 		//25MHz default osc clock
 
-static bool PCA9685_initSuccess=false;
- 
+static bool PCA9685_initSuccess = false;
+
 /**
-* Init PCA9685
-*
-* @param 
-* 		void
-*
-* @return 
-*		bool
-*
-*/
+ * Init PCA9685
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		bool
+ *
+ */
 bool pca9685Init() {
-	if(checkI2cDeviceIsExist(PCA9685_ADDRESS)){
-		_DEBUG(DEBUG_NORMAL,"PCA9685 exist\n");
-			PCA9685_initSuccess = true;
-	}else{
-		_DEBUG(DEBUG_NORMAL,"PCA9685_ADDRESS dowsn't exist\n");
+	if (checkI2cDeviceIsExist(PCA9685_ADDRESS)) {
+		_DEBUG(DEBUG_NORMAL, "PCA9685 exist\n");
+		PCA9685_initSuccess = true;
+	} else {
+		_DEBUG(DEBUG_NORMAL, "PCA9685_ADDRESS dowsn't exist\n");
 		return false;
 	}
 
@@ -47,47 +46,55 @@ bool pca9685Init() {
 }
 
 /**
-* Reset PCA9685
-*
-* @param 
-* 		void
-*
-* @return 
-*		bool
-*
-*/
+ * Reset PCA9685
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		bool
+ *
+ */
 void resetPca9685() {
-	if(true==PCA9685_initSuccess){
-		writeByte(PCA9685_ADDRESS, PCA9685_MODE1, 0x00);//setup sleep mode, Low power mode. Oscillator off (bit4: 1-sleep, 0-normal)
+	if (true == PCA9685_initSuccess) {
+		writeByte(PCA9685_ADDRESS, PCA9685_MODE1, 0x00); //setup sleep mode, Low power mode. Oscillator off (bit4: 1-sleep, 0-normal)
 		writeByte(PCA9685_ADDRESS, PCA9685_MODE2, 0x04);
 		//Delay Time is 0, means it always turn into high at the begin
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 0, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 0, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 1, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 1, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 2, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 2, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 3, 0);
-		writeByte(PCA9685_ADDRESS, PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 3, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 0, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 0, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 1, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 1, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 2, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 2, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_L + PCA9685_LED_MULTIPLYER * 3, 0);
+		writeByte(PCA9685_ADDRESS,
+		PCA9685_LED0_ON_H + PCA9685_LED_MULTIPLYER * 3, 0);
 
-
-	}else{
-		_ERROR("(%s-%d) pca9685 doesn't init\n",__func__,__LINE__);
+	} else {
+		_ERROR("(%s-%d) pca9685 doesn't init\n", __func__, __LINE__);
 	}
 }
 
 /**
-* Set the frequency of PWM
-*
-* @param freq
-* 		frequency of PWM
-*
-* @return 
-*		bool
-*/
+ * Set the frequency of PWM
+ *
+ * @param freq
+ * 		frequency of PWM
+ *
+ * @return
+ *		bool
+ */
 void setPWMFreq(unsigned short freq) {
 
-	_DEBUG(DEBUG_NORMAL,"(%s-%d)PCA9685: setting frequency %d HZ\n",__func__,__LINE__,freq);
+	_DEBUG(DEBUG_NORMAL, "(%s-%d)PCA9685: setting frequency %d HZ\n", __func__,
+			__LINE__, freq);
 
 	unsigned char prescale = (PCA9685_CLOCK_FREQ / 4096 / freq) - 1;
 	unsigned char oldmode = 0;
@@ -97,7 +104,7 @@ void setPWMFreq(unsigned short freq) {
 
 	writeByte(PCA9685_ADDRESS, PCA9685_MODE1, newmode);
 	writeByte(PCA9685_ADDRESS, PCA9685_PRE_SCALE, prescale); //set freq
-	writeByte(PCA9685_ADDRESS, PCA9685_MODE1, oldmode);//setup normal mode (bit4: 1-sleep, 0-normal)
+	writeByte(PCA9685_ADDRESS, PCA9685_MODE1, oldmode); //setup normal mode (bit4: 1-sleep, 0-normal)
 	usleep(1000); // >500us
 	writeByte(PCA9685_ADDRESS, PCA9685_MODE1, oldmode | 0x80); //setup restart (bit7: 1- enable, 0-disable)
 	usleep(1000); // >500us
@@ -111,7 +118,7 @@ void setPWMFreq(unsigned short freq) {
  *	|<----------- 0 to 4095 ------------>|
  *
  *  	       	---------------------
- *    Low      		| High                         |  Low
+ *  Low      	| High               |  Low
  *  --------------------------------------
  * 	^      		^                               ^
  *  Delay Time  On Time             Off Time
@@ -121,11 +128,11 @@ void setPWMFreq(unsigned short freq) {
  *   Example:
  *   If on Time=0, off Time=2014 then the PWM signal is as below
  *
- *  	--------------------
- *    | High                         |  Low
- *  	-------------------------------------
- * 	^      		             ^
- *    0 (On Time)       	      2014 (Off Time) 
+ * 	--------------------
+ * | High               |  Low
+ * 	-------------------------------------
+ * 	^      		        ^
+ *  0 (On Time)         2014 (Off Time)
  *
  * @param channel
  * 		channel index
@@ -136,10 +143,13 @@ void setPWMFreq(unsigned short freq) {
 void setPWM(unsigned char channel, unsigned short value) {
 
 	if (!PCA9685_initSuccess) {
-		_ERROR("(%s-%d)  PCA9685_initSuccess=%d\n",__func__,__LINE__,PCA9685_initSuccess);
+		_ERROR("(%s-%d)  PCA9685_initSuccess=%d\n", __func__, __LINE__,
+				PCA9685_initSuccess);
 		return;
 	}
-	writeByte(PCA9685_ADDRESS, PCA9685_LED0_OFF_L + PCA9685_LED_MULTIPLYER * channel, value & 0xFF);
-	writeByte(PCA9685_ADDRESS, PCA9685_LED0_OFF_H + PCA9685_LED_MULTIPLYER * channel, value >> 8);
+	writeByte(PCA9685_ADDRESS,
+	PCA9685_LED0_OFF_L + PCA9685_LED_MULTIPLYER * channel, value & 0xFF);
+	writeByte(PCA9685_ADDRESS,
+	PCA9685_LED0_OFF_H + PCA9685_LED_MULTIPLYER * channel, value >> 8);
 }
 

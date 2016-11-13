@@ -1,5 +1,3 @@
-
-
 /**
  * motor definition
  *	  2 CCW2  CW2 3
@@ -7,12 +5,9 @@
  *	  1 CW1  CCW1 0
  *			H
  */
-typedef enum{
- SOFT_PWM_CCW1,
- SOFT_PWM_CW1,
- SOFT_PWM_CCW2,
- SOFT_PWM_CW2
-}MOTOR_INDEX;
+typedef enum {
+	SOFT_PWM_CCW1, SOFT_PWM_CW1, SOFT_PWM_CCW2, SOFT_PWM_CW2
+} MOTOR_INDEX;
 
 #define DEFAULT_ADJUST_POWER_RANGE 500  
 #define DEFAULT_PID_OUTPUT_LIMITATION 500

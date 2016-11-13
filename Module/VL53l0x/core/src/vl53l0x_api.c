@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright © 2016, STMicroelectronics International N.V.
+ Copyright ?2016, STMicroelectronics International N.V.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -381,7 +381,7 @@ VL53L0X_Error VL53L0X_DataInit(VL53L0X_DEV Dev)
 		0xFE,
 		0x01);
 #endif
-
+ 
 	/* Set I2C standard mode */
 	if (Status == VL53L0X_ERROR_NONE)
 		Status = VL53L0X_WrByte(Dev, 0x88, 0x00);

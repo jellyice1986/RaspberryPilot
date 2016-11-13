@@ -1,4 +1,3 @@
-
 #define MAX_COUNTER 40 
 #define MIN_COUNTER 0
 

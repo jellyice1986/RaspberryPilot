@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -13,81 +12,78 @@ static struct timeval last_tv;
 static float exInt = 0, eyInt = 0, ezInt = 0;
 static float q0 = 1, q1 = 0, q2 = 0, q3 = 0;
 
-float invSqrt(float x) ;
+float invSqrt(float x);
 
 /**
-* init ahrs    
-*
-* @param 
-* 		void   
-*
-* @return 
-*		void
-*		
-*/
+ * init ahrs
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		void
+ *
+ */
 void ahrsInit() {
-	q0 = 1; 
+	q0 = 1;
 	q1 = 0;
 	q2 = 0;
 	q3 = 0;
 }
 
-
 /**
-* fast inverse square root
-*
-* @param x
-* 		input value
-*
-* @return 
-*		inverse square
-*		
-*/
-float invSqrt(float x) 
-{
+ * fast inverse square root
+ *
+ * @param x
+ * 		input value
+ *
+ * @return
+ *		inverse square
+ *
+ */
+float invSqrt(float x) {
 	float halfx = 0.5f * x;
 	float y = x;
-	long i = *(long*)&y;
-	
-	i = 0x5f3759df - (i>>1);
-	y = *(float*)&i;
+	long i = *(long*) &y;
+
+	i = 0x5f3759df - (i >> 1);
+	y = *(float*) &i;
 	y = y * (1.5f - (halfx * y * y));
 
 	return y;
 }
 
-
 /**
-* Madgwick's IMU update method
-*
-* reference:
-* S. O. H. Madgwick, An efficient orientation filter for inertial and inertial/magnetic sensor arrays, Technical report, University of. Bristol University, UK, 2010
-* 
-* @param gx
-* 		Gyroscope x axis measurement in radians/s
-*
-* @param gy
-* 		Gyroscope y axis measurement in radians/s
-*
-* @param gz
-* 		Gyroscope z axis measurement in radians/s
-*
-* @param ax
-* 		Accelerometer x axis measurement in any calibrated units
-*
-* @param ay
-* 		Accelerometer y axis measurement in any calibrated units
-*
-* @param az
-* 		Accelerometer z axis measurement in any calibrated units
-*
-* @param q
-* 		quaternion
-*
-* @return 
-*		void
-*		
-*/
+ * Madgwick's IMU update method
+ *
+ * reference:
+ * S. O. H. Madgwick, An efficient orientation filter for inertial and inertial/magnetic sensor arrays, Technical report, University of. Bristol University, UK, 2010
+ *
+ * @param gx
+ * 		Gyroscope x axis measurement in radians/s
+ *
+ * @param gy
+ * 		Gyroscope y axis measurement in radians/s
+ *
+ * @param gz
+ * 		Gyroscope z axis measurement in radians/s
+ *
+ * @param ax
+ * 		Accelerometer x axis measurement in any calibrated units
+ *
+ * @param ay
+ * 		Accelerometer y axis measurement in any calibrated units
+ *
+ * @param az
+ * 		Accelerometer z axis measurement in any calibrated units
+ *
+ * @param q
+ * 		quaternion
+ *
+ * @return
+ *		void
+ *
+ */
 void IMUupdate(float gx, float gy, float gz, float ax, float ay, float az,
 		float q[]) {
 
@@ -102,9 +98,10 @@ void IMUupdate(float gx, float gy, float gz, float ax, float ay, float az,
 	if (last_tv.tv_sec != 0) {
 
 		timeDiff = (float) ((float) (tv.tv_sec - last_tv.tv_sec)
-				+ (float) (tv.tv_usec - last_tv.tv_usec)*0.000001f);
+				+ (float) (tv.tv_usec - last_tv.tv_usec) * 0.000001f);
 
-		_DEBUG(DEBUG_IMUUPDATE_INTVAL,"(%s-%d) interval=%.5f Sec\n",__func__,__LINE__,timeDiff);
+		_DEBUG(DEBUG_IMUUPDATE_INTVAL, "(%s-%d) interval=%.5f Sec\n", __func__,
+				__LINE__, timeDiff);
 
 		// normalise the measurements
 		norm = invSqrt(ax * ax + ay * ay + az * az);
