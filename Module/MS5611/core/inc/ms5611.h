@@ -1,3 +1,3 @@
 bool ms5611Init();
-float getAltitude();
+bool ms5611GetMeasurementData(float *cm);
 

@@ -8,7 +8,7 @@ OUTPUT_DIR = bin
 OBJ_DIR = obj
 LIB = -lModule_RaspberryPilot -lwiringPi -lm -lpthread
 PROCESS = RaspberryPilot
-TARGET_LIB = $(OUTPUT_DIR)/$(PROCESS)
+TARGET_PROCESS = $(OUTPUT_DIR)/$(PROCESS)
 
 INCLUDES = \
 	-I. \
@@ -38,12 +38,12 @@ include $(PWD)/config.mk
 RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS) -Wall
 
 .PHONY: all
-all: $(TARGET_LIB)
+all: $(TARGET_PROCESS)
 
-$(TARGET_LIB): $(SUBDIR) $(LIB_OBJS)
+$(TARGET_PROCESS): $(SUBDIR) $(LIB_OBJS)
 	@echo "\033[32mMake RaspberryPilot all...\033[0m"
 	mkdir -p $(dir $@)
-	$(CC) $(LIB_OBJS) $(LIB) $(LIB_PATH) $(INCLUDES) -o $(TARGET_LIB)
+	$(CC) $(LIB_OBJS) $(LIB) $(LIB_PATH) $(INCLUDES) -o $@
 
 $(OBJ_DIR)/%.o: $(PWD)/%.c
 	mkdir -p $(dir $@)

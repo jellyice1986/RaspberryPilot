@@ -1034,12 +1034,12 @@ bool mpu6050Init() {
 	usleep(1000);
 
 	// load and configure the DMP
-	printf("Initializing DMP...\n");
+	_DEBUG(DEBUG_NORMAL,"Initializing DMP...\n");
 	devStatus = dmpInitialize();
 
 	// make sure it worked (returns 0 if so)
 	if (devStatus == 0) {
-		printf("Enabling DMP...\n");
+		_DEBUG(DEBUG_NORMAL,"Enabling DMP...\n");
 		setDMPEnabled(true);
 
 		// enable Arduino interrupt detection
@@ -1048,7 +1048,7 @@ bool mpu6050Init() {
 		mpuIntStatus = getIntStatus();
 
 		// set our DMP Ready flag so the main loop() function knows it's okay to use it
-		printf("DMP ready!\n");
+		_DEBUG(DEBUG_NORMAL,"DMP ready!\n");
 		dmpReady = true;
 
 		// get expected DMP packet size for later comparison
@@ -1058,7 +1058,7 @@ bool mpu6050Init() {
 		// 1 = initial memory load failed
 		// 2 = DMP configuration updates failed
 		// (if it's going to break, usually the code will be 1)
-		printf("DMP Initialization failed (code %d: %s)\n", devStatus,
+		_DEBUG(DEBUG_NORMAL,"DMP Initialization failed (code %d: %s)\n", devStatus,
 				devStatus == 1 ?
 				"initial memory load failed" :
 				"DMP configuration updates failed");
@@ -1073,12 +1073,12 @@ bool mpu6050Init() {
 	usleep(1000);
 	writeByte(devAddr, 0x6B, 0x01);		// PWR_MGMT_1 Clock Source
 	usleep(1000);
-	printf("Setting DLPF bandwidth to 20Hz...\n");
+	_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 20Hz...\n");
 	setDLPFMode(MPU6050_DLPF_BW_20);
 	usleep(1000);
 	setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 	usleep(1000);
-	//printf("Setting sample rate to 200Hz...\n");
+	//_DEBUG(DEBUG_NORMAL,"Setting sample rate to 200Hz...\n");
 	// setRate(4); // 1khz / (1 + 4) = 200 Hz
 	usleep(1000);
 	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
@@ -1111,7 +1111,7 @@ bool mpu6050Init() {
 	asaX = ak8963SensitivityAdjustment(buffer[0]);
 	asaY = ak8963SensitivityAdjustment(buffer[1]);
 	asaZ = ak8963SensitivityAdjustment(buffer[2]);
-	printf("AK8963 Sensitivity Adjustment values: x=%f, y=%f, z=%f\n", asaX,
+	_DEBUG(DEBUG_NORMAL,"AK8963 Sensitivity Adjustment values: x=%f, y=%f, z=%f\n", asaX,
 			asaY, asaZ);
 	usleep(10000);
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00); // Power-down mode
@@ -1228,7 +1228,7 @@ void meansensors() {
 		gx = (gx_ * getGyroSensitivityInv());
 		gy = (gy_ * getGyroSensitivityInv());
 		gz = (gz_ * getGyroSensitivityInv());
-		//printf("gx=%2.4f gy=%2.4f gz=%2.4f\n",gx,gy,gz);
+		//_DEBUG(DEBUG_NORMAL,"gx=%2.4f gy=%2.4f gz=%2.4f\n",gx,gy,gz);
 		if (i <= (AUTO_CAL_BUFFER_SIZE)) {
 			buff_gx = buff_gx + gx;
 			buff_gy = buff_gy + gy;
@@ -1245,7 +1245,7 @@ void meansensors() {
 		i++;
 		usleep(5000); //Needed so we don't get repeated measures
 	}
-	printf("mean gx=%2.4f, gy=%2.4f gz=%2.4f\n", cal_mean_gx, cal_mean_gy,
+	_DEBUG(DEBUG_NORMAL,"mean gx=%2.4f, gy=%2.4f gz=%2.4f\n", cal_mean_gx, cal_mean_gy,
 			cal_mean_gz);
 
 }
@@ -1399,7 +1399,7 @@ void getMpu6050Rotation(short int * x, short int * y, short int * z) {
 	*x = (((short int) buffer[0]) << 8) | buffer[1];
 	*y = (((short int) buffer[2]) << 8) | buffer[3];
 	*z = (((short int) buffer[4]) << 8) | buffer[5];
-//   printf("raw gyro: x=%d, y=%d, z=%d \n",*x,*y,*z);
+//   _DEBUG(DEBUG_NORMAL,"raw gyro: x=%d, y=%d, z=%d \n",*x,*y,*z);
 }
 /** Get X-axis gyroscope reading.
  * @return X-axis rotation measurement in 16-bit 2's complement format
@@ -1491,8 +1491,8 @@ void getAcceleration(short *x, short *y, short *z) {
 float convertMpu6050Acceleration(short sampleValue) {
 	float value = ((float) sampleValue
 			/ (float) ((float) 16384 / (float) (1 << getFullScaleAccelRange())));
-//	printf("%s %d: sampleValue=%d\n",__func__,__LINE__, sampleValue);
-	//	printf("%s %d: return value=%2.2f\n",__func__,__LINE__,value);
+	//	_DEBUG(DEBUG_NORMAL,"%s %d: sampleValue=%d\n",__func__,__LINE__, sampleValue);
+	//	_DEBUG(DEBUG_NORMAL,"%s %d: return value=%2.2f\n",__func__,__LINE__,value);
 	return value;
 }
 
@@ -2561,18 +2561,18 @@ unsigned char dmpGetGyro2(float *data, const unsigned char* packet) {
 	return 0;
 }
 unsigned char dmpGetGyro(short *data, const unsigned char* packet) {
-	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
+
 	if (packet == 0)
 		packet = dmpPacketBuffer;
 	data[0] = ((packet[16] << 8) | packet[17]);
 	data[1] = ((packet[20] << 8) | packet[21]);
 	data[2] = ((packet[24] << 8) | packet[25]);
-	//printf("data[0]=%3.3f, data[1]=%3.3f, data[2]=%3.3f\n",data[0],data[1],data[2]);
+	//_DEBUG(DEBUG_NORMAL,"data[0]=%3.3f, data[1]=%3.3f, data[2]=%3.3f\n",data[0],data[1],data[2]);
 	return 0;
 }
 
 unsigned char sub_dmpGetQuaternion(short *qi, const unsigned char* packet) {
-	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
+
 	if (packet == 0)
 		packet = dmpPacketBuffer;
 	qi[0] = ((packet[0] << 8) + packet[1]);
@@ -2610,9 +2610,9 @@ void getMagnet(short* mx, short* my, short* mz) {
 	*mx = ((((short)buffer[2]) << 8) | buffer[1]);
 	*my = ((((short)buffer[4]) << 8) | buffer[3]);
 	*mz = ((((short)buffer[6]) << 8) | buffer[5]);
-	//printf("mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
-
-	//printf("%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+	
+	//_DEBUG(DEBUG_NORMAL,"mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
+	//_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
 #else
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x01);
 	usleep(10000);
@@ -2620,8 +2620,8 @@ void getMagnet(short* mx, short* my, short* mz) {
 	*mx = (((short)buffer[1]) << 8) | buffer[2];
 	*my = (((short)buffer[3]) << 8) | buffer[4];
 	*mz = (((short)buffer[5]) << 8) | buffer[6];
-	printf("%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
-	//printf("mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
+	_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+	//_DEBUG(DEBUG_NORMAL,"mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
 #endif	
 }
 
@@ -2677,48 +2677,42 @@ void getMotion9(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
 unsigned char dmpInitialize() {
 
 	// reset device
-	printf("Resetting MPU6050 9 AXIS ...\n");
+	_DEBUG(DEBUG_NORMAL,"Resetting MPU6050 9 AXIS ...\n");
 	reset();
 	usleep(120000);// wait after reset
 
 	// disable sleep mode
-	printf("Disabling sleep mode...\n");
+	_DEBUG(DEBUG_NORMAL,"Disabling sleep mode...\n");
 	setSleepEnabled(false);
 
-	// get MPU product ID
-	// printf("Getting product ID...\n");
-	//uint8_t productID = 0; //getProductID();
-	// printf("Product ID = ");
-	//printf(productID);
-
 	// get MPU hardware revision
-	printf("Selecting user bank 16...\n");
+	_DEBUG(DEBUG_NORMAL,"Selecting user bank 16...\n");
 	setMemoryBank(0x10, true, true);
-	printf("Selecting memory byte 6...\n");
+	_DEBUG(DEBUG_NORMAL,"Selecting memory byte 6...\n");
 	setMemoryStartAddress(0x06);
-	printf("Checking hardware revision...\n");
+	_DEBUG(DEBUG_NORMAL,"Checking hardware revision...\n");
 	unsigned char hwRevision = readMemoryByte();
-	printf("Revision @ user[16][6] = 0x%x\n", hwRevision);
-	printf("Resetting memory bank selection to 0...\n");
+	_DEBUG(DEBUG_NORMAL,"Revision @ user[16][6] = 0x%x\n", hwRevision);
+	_DEBUG(DEBUG_NORMAL,"Resetting memory bank selection to 0...\n");
 	setMemoryBank(0, false, false);
 
 	// check OTP bank valid
-	printf("Reading OTP bank valid flag...\n");
+	_DEBUG(DEBUG_NORMAL,"Reading OTP bank valid flag...\n");
 	unsigned char otpValid = getOTPBankValid();
-	printf("OTP bank is %s\n", otpValid ? "valid!" : "invalid!");
+	_DEBUG(DEBUG_NORMAL,"OTP bank is %s\n", otpValid ? "valid!" : "invalid!");
 
 	// get X/Y/Z gyro offsets
-	printf("Reading gyro offset values...\n");
+	_DEBUG(DEBUG_NORMAL,"Reading gyro offset values...\n");
 	char xgOffset = getXGyroOffset();
 	char ygOffset = getYGyroOffset();
 	char zgOffset = getZGyroOffset();
-	printf("X gyro offset = %d\n", xgOffset);
-	printf("Y gyro offset = %d\n", ygOffset);
-	printf("Z gyro offset = %d\n", ygOffset);
+	_DEBUG(DEBUG_NORMAL,"X gyro offset = %d\n", xgOffset);
+	_DEBUG(DEBUG_NORMAL,"Y gyro offset = %d\n", ygOffset);
+	_DEBUG(DEBUG_NORMAL,"Z gyro offset = %d\n", ygOffset);
 
 	readByte(devAddr, MPU6050_RA_USER_CTRL, buffer);// ?
 
-	printf("Enabling interrupt latch, clear on any read, AUX bypass enabled\n");
+	_DEBUG(DEBUG_NORMAL,"Enabling interrupt latch, clear on any read, AUX bypass enabled\n");
 
 	writeByte(devAddr, MPU6050_RA_INT_PIN_CFG, 0x32);
 
@@ -2726,81 +2720,81 @@ unsigned char dmpInitialize() {
 	//DEBUG_PRINTLN(F("Enabling AUX I2C bypass mode..."));
 	//setI2CBypassEnabled(true);
 
-	printf("Setting magnetometer mode to power-down...\n");
+	_DEBUG(DEBUG_NORMAL,"Setting magnetometer mode to power-down...\n");
 	//mag -> setMode(0);
 	writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x00);
 
-	printf("Setting magnetometer mode to fuse access...\n");
+	_DEBUG(DEBUG_NORMAL,"Setting magnetometer mode to fuse access...\n");
 	//mag -> setMode(0x0F);
 	writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x0F);
 
-	printf("Reading mag magnetometer factory calibration...\n");
+	_DEBUG(DEBUG_NORMAL,"Reading mag magnetometer factory calibration...\n");
 	char asax, asay, asaz;
 	//mag -> getAdjustment(&asax, &asay, &asaz);
 	readBytes(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x10, 3, buffer);
 	asax = (int8_t) buffer[0];
 	asay = (int8_t) buffer[1];
 	asaz = (int8_t) buffer[2];
-	printf("Adjustment X/Y/Z = %d/%d/%d\n", asax, asay, asaz);
+	_DEBUG(DEBUG_NORMAL,"Adjustment X/Y/Z = %d/%d/%d\n", asax, asay, asaz);
 
-	printf("Setting magnetometer mode to power-down...\n");
+	_DEBUG(DEBUG_NORMAL,"Setting magnetometer mode to power-down...\n");
 	//mag -> setMode(0);
 	writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x00);
 
 	// load DMP code into memory banks
-	printf("Writing DMP code to MPU memory banks (%d bytes)\n",
+	_DEBUG(DEBUG_NORMAL,"Writing DMP code to MPU memory banks (%d bytes)\n",
 			MPU6050_DMP_CODE_SIZE);
 
 	if (writeProgMemoryBlock(dmpMemory, MPU6050_DMP_CODE_SIZE, 0, 0, true)) {
-		printf("Success! DMP code written and verified.\n");
+		_DEBUG(DEBUG_NORMAL,"Success! DMP code written and verified.\n");
 
-		printf("Configuring DMP and related settings...\n");
+		_DEBUG(DEBUG_NORMAL,"Configuring DMP and related settings...\n");
 
 		// write DMP configuration
-		printf(
+		_DEBUG(DEBUG_NORMAL,
 				"Writing DMP configuration to MPU memory banks (%d bytes in config def)\n",
 				MPU6050_DMP_CONFIG_SIZE);
 
 		if (writeProgDMPConfigurationSet(dmpConfig, MPU6050_DMP_CONFIG_SIZE)) {
-			printf("Success! DMP configuration written and verified.\n");
+			_DEBUG(DEBUG_NORMAL,"Success! DMP configuration written and verified.\n");
 
-			printf("Setting DMP and FIFO_OFLOW interrupts enabled...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting DMP and FIFO_OFLOW interrupts enabled...\n");
 			setIntEnabled(0x12);
 
-			printf("Setting sample rate to 200Hz...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting sample rate to 200Hz...\n");
 			setRate(4); // 1khz / (1 + 4) = 200 Hz
 
-			printf("Setting clock source to Z Gyro...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting clock source to Z Gyro...\n");
 			setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 
 			//20 HZ is for mpu9250,  too much noise......
-			printf("Setting DLPF bandwidth to 20Hz...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 20Hz...\n");
 			setDLPFMode(MPU6050_DLPF_BW_20);
 
-			printf("Setting external frame sync to TEMP_OUT_L[0]...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting external frame sync to TEMP_OUT_L[0]...\n");
 			setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L);
 
-			printf("Setting gyro sensitivity to +/- 2000 deg/sec...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting gyro sensitivity to +/- 2000 deg/sec...\n");
 			setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
-			printf("Setting DMP configuration bytes (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting DMP configuration bytes (function unknown)...\n");
 			setDMPConfig1(0x03);
 			setDMPConfig2(0x00);
 
-			printf("Clearing OTP Bank flag...\n");
+			_DEBUG(DEBUG_NORMAL,"Clearing OTP Bank flag...\n");
 			setOTPBankValid(false);
 
-			printf("Setting X/Y/Z gyro offsets to previous values...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro offsets to previous values...\n");
 			setXGyroOffsetTC(xgOffset);
 			setYGyroOffsetTC(ygOffset);
 			setZGyroOffsetTC(zgOffset);
 
-			printf("Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",
+			_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",
 					xGyroOffset, yGyroOffset, zGyroOffset);
 			setXGyroOffsetUser(xGyroOffset);
 			setYGyroOffsetUser(yGyroOffset);
 			setZGyroOffsetUser(zGyroOffset);
 
-			printf("Writing final memory update 1/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 1/19 (function unknown)...\n");
 			unsigned char dmpUpdate[16], j;
 			unsigned short pos = 0;
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
@@ -2808,226 +2802,218 @@ unsigned char dmpInitialize() {
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Writing final memory update 2/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 2/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Resetting FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting FIFO...\n");
 			resetFIFO();
 
-			printf("Reading FIFO count...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO count...\n");
 			unsigned char fifoCount = getFIFOCount();
 
-			printf("Current FIFO count=%d\n", fifoCount);
+			_DEBUG(DEBUG_NORMAL,"Current FIFO count=%d\n", fifoCount);
 			unsigned char fifoBuffer[128];
 			//getFIFOBytes(fifoBuffer, fifoCount);
 
-			printf("Writing final memory update 3/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 3/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Writing final memory update 4/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 4/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Disabling all standby flags...\n");
+			_DEBUG(DEBUG_NORMAL,"Disabling all standby flags...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS , MPU6050_RA_PWR_MGMT_2, 0x00);
 
-			printf("Setting accelerometer sensitivity to +/- 8g...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting accelerometer sensitivity to +/- 8g...\n");
 			setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
 
-			printf("Setting motion detection threshold to 2...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting motion detection threshold to 2...\n");
 			setMotionDetectionThreshold(2);
 
-			printf("Setting zero-motion detection threshold to 156...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting zero-motion detection threshold to 156...\n");
 			setZeroMotionDetectionThreshold(156);
 
-			printf("Setting motion detection duration to 80...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting motion detection duration to 80...\n");
 			setMotionDetectionDuration(80);
 
-			printf("Setting zero-motion detection duration to 0...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting zero-motion detection duration to 0...\n");
 			setZeroMotionDetectionDuration(0);
 
-			printf("Setting AK8975 to single measurement mode...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting AK8975 to single measurement mode...\n");
 			//mag -> setMode(1);	
 			writeByte(MPU9150_MPU9250_RA_MAG_ADDRESS, 0x0A, 0x01);
 
 			// setup AK8975 (MPU9150_MPU9250_RA_MAG_ADDRESS) as Slave 0 in read mode
-			printf("Setting up AK8975 read slave 0...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting up AK8975 read slave 0...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV0_ADDR, 0x8E);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV0_REG, 0x01);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV0_CTRL, 0xDA);
 
 			// setup AK8975 (MPU9150_MPU9250_RA_MAG_ADDRESS) as Slave 2 in write mode
-			printf("Setting up AK8975 write slave 2...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting up AK8975 write slave 2...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_ADDR, MPU9150_MPU9250_RA_MAG_ADDRESS);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_REG, 0x0A);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_CTRL, 0x81);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV2_DO, 0x01);
 
 			// setup I2C timing/delay control
-			printf("Setting up slave access delay...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting up slave access delay...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_SLV4_CTRL, 0x18);
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_I2C_MST_DELAY_CTRL, 0x05);
 
 			// enable interrupts
-			printf("Enabling default interrupt behavior/no bypass...\n");
+			_DEBUG(DEBUG_NORMAL,"Enabling default interrupt behavior/no bypass...\n");
 			writeByte(0x68, MPU6050_RA_INT_PIN_CFG, 0x00);
 
 			// enable I2C master mode and reset DMP/FIFO
-			printf("Enabling I2C master mode...\n");
+			_DEBUG(DEBUG_NORMAL,"Enabling I2C master mode...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_USER_CTRL, 0x20);
-			printf("Resetting FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting FIFO...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_USER_CTRL, 0x24);
-			printf(
+			_DEBUG(DEBUG_NORMAL,
 					"Rewriting I2C master mode enabled because...I don't know\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_USER_CTRL, 0x20);
-			printf("Enabling and resetting DMP/FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Enabling and resetting DMP/FIFO...\n");
 			writeByte(MPU6050_DEFAULT_ADDRESS, MPU6050_RA_USER_CTRL, 0xE8);
 
-			printf("Writing final memory update 5/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 5/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 6/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 6/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 7/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 7/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 8/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 8/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 9/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 9/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 10/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 10/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 11/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 11/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Reading final memory update 12/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading final memory update 12/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			readMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1]);
-#if 0
-			printf("Read bytes: ");
-			for (j = 0; j < 4; j++) {
-				printf("%d",dmpUpdate[3 + j]);
-				printf(" ");
-			}
-			printf("\n");
-#endif
 
-			printf("Writing final memory update 13/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 13/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 14/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 14/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 15/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 15/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 16/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 16/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("Writing final memory update 17/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 17/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Waiting for FIRO count >= 46...\n");
+			_DEBUG(DEBUG_NORMAL,"Waiting for FIRO count >= 46...\n");
 			while ((fifoCount = getFIFOCount()) < 46)
 			;
-			printf("Reading FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO...\n");
 			getFIFOBytes(fifoBuffer, min(fifoCount, 128)); // safeguard only 128 bytes
-			printf("Reading interrupt status...");
+			_DEBUG(DEBUG_NORMAL,"Reading interrupt status...");
 			getIntStatus();
 
-			printf("Writing final memory update 18/19 (function unknown)..\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 18/19 (function unknown)..\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Waiting for FIRO count >= 48...\n");
+			_DEBUG(DEBUG_NORMAL,"Waiting for FIRO count >= 48...\n");
 			while ((fifoCount = getFIFOCount()) < 48)
 			;
-			printf("Reading FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO...\n");
 			getFIFOBytes(fifoBuffer, min(fifoCount, 128));// safeguard only 128 bytes
-			printf("Reading interrupt status...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading interrupt status...\n");
 			getIntStatus();
-			printf("Waiting for FIRO count >= 48...\n");
+			_DEBUG(DEBUG_NORMAL,"Waiting for FIRO count >= 48...\n");
 			while ((fifoCount = getFIFOCount()) < 48)
 			;
-			printf("Reading FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO...\n");
 			getFIFOBytes(fifoBuffer, min(fifoCount, 128));// safeguard only 128 bytes
-			printf("Reading interrupt status...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading interrupt status...\n");
 			getIntStatus();
 
-			printf("Writing final memory update 19/19 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 19/19 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 			dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Disabling DMP (you turn it on later)...\n");
+			_DEBUG(DEBUG_NORMAL,"Disabling DMP (you turn it on later)...\n");
 			setDMPEnabled(false);
 
-			printf(
+			_DEBUG(DEBUG_NORMAL,
 					"Setting up internal 48-byte (default) DMP packet buffer...\n");
 			dmpPacketSize = 48;
 			/*if ((dmpPacketBuffer = (uint8_t *)malloc(42)) == 0) {
 			 return 3; // TODO: proper error code for no memory
 			 }*/
 
-			printf("Resetting FIFO and clearing INT status one last time...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting FIFO and clearing INT status one last time...\n");
 			resetFIFO();
 			getIntStatus();
 		} else {
-			printf("ERROR! DMP configuration verification failed.\n");
+			_DEBUG(DEBUG_NORMAL,"ERROR! DMP configuration verification failed.\n");
 			return 2; // configuration block loading failed
 		}
 	} else {
-		printf("ERROR! DMP code verification failed.\n");
+		_DEBUG(DEBUG_NORMAL,"ERROR! DMP code verification failed.\n");
 		return 1; // main binary block loading failed
 	}
 	return 0; // success
 }
 
 unsigned char dmpGetMag(short *data, const unsigned char* packet) {
-	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
+
 	if (packet == 0)
 	packet = dmpPacketBuffer;
 	data[0] = (packet[28] << 8) | packet[29];
@@ -3037,7 +3023,7 @@ unsigned char dmpGetMag(short *data, const unsigned char* packet) {
 }
 
 unsigned char dmpGetAccel(short *data, const unsigned char* packet) {
-	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
+
 	if (packet == 0)
 	packet = dmpPacketBuffer;
 	data[0] = (packet[34] << 8) | packet[35];
@@ -3050,7 +3036,7 @@ unsigned char dmpGetAccel(short *data, const unsigned char* packet) {
 
 unsigned char dmpInitialize() {
 	// reset device
-	printf("\n\nResetting MPU6050 6 AXIS ...\n");
+	_DEBUG(DEBUG_NORMAL,"\n\nResetting MPU6050 6 AXIS ...\n");
 	reset();
 	usleep(30000); // wait after reset
 
@@ -3061,104 +3047,104 @@ unsigned char dmpInitialize() {
 	 setWakeCycleEnabled(true);*/
 
 	// disable sleep mode
-	printf("Disabling sleep mode...\n");
+	_DEBUG(DEBUG_NORMAL,"Disabling sleep mode...\n");
 	setSleepEnabled(false);
 
 	// get MPU hardware revision
-	printf("Selecting user bank 16...\n");
+	_DEBUG(DEBUG_NORMAL,"Selecting user bank 16...\n");
 	setMemoryBank(0x10, true, true);
-	printf("Selecting memory byte 6...\n");
+	_DEBUG(DEBUG_NORMAL,"Selecting memory byte 6...\n");
 	setMemoryStartAddress(0x06);
-	printf("Checking hardware revision...\n");
+	_DEBUG(DEBUG_NORMAL,"Checking hardware revision...\n");
 	unsigned char hwRevision __attribute__((__unused__)) = readMemoryByte();
-	printf("Revision @ user[16][6] = %x\n", hwRevision);
-	printf("Resetting memory bank selection to 0...\n");
+	_DEBUG(DEBUG_NORMAL,"Revision @ user[16][6] = %x\n", hwRevision);
+	_DEBUG(DEBUG_NORMAL,"Resetting memory bank selection to 0...\n");
 	setMemoryBank(0, false, false);
 
 	// check OTP bank valid
-	printf("Reading OTP bank valid flag...\n");
+	_DEBUG(DEBUG_NORMAL,"Reading OTP bank valid flag...\n");
 	unsigned char otpValid __attribute__((__unused__)) = getOTPBankValid();
-	printf("OTP bank is %s\n", otpValid ? "valid!" : "invalid!");
+	_DEBUG(DEBUG_NORMAL,"OTP bank is %s\n", otpValid ? "valid!" : "invalid!");
 
 	// get X/Y/Z gyro offsets
-	printf("Reading gyro offset values...\n");
+	_DEBUG(DEBUG_NORMAL,"Reading gyro offset values...\n");
 	char xgOffset = getXGyroOffset();
 	char ygOffset = getYGyroOffset();
 	char zgOffset = getZGyroOffset();
-	printf("X gyro offset = %d\n", xgOffset);
-	printf("Z gyro offset = %d\n", ygOffset);
-	printf("Z gyro offset = %d\n", zgOffset);
+	_DEBUG(DEBUG_NORMAL,"X gyro offset = %d\n", xgOffset);
+	_DEBUG(DEBUG_NORMAL,"Z gyro offset = %d\n", ygOffset);
+	_DEBUG(DEBUG_NORMAL,"Z gyro offset = %d\n", zgOffset);
 
 	// setup weird slave stuff (?)
-	printf("Setting slave 0 address to 0x7F...\n");
+	_DEBUG(DEBUG_NORMAL,"Setting slave 0 address to 0x7F...\n");
 	setSlaveAddress(0, 0x7F);
-	printf("Disabling I2C Master mode...\n");
+	_DEBUG(DEBUG_NORMAL,"Disabling I2C Master mode...\n");
 	setI2CMasterModeEnabled(false);
-	printf("Setting slave 0 address to %f (self)...\n",
+	_DEBUG(DEBUG_NORMAL,"Setting slave 0 address to %f (self)...\n",
 	MPU6050_DEFAULT_ADDRESS);
 	setSlaveAddress(0, MPU6050_DEFAULT_ADDRESS);
-	printf("Resetting I2C Master control...\n");
+	_DEBUG(DEBUG_NORMAL,"Resetting I2C Master control...\n");
 	resetI2CMaster();
 	usleep(20000);
 
 	// load DMP code into memory banks
-	printf("Writing DMP code to MPU memory banks (%d bytes)\n",
+	_DEBUG(DEBUG_NORMAL,"Writing DMP code to MPU memory banks (%d bytes)\n",
 	MPU6050_DMP_CODE_SIZE);
 	if (writeProgMemoryBlock(dmpMemory, MPU6050_DMP_CODE_SIZE, 0, 0, true)) {
-		printf("Success! DMP code written and verified.\n");
+		_DEBUG(DEBUG_NORMAL,"Success! DMP code written and verified.\n");
 
 		// write DMP configuration
-		printf(
+		_DEBUG(DEBUG_NORMAL,
 				"Writing DMP configuration to MPU memory banks (%d  bytes in config def)\n",
 				MPU6050_DMP_CONFIG_SIZE);
 		if (writeProgDMPConfigurationSet(dmpConfig, MPU6050_DMP_CONFIG_SIZE)) {
 
-			printf("Success! DMP configuration written and verified.\n");
+			_DEBUG(DEBUG_NORMAL,"Success! DMP configuration written and verified.\n");
 
-			printf("Setting clock source to Z Gyro...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting clock source to Z Gyro...\n");
 			setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 
-			printf("Setting DMP and FIFO_OFLOW interrupts enabled...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting DMP and FIFO_OFLOW interrupts enabled...\n");
 			setIntEnabled(0x12);
 
-			printf("Setting sample rate to 200Hz...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting sample rate to 200Hz...\n");
 			setRate(4); // 1khz / (1 +4 ) = 200 Hz
 
-			printf("Setting external frame sync to TEMP_OUT_L[0]...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting external frame sync to TEMP_OUT_L[0]...\n");
 			setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L);
 
-			//printf("Setting DLPF bandwidth to 42Hz...\n");
+			//_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 42Hz...\n");
 			//setDLPFMode(MPU6050_DLPF_BW_42);
 
 			//20 HZ is for mpu9250,  too much noise......
-			printf("Setting DLPF bandwidth to 20Hz...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 20Hz...\n");
 			setDLPFMode(MPU6050_DLPF_BW_20);
 
-			printf("Setting gyro sensitivity to +/- 2000 deg/sec...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting gyro sensitivity to +/- 2000 deg/sec...\n");
 			setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 
-//                        printf("Setting gyro sensitivity to +/- 250 deg/sec...\n");
+			//_DEBUG(DEBUG_NORMAL,"Setting gyro sensitivity to +/- 250 deg/sec...\n");
 			//                      setFullScaleGyroRange(MPU6050_GYRO_FS_250);
 
-			printf("Setting DMP configuration bytes (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting DMP configuration bytes (function unknown)...\n");
 			setDMPConfig1(0x03);
 			setDMPConfig2(0x00);
 
-			printf("Clearing OTP Bank flag...\n");
+			_DEBUG(DEBUG_NORMAL,"Clearing OTP Bank flag...\n");
 			setOTPBankValid(false);
 
-			printf("Setting X/Y/Z gyro offsets to previous values...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro offsets to previous values...\n");
 			setXGyroOffset(xgOffset);
 			setYGyroOffset(ygOffset);
 			setZGyroOffset(zgOffset);
 
-			printf("Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",
+			_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",
 					xGyroOffset, yGyroOffset, zGyroOffset);
 			setXGyroOffsetUser(xGyroOffset);
 			setYGyroOffsetUser(yGyroOffset);
 			setZGyroOffsetUser(zGyroOffset);
 
-			printf("Writing final memory update 1/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 1/7 (function unknown)...\n");
 			unsigned char dmpUpdate[16], j;
 			unsigned short pos = 0;
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
@@ -3166,132 +3152,132 @@ unsigned char dmpInitialize() {
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Writing final memory update 2/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 2/7 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 				dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Resetting FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting FIFO...\n");
 			resetFIFO();
 
-			printf("Reading FIFO count...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO count...\n");
 			unsigned char fifoCount = getFIFOCount();
 			unsigned char fifoBuffer[1024];
 
-			printf("Current FIFO count=%d\n", fifoCount);
+			_DEBUG(DEBUG_NORMAL,"Current FIFO count=%d\n", fifoCount);
 			if (fifoCount > 0)
 				getFIFOBytes(fifoBuffer, fifoCount);
 
-			printf("Setting motion detection threshold to 2...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting motion detection threshold to 2...\n");
 			setMotionDetectionThreshold(2);
 
-			printf("Setting zero-motion detection threshold to 156...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting zero-motion detection threshold to 156...\n");
 			setZeroMotionDetectionThreshold(156);
 
-			printf("Setting motion detection duration to 80...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting motion detection duration to 80...\n");
 			setMotionDetectionDuration(80);
 
-			printf("Setting zero-motion detection duration to 0...\n");
+			_DEBUG(DEBUG_NORMAL,"Setting zero-motion detection duration to 0...\n");
 			setZeroMotionDetectionDuration(0);
 
-			printf("Resetting FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting FIFO...\n");
 			resetFIFO();
 
-			printf("Enabling FIFO...\n");
+			_DEBUG(DEBUG_NORMAL,"Enabling FIFO...\n");
 			setFIFOEnabled(true);
 
-			printf("Enabling DMP...\n");
+			_DEBUG(DEBUG_NORMAL,"Enabling DMP...\n");
 			setDMPEnabled(true);
 
-			printf("Resetting DMP...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting DMP...\n");
 			resetDMP();
 
-			printf("Writing final memory update 3/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 3/7 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 				dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Writing final memory update 4/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 4/7 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 				dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Writing final memory update 5/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 5/7 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 				dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
 
-			printf("Waiting for FIFO count > 2...\n");
+			_DEBUG(DEBUG_NORMAL,"Waiting for FIFO count > 2...\n");
 			while ((fifoCount = getFIFOCount()) < 3)
 				;
 
-			printf("Current FIFO count=%d\n", fifoCount);
-			printf("Reading FIFO data...\n");
+			_DEBUG(DEBUG_NORMAL,"Current FIFO count=%d\n", fifoCount);
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO data...\n");
 			getFIFOBytes(fifoBuffer, fifoCount);
 
-			printf("Reading interrupt status...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading interrupt status...\n");
 			unsigned char mpuIntStatus __attribute__((__unused__))
 			= getIntStatus();
-			printf("Current interrupt status=%d\n", mpuIntStatus);
+			_DEBUG(DEBUG_NORMAL,"Current interrupt status=%d\n", mpuIntStatus);
 
-			printf("Reading final memory update 6/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading final memory update 6/7 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 				dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			readMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1]);
 
-			printf("Waiting for FIFO count > 2...\n");
+			_DEBUG(DEBUG_NORMAL,"Waiting for FIFO count > 2...\n");
 			while ((fifoCount = getFIFOCount()) < 3)
 				;
-			printf("Current FIFO count=%d\n", fifoCount);
+			_DEBUG(DEBUG_NORMAL,"Current FIFO count=%d\n", fifoCount);
 
-			printf("Reading FIFO data...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading FIFO data...\n");
 			getFIFOBytes(fifoBuffer, fifoCount);
 
-			printf("Reading interrupt status...\n");
+			_DEBUG(DEBUG_NORMAL,"Reading interrupt status...\n");
 			mpuIntStatus = getIntStatus();
 
-			printf("Current interrupt status=%d\n", mpuIntStatus);
+			_DEBUG(DEBUG_NORMAL,"Current interrupt status=%d\n", mpuIntStatus);
 
-			printf("Writing final memory update 7/7 (function unknown)...\n");
+			_DEBUG(DEBUG_NORMAL,"Writing final memory update 7/7 (function unknown)...\n");
 			for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++)
 				dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
 			writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0],
 					dmpUpdate[1], true, false);
-			printf("!!!!!!!!!DMP is good to go! Finally!!!!!!!!!!\n");
+			_DEBUG(DEBUG_NORMAL,"!!!!!!!!!DMP is good to go! Finally!!!!!!!!!!\n");
 
-			printf("Disabling DMP (you turn it on later)...\n");
+			_DEBUG(DEBUG_NORMAL,"Disabling DMP (you turn it on later)...\n");
 			setDMPEnabled(false);
 
-			printf(
+			_DEBUG(DEBUG_NORMAL,
 					"Setting up internal 42-byte (default) DMP packet buffer...\n");
 			dmpPacketSize = 42;
 			//if ((dmpPacketBuffer = (uint8_t *)malloc(42)) == 0) {
 			//	return 3; // TODO: proper error code for no memory
 			//}
 
-			printf("Resetting FIFO and clearing INT status one last time...\n");
+			_DEBUG(DEBUG_NORMAL,"Resetting FIFO and clearing INT status one last time...\n");
 			resetFIFO();
 			getIntStatus();
 		} else {
-			printf("ERROR! DMP configuration verification failed.\n");
+			_DEBUG(DEBUG_NORMAL,"ERROR! DMP configuration verification failed.\n");
 			return 2; // configuration block loading failed
 		}
 
 	} else {
-		printf("ERROR! DMP code verification failed.\n");
+		_DEBUG(DEBUG_NORMAL,"ERROR! DMP code verification failed.\n");
 		return 2; // main binary block loading failed
 	}
-	printf("%s %d: success.\n", __func__, __LINE__);
+	_DEBUG(DEBUG_NORMAL,"%s %d: success.\n", __func__, __LINE__);
 	return 0; // success
 }
 
 unsigned char dmpGetAccel(short *data, const unsigned char* packet) {
-	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
+
 	if (packet == 0)
 		packet = dmpPacketBuffer;
 	data[0] = (packet[28] << 8) | packet[29];

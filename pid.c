@@ -208,7 +208,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 
 #if 0 //Debug
 		if(pid->name[0]=='P')
-		printf("name=%s, timeDiff=%.3f, result=%.3f, pterm=%.3f, iterm=%.3f, iintegral=%.3f, dterm=%.3f, sp=%.3f, shift=%.3f, pv=%.3f, err=%.3f, last_error=%.3f\n",
+		_DEBUG(DEBUG_NORMAL,"name=%s, timeDiff=%.3f, result=%.3f, pterm=%.3f, iterm=%.3f, iintegral=%.3f, dterm=%.3f, sp=%.3f, shift=%.3f, pv=%.3f, err=%.3f, last_error=%.3f\n",
 				getName(pid),timeDiff,result,pterm,iterm,pid->integral,dterm,pid->sp,pid->spShift,pid->pv,pid->err,pid->last_error);
 #endif
 	}

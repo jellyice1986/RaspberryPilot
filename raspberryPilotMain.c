@@ -64,7 +64,7 @@ int main() {
 
 #if CHECK_CYCLE_TIME_1 /*debug: check cycle time of this loop*/
 		gettimeofday(&tv,NULL);
-		printf("duration=%d us\n",(tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
+		_DEBUG(DEBUG_NORMAL,"duration=%d us\n",(tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
 		tv2.tv_usec=tv.tv_usec;
 		tv2.tv_sec=tv.tv_sec;
 #endif
@@ -81,7 +81,7 @@ int main() {
 #if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
 			if(!mpuResult) {
 				gettimeofday(&tv,NULL);
-				printf("duration=%d us\n",(tv.tv_sec-tv3.tv_sec)*1000000+(tv.tv_usec-tv3.tv_usec));
+				_DEBUG(DEBUG_NORMAL,"duration=%d us\n",(tv.tv_sec-tv3.tv_sec)*1000000+(tv.tv_usec-tv3.tv_usec));
 				tv3.tv_usec=tv.tv_usec;
 				tv3.tv_sec=tv.tv_sec;
 			}

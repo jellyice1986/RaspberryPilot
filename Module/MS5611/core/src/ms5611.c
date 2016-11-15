@@ -75,15 +75,14 @@ bool ms5611Init() {
  * get temperature and pressure from MS5611 and calculate attitude
  *
  * @param
- * 		void
+ * 		altitude
  *
  * @return
- *		altitude (cm)
+ *		bool
  *
  */
-float getAltitude() {
+bool ms5611GetMeasurementData(float *cm) {
 
-	float altitude = 0.0;
 	float tmp = 0;
 	float press = 0;
 
@@ -98,13 +97,13 @@ float getAltitude() {
 	press = readPress();
 
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
-	altitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
+	*cm = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
 			* (tmp + 273.15f)) * CONST_PF2 * 100.f;
 
-	_DEBUG(DEBUG_ALTITUDE, "altitude=%.2f, mbar=%.2f, temp=%.2f\n", altitude,
+	_DEBUG(DEBUG_ALTITUDE, "altitude=%.2f, mbar=%.2f, temp=%.2f\n", *cm,
 			press, tmp);
 
-	return altitude;
+	return true;
 }
 
 /**

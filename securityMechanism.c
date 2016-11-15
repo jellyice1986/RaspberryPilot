@@ -60,7 +60,7 @@ void increasePacketCounter() {
 	packetAccCounter++;
 	if (packetAccCounter > MAX_COUNTER)
 		packetAccCounter = MAX_COUNTER;
-	//printf("getPacketCounter=%d\n",getPacketCounter());
+	//_DEBUG(DEBUG_NORMAL,"getPacketCounter=%d\n",getPacketCounter());
 }
 
 /**
