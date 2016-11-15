@@ -23,8 +23,7 @@ extern PID_STRUCT altHoldAltSettings;
 extern PID_STRUCT altHoldlSpeedSettings;
 
 void pidInit(void);
-float pidCalculation(PID_STRUCT *pid, float process_point,
-		const bool updateError);
+float pidCalculation(PID_STRUCT *pid, float process_point);
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
 		float set_point, float shift, float ilimit);
 void resetPidRecord(PID_STRUCT *pid);

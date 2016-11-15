@@ -15,24 +15,27 @@ LIB_SRCS = \
 	mpu6050.c \
 	ms5611.c\
 	vl53l0x.c \
+	srf02.c \
 	vl53l0x_api_calibration.c \
 	vl53l0x_api_core.c \
 	vl53l0x_api_ranging.c \
 	vl53l0x_api_strings.c \
 	vl53l0x_api.c \
 	vl53l0x_platform.c
-	
+
 INCLUDES = \
 	-I${PWD}/..\
 	-I${PWD}/PCA9685/core/inc \
 	-I${PWD}/MPU6050/core/inc \
 	-I${PWD}/MS5611/core/inc \
+ 	-I${PWD}/SRF02/core/inc \
 	-I${PWD}/VL53l0x/core/inc \
 	-I${PWD}/VL53l0x/platform/inc
 
 VPATH = \
 	${PWD}/PCA9685/core/src \
 	${PWD}/MPU6050/core/src \
+	${PWD}/SRF02/core/src \
 	${PWD}/MS5611/core/src \
 	${PWD}/VL53l0x/core/src \
 	${PWD}/VL53l0x/platform/src/
@@ -40,7 +43,7 @@ VPATH = \
 LIB_OBJS  = $(LIB_SRCS:%.c=$(OBJ_DIR)/%.o)
 
 .PHONY: all
-all: ${TARGET_LIB}
+all: $(TARGET_LIB)
 
 $(TARGET_LIB): $(LIB_OBJS)
 	@echo "\033[32mCompiling RaspberryPilot $@...\033[0m"

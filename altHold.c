@@ -6,6 +6,7 @@
 #include "commonLib.h"
 #include "flyControler.h"
 #include "vl53l0x.h"
+#include "srf02.h"
 #include "motorControl.h"
 #include "mpu6050.h"
 #include "altHold.h"
@@ -75,13 +76,26 @@ bool initAltHold() {
 
 		break;
 
+	case ALTHOLD_MODULE_SRF02:
+
+		if(!srf02Init()){
+			_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
+			return 	false;
+		}
+
+		setMaxAlt(500);		//cm
+		setStartAlt(0);		//cm
+		
+		break;
+
+
 	case ALTHOLD_MODULE_MS5611:
 
 		//unavailable
 		return false;
 
 		break;
-
+		
 	default:
 
 		return false;
@@ -363,22 +377,29 @@ void *altHoldUpdate(void *arg) {
 			case ALTHOLD_MODULE_VL53L0X:
 
 				result = vl53l0xGetMeasurementData(&data);
-				aslRaw = (float) data * 0.1f;
-
 				break;
 
+			case ALTHOLD_MODULE_SRF02:
+				
+				result = srf02GetMeasurementData(&data);
+				break;
+				
 			case ALTHOLD_MODULE_MS5611:
+				
 				//unavailable
 				result = false;
 				break;
 
 			default:
+				
 				result = false;
 				break;
 			}
 
 			if (result) {
-
+				
+				aslRaw = (float) data;
+				
 				updateSpeedByAcceleration();
 
 				asl = asl * aslAlpha + aslRaw * (1.f - aslAlpha);

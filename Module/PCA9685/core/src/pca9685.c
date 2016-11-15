@@ -33,14 +33,15 @@ static bool PCA9685_initSuccess = false;
  *
  */
 bool pca9685Init() {
+
 	if (checkI2cDeviceIsExist(PCA9685_ADDRESS)) {
 		_DEBUG(DEBUG_NORMAL, "PCA9685 exist\n");
-		PCA9685_initSuccess = true;
 	} else {
 		_DEBUG(DEBUG_NORMAL, "PCA9685_ADDRESS dowsn't exist\n");
 		return false;
 	}
 
+	PCA9685_initSuccess = true;
 	resetPca9685();
 	return true;
 }
@@ -56,6 +57,7 @@ bool pca9685Init() {
  *
  */
 void resetPca9685() {
+
 	if (true == PCA9685_initSuccess) {
 		writeByte(PCA9685_ADDRESS, PCA9685_MODE1, 0x00); //setup sleep mode, Low power mode. Oscillator off (bit4: 1-sleep, 0-normal)
 		writeByte(PCA9685_ADDRESS, PCA9685_MODE2, 0x04);
@@ -115,13 +117,13 @@ void setPWMFreq(unsigned short freq) {
  *    
  * =======================================
  *
- *	|<----------- 0 to 4095 ------------>|
+ *|<------------- 0 to 4095 ------------->|
  *
  *  	       	---------------------
- *  Low      	| High               |  Low
+ *  Low      	| High                          |  Low
  *  --------------------------------------
- * 	^      		^                               ^
- *  Delay Time  On Time             Off Time
+ * ^                ^                               ^
+ * Delay Time  On Time                     Off Time
  *
  * ========================================
  *
@@ -129,10 +131,10 @@ void setPWMFreq(unsigned short freq) {
  *   If on Time=0, off Time=2014 then the PWM signal is as below
  *
  * 	--------------------
- * | High               |  Low
+ *    | High                         |  Low
  * 	-------------------------------------
- * 	^      		        ^
- *  0 (On Time)         2014 (Off Time)
+ * 	^      		             ^
+ *  0 (On Time)                 2014 (Off Time)
  *
  * @param channel
  * 		channel index

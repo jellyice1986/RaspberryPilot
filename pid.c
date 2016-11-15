@@ -169,10 +169,13 @@ void pidInit() {
  *		output of PID controler
  *
  */
-float pidCalculation(PID_STRUCT *pid, float processValue,
-		const bool updateError) {
+float pidCalculation(PID_STRUCT *pid, float processValue) {
 
-	float pterm = 0, dterm = 0, iterm = 0, result = 0, timeDiff = 0;
+	float pterm = 0.f;
+	float dterm = 0.f;
+	float iterm = 0.f;
+	float result = 0.f;
+	float timeDiff = 0.f;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
@@ -180,13 +183,11 @@ float pidCalculation(PID_STRUCT *pid, float processValue,
 	if (pid->last_tv.tv_sec != 0) {
 
 		pid->pv = processValue;
-		timeDiff = (float) ((float) (tv.tv_sec - pid->last_tv.tv_sec)
-				+ (float) (tv.tv_usec - pid->last_tv.tv_usec) / 1000000.f);
+		timeDiff = ((float) (tv.tv_sec - pid->last_tv.tv_sec)
+				+ (float)(tv.tv_usec - pid->last_tv.tv_usec)*0.000001f);
 
 		//P term
-		if (updateError) {
-			pid->err = (pid->sp + pid->spShift) - (pid->pv);
-		}
+		pid->err = (pid->sp + pid->spShift) - (pid->pv);
 
 		//I term
 		pid->integral += (pid->err * timeDiff);

@@ -16,7 +16,7 @@
 #define DEFAULT_GYRO_LIMIT 50
 #define DEFAULT_ANGULAR_LIMIT 5000
 
-static float getThrottleOffset();
+float getSlopeThrottleOffset();
 static void getAttitudePidOutput();
 void getAltHoldAltPidOutput();
 void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput);
@@ -106,14 +106,14 @@ bool getLeaveFlyControlerFlag() {
 void getAttitudePidOutput() {
 
 	rollAttitudeOutput = LIMIT_MIN_MAX_VALUE(
-			pidCalculation(&rollAttitudePidSettings, getRoll(),true),
+			pidCalculation(&rollAttitudePidSettings, getRoll()),
 			-getGyroLimit(), getGyroLimit());
 	pitchAttitudeOutput = LIMIT_MIN_MAX_VALUE(
-			pidCalculation(&pitchAttitudePidSettings, getPitch(),true),
+			pidCalculation(&pitchAttitudePidSettings, getPitch()),
 			-getGyroLimit(), getGyroLimit());
 	yawAttitudeOutput =
 			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw()),true),
+					pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw())),
 					-getGyroLimit(), getGyroLimit());
 
 	_DEBUG(DEBUG_ATTITUDE_PID_OUTPUT,
@@ -140,10 +140,9 @@ void getRatePidOutput(float *rollRateOutput, float *pitchRateOutput,
 	setPidSp(&rollRatePidSettings, rollAttitudeOutput);
 	setPidSp(&pitchRatePidSettings, pitchAttitudeOutput);
 	setPidSp(&yawRatePidSettings, yawAttitudeOutput);
-	*rollRateOutput = pidCalculation(&rollRatePidSettings, getRollGyro(), true);
-	*pitchRateOutput = pidCalculation(&pitchRatePidSettings, getPitchGyro(),
-	true);
-	*yawRateOutput = pidCalculation(&yawRatePidSettings, getYawGyro(), true);
+	*rollRateOutput = pidCalculation(&rollRatePidSettings, getRollGyro());
+	*pitchRateOutput = pidCalculation(&pitchRatePidSettings, getPitchGyro());
+	*yawRateOutput = pidCalculation(&yawRatePidSettings, getYawGyro());
 
 	_DEBUG(DEBUG_RATE_PID_OUTPUT,
 			"(%s-%d) rate pid output: roll=%.5f, pitch=%.5f, yaw=%.5f\n",
@@ -188,20 +187,19 @@ void motorControler() {
 
 	float maxLimit = 0.f;
 	float minLimit = 0.f;
-	float throttleOffset = 0.f;
+	float altThrottleOffset = 0.f;
+	float slopThrottleOffset = 1.f;
+	float centerThrottle = 0.f;
 
-	if (getAltHoldIsReady() && getEnableAltHold()) {
-		throttleOffset = getThrottleOffsetByAltHold(updateAltHold());
-	} else {
-		//have to check whether it is useful or not
-		//throttleOffset=getThrottleOffset();
-	}
+	altThrottleOffset = (getAltHoldIsReady() && getEnableAltHold())?getThrottleOffsetByAltHold(updateAltHold()):0.f;
+	slopThrottleOffset = getSlopeThrottleOffset();
+	centerThrottle = ((float)getThrottlePowerLevel() + altThrottleOffset)*slopThrottleOffset;
 
 	maxLimit = (float) min(
-			(getThrottlePowerLevel() + throttleOffset)
+			centerThrottle
 					+ getAdjustPowerLeveRange(), getMaxPowerLeve());
 	minLimit = (float) max(
-			(getThrottlePowerLevel() + throttleOffset)
+			centerThrottle
 					- getAdjustPowerLeveRange(), getMinPowerLevel());
 
 	getAttitudePidOutput();
@@ -209,14 +207,14 @@ void motorControler() {
 
 	// rollCa>0
 	//    -  CCW2   CW2   +
-	//            X
-	//    -   CW1   CCW1  +
-	//            H
+	//                 X
+	//    -   CW1    CCW1  +
+	//                H
 	//
 	// rollCa<0
 	//    +  CCW2   CW2    -
-	//            X
-	//    +   CW1   CCW1  -
+	//                 X
+	//    +   CW1    CCW1  -
 	//            H
 
 	rollCcw1 = rollRateOutput;
@@ -226,13 +224,13 @@ void motorControler() {
 
 	// pitchCa>0
 	//    +  CCW2   CW2    +
-	//            X
-	//    -   CW1   CCW1   -
+	//                 X
+	//    -  CW1      CCW1   -
 	//            H
 	//
 	//pitchCa<0
 	//    -  CCW2   CW2   -
-	//            X
+	//                 X
 	//    +   CW1   CCW1  +
 	//            H
 
@@ -243,7 +241,7 @@ void motorControler() {
 
 	// yawCa>0
 	//    +   CCW2   CW2    -
-	//                 X
+	//                  X
 	//    -    CW1   CCW1   +
 	//                 H
 	//
@@ -258,16 +256,16 @@ void motorControler() {
 	yawCw1 = -yawRateOutput;
 	yawCw2 = -yawRateOutput;
 
-	outCcw1 = ((float) getThrottlePowerLevel() + throttleOffset)
+	outCcw1 = centerThrottle
 			+ LIMIT_MIN_MAX_VALUE(rollCcw1 + pitchCcw1 + yawCcw1,
 					-getPidOutputLimitation(), getPidOutputLimitation());
-	outCcw2 = ((float) getThrottlePowerLevel() + throttleOffset)
+	outCcw2 = centerThrottle
 			+ LIMIT_MIN_MAX_VALUE(rollCcw2 + pitchCcw2 + yawCcw2,
 					-getPidOutputLimitation(), getPidOutputLimitation());
-	outCw1 = ((float) getThrottlePowerLevel() + throttleOffset)
+	outCw1 = centerThrottle
 			+ LIMIT_MIN_MAX_VALUE(rollCw1 + pitchCw1 + yawCw1,
 					-getPidOutputLimitation(), getPidOutputLimitation());
-	outCw2 = ((float) getThrottlePowerLevel() + throttleOffset)
+	outCw2 = centerThrottle
 			+ LIMIT_MIN_MAX_VALUE(rollCw2 + pitchCw2 + yawCw2,
 					-getPidOutputLimitation(), getPidOutputLimitation());
 
@@ -286,9 +284,9 @@ void motorControler() {
 	setupCw2MotorPoewrLevel((unsigned short) outCw2);
 
 }
-
+	
 /**
- *  calculate throttle offset,  keep the height by applying the offset to motors
+ *  get throttle offset for slope
  *
  * @param
  * 		void
@@ -297,25 +295,25 @@ void motorControler() {
  *		offset
  *
  */
-#if 0
-float getThrottleOffset() {
+float getSlopeThrottleOffset() {
 
-	float offset = 0.f;
+	float offset = 1.f;
 
-	if (getZAxisSlope() <= 0.0) {
-		//inverted or vertical
-		offset = 0.0;
+	if (getZGravity() <= 0.0) {
+		//attitude is inverted or vertical
+		offset = 1.f;
 	} else {
-		offset = (((1.0 - getZAxisSlope()) >= 0.3) ? 0.3 : 1.0 - getZAxisSlope())
-		* ((float) (getThrottlePowerLevel() - getMinPowerLevel()));
+		offset=2.f-getZGravity();
 	}
-
+	
+	//_DEBUG(DEBUG_NORMAL,"getZGravity=%f\n",getZGravity());
+	//_DEBUG(DEBUG_NORMAL,"getSlopeThrottleOffset=%f\n",offset);
+	
 	return offset;
 }
-#endif
 
 /**
- * quadcopter will record the yaw before flying, this value will be a center point for yaw PID attitude controler
+ * quadcopter will record the yaw attitude before flying, this value will become a center point for yaw PID attitude controler
  *
  * @param point
  * 		value
@@ -325,6 +323,7 @@ float getThrottleOffset() {
  *
  */
 void setYawCenterPoint(float point) {
+
 	float yawCenterPoint1 = point;
 	if (yawCenterPoint1 > 180.0) {
 		yawCenterPoint1 = yawCenterPoint1 - 360.0;
@@ -345,6 +344,7 @@ void setYawCenterPoint(float point) {
  *
  */
 float getYawCenterPoint() {
+
 	return yawCenterPoint;
 }
 
@@ -358,6 +358,7 @@ float getYawCenterPoint() {
  *		the yaw value after transform
  */
 float yawTransform(float originPoint) {
+
 	float output = originPoint - yawCenterPoint;
 	if (output > 180.0) {
 		output = output - 360.0;
@@ -378,6 +379,7 @@ float yawTransform(float originPoint) {
  *
  */
 void setGyroLimit(float limitation) {
+
 	gyroLimit = limitation;
 }
 
@@ -392,6 +394,7 @@ void setGyroLimit(float limitation) {
  *
  */
 float getGyroLimit() {
+
 	return gyroLimit;
 }
 
@@ -406,6 +409,7 @@ float getGyroLimit() {
  *
  */
 void setAdjustPeriod(unsigned short period) {
+
 	adjustPeriod = period;
 }
 
@@ -420,6 +424,7 @@ void setAdjustPeriod(unsigned short period) {
  *
  */
 unsigned short getAdjustPeriod() {
+
 	return adjustPeriod;
 }
 
@@ -434,6 +439,7 @@ unsigned short getAdjustPeriod() {
  *
  */
 void setAngularLimit(float angular) {
+
 	angularLimit = angular;
 }
 
@@ -461,6 +467,7 @@ float getAngularLimit() {
  *		void
  */
 void setAltitudePidOutputLimitation(float v) {
+
 	altitudePidOutputLimitation = v;
 }
 
@@ -474,6 +481,7 @@ void setAltitudePidOutputLimitation(float v) {
  *		limitation
  */
 float getAltitudePidOutputLimitation(void) {
+
 	return altitudePidOutputLimitation;
 }
 
@@ -490,7 +498,7 @@ void getAltHoldAltPidOutput() {
 
 	altHoltAltOutput =
 			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude(),true),
+					pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude()),
 					-getAltitudePidOutputLimitation(),
 					getAltitudePidOutputLimitation());
 	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f\n",getCurrentAltHoldAltitude());
@@ -510,7 +518,7 @@ void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
 
 	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
 	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings,
-			getCurrentAltHoldSpeed(), true);
+			getCurrentAltHoldSpeed());
 	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldSpeed=%f\n",getCurrentAltHoldSpeed());
 	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
 }
