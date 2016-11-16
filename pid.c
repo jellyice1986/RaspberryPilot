@@ -1,3 +1,27 @@
+/******************************************************************************
+The pid.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -191,11 +215,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 
 		//I term
 		pid->integral += (pid->err * timeDiff);
-		if (pid->integral > pid->iLimit) {
-			pid->integral = pid->iLimit;
-		} else if (pid->integral < -pid->iLimit) {
-			pid->integral = -pid->iLimit;
-		}
+		pid->integral=LIMIT_MIN_MAX_VALUE(pid->integral,-pid->iLimit, pid->iLimit);
 
 		//D term
 		dterm = (pid->err - pid->last_error) / timeDiff;
@@ -207,9 +227,20 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 		result = (pterm + iterm + dterm);
 
 #if 0 //Debug
-		if(pid->name[0]=='P')
-		_DEBUG(DEBUG_NORMAL,"name=%s, timeDiff=%.3f, result=%.3f, pterm=%.3f, iterm=%.3f, iintegral=%.3f, dterm=%.3f, sp=%.3f, shift=%.3f, pv=%.3f, err=%.3f, last_error=%.3f\n",
-				getName(pid),timeDiff,result,pterm,iterm,pid->integral,dterm,pid->sp,pid->spShift,pid->pv,pid->err,pid->last_error);
+		if(0==strncmp(pid->name,"ROLL_A",strlen("ROLL_A"))){
+			_DEBUG(DEBUG_NORMAL,"name       =%s\n"	,getName(pid));
+			_DEBUG(DEBUG_NORMAL,"timeDiff   =%.3f\n",timeDiff);
+			_DEBUG(DEBUG_NORMAL,"result     =%.3f\n",result);
+			_DEBUG(DEBUG_NORMAL,"pterm      =%.3f\n",pterm);
+			_DEBUG(DEBUG_NORMAL,"iterm      =%.3f\n",iterm);
+			_DEBUG(DEBUG_NORMAL,"iintegral  =%.3f\n",pid->integral);
+			_DEBUG(DEBUG_NORMAL,"dterm      =%.3f\n",dterm);
+			_DEBUG(DEBUG_NORMAL,"sp         =%.3f\n",pid->sp);
+			_DEBUG(DEBUG_NORMAL,"spshift    =%.3f\n", pid->spShift);
+			_DEBUG(DEBUG_NORMAL,"pv		    =%.3f\n",pid->pv);
+			_DEBUG(DEBUG_NORMAL,"err        =%.3f\n",pid->err);
+			_DEBUG(DEBUG_NORMAL,"last_error =%.3f\n",pid->last_error);
+		}
 #endif
 	}
 

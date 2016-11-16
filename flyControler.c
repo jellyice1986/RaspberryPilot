@@ -1,7 +1,32 @@
+/******************************************************************************
+The flyControler.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
 #include "commonLib.h"
@@ -35,6 +60,8 @@ static float gyroLimit;
 static float yawCenterPoint;
 static float maxThrottleOffset;
 static float altitudePidOutputLimitation;
+float SlopeThrottleOffsetGain=1.f;
+
 
 /**
  * Init paramtes and states for flyControler
@@ -43,10 +70,15 @@ static float altitudePidOutputLimitation;
  * 		void
  *
  * @return
- *		void
+ *		bool
  *
  */
-void flyControlerInit() {
+bool flyControlerInit() {
+
+	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
+		_ERROR("(%s-%d) controlMotorMutex init failed\n", __func__, __LINE__);
+		return false;
+	}
 
 	setLeaveFlyControlerFlag(false);
 	disenableFlySystem();
@@ -63,6 +95,8 @@ void flyControlerInit() {
 	yawAttitudeOutput = 0.f;
 	altHoltAltOutput = 0.f;
 	maxThrottleOffset = 1000.f;
+
+	return true;
 }
 
 /**
@@ -303,9 +337,9 @@ float getSlopeThrottleOffset() {
 		//attitude is inverted or vertical
 		offset = 1.f;
 	} else {
-		offset=2.f-getZGravity();
+		offset=(2.f-getZGravity())*SlopeThrottleOffsetGain;
 	}
-	
+
 	//_DEBUG(DEBUG_NORMAL,"getZGravity=%f\n",getZGravity());
 	//_DEBUG(DEBUG_NORMAL,"getSlopeThrottleOffset=%f\n",offset);
 	

@@ -1,3 +1,27 @@
+/******************************************************************************
+The raspberryPilotMain.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -89,7 +113,7 @@ int main() {
 			count++;
 
 #ifdef MPU_DMP_YAW
-			if(0 == mpuResult)
+		if(0 == mpuResult)
 #endif
 			setYaw(yrpAttitude[0]);
 			setPitch(yrpAttitude[2]);
@@ -123,10 +147,10 @@ int main() {
 						if (getPidSp(&yawAttitudePidSettings) != 321.0) {
 							motorControler();
 						} else {
+							setThrottlePowerLevel(getMinPowerLevel());
 							setupAllMotorPoewrLevel(getMinPowerLevel(),
 									getMinPowerLevel(), getMinPowerLevel(),
 									getMinPowerLevel());
-							setThrottlePowerLevel(getMinPowerLevel());
 						}
 					} else {
 						//security mechanism is triggered while connection is broken
@@ -134,8 +158,8 @@ int main() {
 					}
 
 				} else {
-					setupAllMotorPoewrLevel(0, 0, 0, 0);
 					setThrottlePowerLevel(0);
+					setupAllMotorPoewrLevel(0, 0, 0, 0);
 				}
 				pthread_mutex_unlock(&controlMotorMutex);
 
@@ -163,16 +187,13 @@ int main() {
  */
 bool raspberryPilotInit() {
 
-	flyControlerInit();
-	securityMechanismInit();
-
 	if (!piSystemInit()) {
 		_ERROR("(%s-%d) Init Raspberry Pi failed!\n", __func__, __LINE__);
 		return false;
 	}
 
-	if (!mpu6050Init()) {
-		_ERROR("(%s-%d) Init MPU6050 failed!\n", __func__, __LINE__);
+	if (!flyControlerInit()) {
+		_ERROR("(%s-%d) Init flyControlerInit failed!\n", __func__, __LINE__);
 		return false;
 	}
 
@@ -181,13 +202,13 @@ bool raspberryPilotInit() {
 		return false;
 	}
 
-	if (!initAltHold()) {
-		_ERROR("(%s-%d) Init altHold failed!\n", __func__, __LINE__);
+	if (!mpu6050Init()) {
+		_ERROR("(%s-%d) Init MPU6050 failed!\n", __func__, __LINE__);
+		return false;
 	}
 
-	if (pthread_mutex_init(&controlMotorMutex, NULL) != 0) {
-		_ERROR("(%s-%d) controlMotorMutex init failed\n", __func__, __LINE__);
-		return false;
+	if (!initAltHold()) {
+		_ERROR("(%s-%d) Init altHold failed!\n", __func__, __LINE__);
 	}
 
 	if (!radioControlInit()) {
@@ -195,8 +216,8 @@ bool raspberryPilotInit() {
 		return false;
 	}
 
+	securityMechanismInit();
 	pidInit();
-
 #ifndef MPU_DMP	
 	ahrsInit();
 #endif

@@ -1,3 +1,40 @@
+/******************************************************************************
+The i2c.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+=============================================================
+
+ATTENTION:
+
+The code in this file is mostly copied from
+
+Jeff Rowberg:
+https://github.com/jrowberg/i2cdevlib
+
+Richard Hirst:
+https://github.com/richardghirst/PiBits/blob/master/MPU6050-Pi-Demo
+
+******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -157,21 +194,22 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 	char count = 0;
 	unsigned char buf[128];
 	int fd;
+	bool result=true;
 
 	if (length > 127) {
 		_ERROR("length (%d) > 127\n", length);
-		return false;
+		result= false;
 	}
 
 	fd = open(I2C_DEV_PATH, O_RDWR);
 	if (fd < 0) {
 		_ERROR("%s: Failed to open device\n", __func__);
-		return false;
+		result= false;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
 		_ERROR("%s: Failed to select device\n", __func__);
 		close(fd);
-		return false;
+		result= false;
 	}
 
 	buf[0] = regAddr;
@@ -180,16 +218,16 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 	if (count < 0) {
 		_ERROR("%s Failed to write device(%d)\n", __func__, count);
 		close(fd);
-		return false;
+		result= false;
 	} else if (count != length + 1) {
 		_ERROR("Short write to device, expected %d, got %d\n", length + 1,
 				count);
 		close(fd);
-		return false;
+		result= false;
 	}
 	close(fd);
 
-	return true;
+	return result;
 }
 
 /**
@@ -237,22 +275,24 @@ bool writeWords(unsigned char devAddr, unsigned char regAddr,
 
 	char count = 0;
 	unsigned char buf[128];
-	int i, fd;
+	int i; 
+	int fd;
+	bool result=true;
 
 	if (length > 63) {
 		_ERROR("%s: length (%d) > 63\n", __func__, length);
-		return false;
+		result= false;
 	}
 
 	fd = open(I2C_DEV_PATH, O_RDWR);
 	if (fd < 0) {
 		_ERROR("%s: Failed to open device\n", __func__);
-		return false;
+		result= false;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
 		_ERROR("%s: Failed to select device\n", __func__);
 		close(fd);
-		return false;
+		result= false;
 	}
 	buf[0] = regAddr;
 	for (i = 0; i < length; i++) {
@@ -263,15 +303,15 @@ bool writeWords(unsigned char devAddr, unsigned char regAddr,
 	if (count < 0) {
 		_ERROR("%s: Failed to write device(%d)\n", __func__, count);
 		close(fd);
-		return false;
+		result= false;
 	} else if (count != length * 2 + 1) {
 		_ERROR("%s: Short write to device, expected %d, got %d\n", __func__,
 				length + 1, count);
 		close(fd);
-		return false;
+		result= false;
 	}
 	close(fd);
-	return true;
+	return result;
 }
 
 /**

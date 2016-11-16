@@ -1,3 +1,27 @@
+/******************************************************************************
+The radioControl.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -122,7 +146,7 @@ void *radioTransmitThread(void *arg) {
 				getMotorPowerLevelCW2());
 
 		if ('#' != message[strlen(message) - 1]) {
-			_DEBUG(DEBUG_NORMAL, ("buffer overflow\n"));
+			_DEBUG(DEBUG_NORMAL, ("invilid package\n"));
 		} else {
 			serialPuts(fd, message);
 			increasePacketCounter();
@@ -284,7 +308,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 
 #if CHECK_RECEIVER_PERIOD
 		gettimeofday(&tv,NULL);
-		_DEBUG("duration=%d us\n",(tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec));
+		_DEBUG("duration=%ld us\n",(tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec));
 		tv_last.tv_usec=tv.tv_usec;
 		tv_last.tv_sec=tv.tv_sec;
 #endif
@@ -325,14 +349,15 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 			setThrottlePowerLevel(parameter);
 
 			if (getMinPowerLevel() == parameter) {
+				
 				resetPidRecord(&rollAttitudePidSettings);
 				resetPidRecord(&pitchAttitudePidSettings);
 				resetPidRecord(&yawAttitudePidSettings);
 				resetPidRecord(&rollRatePidSettings);
 				resetPidRecord(&pitchRatePidSettings);
+				resetPidRecord(&yawRatePidSettings);
 				resetPidRecord(&altHoldAltSettings);
 				resetPidRecord(&altHoldlSpeedSettings);
-
 				setYawCenterPoint(0);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
@@ -343,6 +368,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 					setYawCenterPoint(getYaw());
 					setPidSp(&yawAttitudePidSettings, 0);
 				}
+				
 				setPidSp(&rollAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
 								getAngularLimit()));
@@ -360,8 +386,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		//halt raspberry pi
 
 		pthread_mutex_lock(&controlMotorMutex);
-		setupAllMotorPoewrLevel(0, 0, 0, 0);
 		setThrottlePowerLevel(0);
+		setupAllMotorPoewrLevel(0, 0, 0, 0);
 		disenableFlySystem();
 		setLeaveFlyControlerFlag(true);
 		pthread_mutex_unlock(&controlMotorMutex);

@@ -1,3 +1,27 @@
+/******************************************************************************
+The pca9685.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
+
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
@@ -149,9 +173,13 @@ void setPWM(unsigned char channel, unsigned short value) {
 				PCA9685_initSuccess);
 		return;
 	}
-	writeByte(PCA9685_ADDRESS,
-	PCA9685_LED0_OFF_L + PCA9685_LED_MULTIPLYER * channel, value & 0xFF);
-	writeByte(PCA9685_ADDRESS,
-	PCA9685_LED0_OFF_H + PCA9685_LED_MULTIPLYER * channel, value >> 8);
+
+	unsigned char data[2];
+	
+	data[0]= value & 0xFF;
+	data[1]= value >> 8;
+	
+	writeBytes(PCA9685_ADDRESS,
+	PCA9685_LED0_OFF_L + PCA9685_LED_MULTIPLYER * channel,2, data);
 }
 
