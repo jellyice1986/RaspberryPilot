@@ -174,12 +174,10 @@ void setPWM(unsigned char channel, unsigned short value) {
 		return;
 	}
 
-	unsigned char data[2];
+	writeByte(PCA9685_ADDRESS,
+ 		PCA9685_LED0_OFF_L + PCA9685_LED_MULTIPLYER * channel, value & 0xFF);
+ 	writeByte(PCA9685_ADDRESS,
+ 		PCA9685_LED0_OFF_H + PCA9685_LED_MULTIPLYER * channel, value >> 8);	
 	
-	data[0]= value & 0xFF;
-	data[1]= value >> 8;
-	
-	writeBytes(PCA9685_ADDRESS,
-	PCA9685_LED0_OFF_L + PCA9685_LED_MULTIPLYER * channel,2, data);
 }
 
