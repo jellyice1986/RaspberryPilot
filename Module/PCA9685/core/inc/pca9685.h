@@ -24,6 +24,6 @@ SOFTWARE.
 
 bool pca9685Init();
 void resetPca9685(void);
-void setPWMFreq(unsigned short);
-void setPWM(unsigned char, unsigned short);
+void pca9685SetPwmFreq(unsigned short);
+void pca9685SetPwm(unsigned char, unsigned short);
 

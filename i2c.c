@@ -64,6 +64,7 @@ bool checkI2cDeviceIsExist(unsigned char devAddr) {
 	unsigned char regAddr = 0x01;
 
 	fd = open(I2C_DEV_PATH, O_RDWR);
+	
 	if (fd < 0) {
 		result = false;
 	}
@@ -199,17 +200,19 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 	if (length > 127) {
 		_ERROR("length (%d) > 127\n", length);
 		result= false;
+		goto Exit;
 	}
 
 	fd = open(I2C_DEV_PATH, O_RDWR);
 	if (fd < 0) {
 		_ERROR("%s: Failed to open device\n", __func__);
 		result= false;
+		goto Exit;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
 		_ERROR("%s: Failed to select device\n", __func__);
-		close(fd);
 		result= false;
+		goto Exit;
 	}
 
 	buf[0] = regAddr;
@@ -217,16 +220,19 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 	count = write(fd, buf, length + 1);
 	if (count < 0) {
 		_ERROR("%s Failed to write device(%d)\n", __func__, count);
-		close(fd);
 		result= false;
+	 	goto Exit;
 	} else if (count != length + 1) {
 		_ERROR("Short write to device, expected %d, got %d\n", length + 1,
 				count);
-		close(fd);
 		result= false;
+		goto Exit;
 	}
-	close(fd);
 
+	goto Exit;
+	 
+	Exit:
+	close(fd);
 	return result;
 }
 
@@ -282,17 +288,19 @@ bool writeWords(unsigned char devAddr, unsigned char regAddr,
 	if (length > 63) {
 		_ERROR("%s: length (%d) > 63\n", __func__, length);
 		result= false;
+		goto Exit;
 	}
 
 	fd = open(I2C_DEV_PATH, O_RDWR);
 	if (fd < 0) {
 		_ERROR("%s: Failed to open device\n", __func__);
 		result= false;
+		goto Exit;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
 		_ERROR("%s: Failed to select device\n", __func__);
-		close(fd);
 		result= false;
+		goto Exit;
 	}
 	buf[0] = regAddr;
 	for (i = 0; i < length; i++) {
@@ -302,14 +310,18 @@ bool writeWords(unsigned char devAddr, unsigned char regAddr,
 	count = write(fd, buf, length * 2 + 1);
 	if (count < 0) {
 		_ERROR("%s: Failed to write device(%d)\n", __func__, count);
-		close(fd);
 		result= false;
+		goto Exit;
 	} else if (count != length * 2 + 1) {
 		_ERROR("%s: Short write to device, expected %d, got %d\n", __func__,
 				length + 1, count);
-		close(fd);
 		result= false;
+		goto Exit;
 	}
+	
+	goto Exit;
+
+	Exit:
 	close(fd);
 	return result;
 }
@@ -361,30 +373,34 @@ char readBytes(unsigned char devAddr, unsigned char regAddr,
 
 	if (fd < 0) {
 		_ERROR("Failed to open device: \n");
-		return (-1);
+		count=-1;
+		goto Exit;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
 		_ERROR("Failed to select device: \n");
-		close(fd);
-		return (-1);
+		count=-1;
+		goto Exit;
 	}
 	if (write(fd, &regAddr, 1) != 1) {
 		_ERROR("Failed to write reg: \n");
-		close(fd);
-		return (-1);
+		count=-1;
+		goto Exit;
 	}
 	count = read(fd, data, length);
 	if (count < 0) {
 		_ERROR("Failed to read device(%d): \n", count);
-		close(fd);
-		return (-1);
+		count=-1;
+		goto Exit;
 	} else if (count != length) {
 		_ERROR("Short read  from device, expected %d, got %d\n", length, count);
-		close(fd);
-		return (-1);
+		count=-1;
+		goto Exit;
 	}
-	close(fd);
 
+	goto Exit;
+
+	Exit:
+	close(fd);
 	return count;
 }
 

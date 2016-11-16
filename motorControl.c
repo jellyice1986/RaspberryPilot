@@ -55,7 +55,7 @@ static float motor_3_gain;
 void motorInit() {
 
 	resetPca9685();
-	setPWMFreq(PWM_DUTY_CYCLE);
+	pca9685SetPwmFreq(PWM_DUTY_CYCLE);
 	pthread_mutex_lock(&controlMotorMutex);
 	setThrottlePowerLevel(MIN_POWER_LEVEL);
 	setupAllMotorPoewrLevel(MIN_POWER_LEVEL, MIN_POWER_LEVEL, MIN_POWER_LEVEL,
@@ -101,7 +101,7 @@ void setupAllMotorPoewrLevel(unsigned short CW1, unsigned short CW2,
 void setupCcw1MotorPoewrLevel(unsigned short CCW1) {
 
 	motorPowerLevel_CCW1 = CCW1;
-	setPWM(SOFT_PWM_CCW1, motorPowerLevel_CCW1);
+	pca9685SetPwm(SOFT_PWM_CCW1, motorPowerLevel_CCW1);
 }
 
 /**
@@ -117,7 +117,7 @@ void setupCcw1MotorPoewrLevel(unsigned short CCW1) {
 void setupCcw2MotorPoewrLevel(unsigned short CCW2) {
 
 	motorPowerLevel_CCW2 = CCW2;
-	setPWM(SOFT_PWM_CCW2, motorPowerLevel_CCW2);
+	pca9685SetPwm(SOFT_PWM_CCW2, motorPowerLevel_CCW2);
 }
 
 /**
@@ -133,7 +133,7 @@ void setupCcw2MotorPoewrLevel(unsigned short CCW2) {
 void setupCw1MotorPoewrLevel(unsigned short CW1) {
 
 	motorPowerLevel_CW1 = CW1;
-	setPWM(SOFT_PWM_CW1, motorPowerLevel_CW1);
+	pca9685SetPwm(SOFT_PWM_CW1, motorPowerLevel_CW1);
 }
 
 /**
@@ -149,7 +149,7 @@ void setupCw1MotorPoewrLevel(unsigned short CW1) {
 void setupCw2MotorPoewrLevel(unsigned short CW2) {
 
 	motorPowerLevel_CW2 = CW2;
-	setPWM(SOFT_PWM_CW2, motorPowerLevel_CW2);
+	pca9685SetPwm(SOFT_PWM_CW2, motorPowerLevel_CW2);
 }
 
 /**
