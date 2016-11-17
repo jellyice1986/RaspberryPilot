@@ -67,14 +67,20 @@ bool checkI2cDeviceIsExist(unsigned char devAddr) {
 	
 	if (fd < 0) {
 		result = false;
+		goto Exit;
 	}
 	if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
 		result = false;
+		goto Exit;
 	}
 	if (write(fd, &regAddr, 1) != 1) {
 		result = false;
+		goto Exit;
 	}
+	
+	goto Exit;
 
+	Exit:
 	close(fd);
 	return result;
 }

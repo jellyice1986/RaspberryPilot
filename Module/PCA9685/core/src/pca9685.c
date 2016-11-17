@@ -182,18 +182,10 @@ void pca9685SetPwm(unsigned char channel, unsigned short value) {
 		return;
 	}
 
-	//unsigned char data[2];
-
-	//data[0]= (unsigned char)(value & 0xFF);
-	//data[1]=(unsigned char)(value >> 8);
-
-	//writeBytes(PCA9685_ADDRESS,PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel,2,data);
-	writeWord(PCA9685_ADDRESS,PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel,value);
-/*	
 	writeByte(PCA9685_ADDRESS,
  		PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel, value & 0xFF);
  	writeByte(PCA9685_ADDRESS,
  		PCA9685_LED0_OFF_H + PCA9685_LED_SHIFT * channel, value >> 8);	
-*/	
+	
 }
 
