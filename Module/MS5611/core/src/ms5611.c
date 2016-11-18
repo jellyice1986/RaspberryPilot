@@ -60,6 +60,7 @@ char getPressD1Cmd();
 char getTempD2Cmd();
 void getDelay();
 void resetMs5611();
+float kalmanFilterOneDim(float inData);
 
 static unsigned short osr;
 static unsigned short calibration[6];
@@ -98,14 +99,14 @@ bool ms5611Init() {
 /**
  * get temperature and pressure from MS5611 and calculate attitude
  *
- * @param
+ * @param cm
  * 		altitude
  *
  * @return
  *		bool
  *
  */
-bool ms5611GetMeasurementData(float *cm) {
+bool ms5611GetMeasurementData(unsigned short *cm) {
 
 	float tmp = 0;
 	float press = 0;
@@ -121,11 +122,10 @@ bool ms5611GetMeasurementData(float *cm) {
 	press = readPress();
 
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
-	*cm = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
-			* (tmp + 273.15f)) * CONST_PF2 * 100.f;
-
-	_DEBUG(DEBUG_ALTITUDE, "altitude=%.2f, mbar=%.2f, temp=%.2f\n", *cm,
-			press, tmp);
+	*cm = (unsigned short)(((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
+			* (tmp + 273.15f)) * CONST_PF2 * 100.f);
+	
+	//_DEBUG(DEBUG_NORMAL, "ms5611 rawAltitude=%d, mbar=%.2f, temp=%.2f\n", *cm,press, tmp);
 
 	return true;
 }

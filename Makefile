@@ -27,6 +27,7 @@ LIB_SRCS =\
 	motorControl.c \
 	systemControl.c \
 	pid.c \
+	kalmanFilter.c \
 	altHold.c \
 	radioControl.c \
 	flyControler.c \

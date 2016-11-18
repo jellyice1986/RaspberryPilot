@@ -173,6 +173,10 @@ void pca9685SetPwmFreq(unsigned short freq) {
  *
  * @param value
  * 		PWM value from 0 to 4095
+ *
+ * @return
+ *		void
+ *
  */
 void pca9685SetPwm(unsigned char channel, unsigned short value) {
 

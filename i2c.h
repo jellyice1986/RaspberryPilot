@@ -25,7 +25,7 @@ SOFTWARE.
 
 ATTENTION:
 
-The code in this file is mostly copied from
+The code in this file is mostly copied and rewritten from
 
 Jeff Rowberg:
 https://github.com/jrowberg/i2cdevlib

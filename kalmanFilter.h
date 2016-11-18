@@ -1,5 +1,5 @@
 /******************************************************************************
-The ms5611.h in RaspberryPilot project is placed under the MIT license
+The kalmanFilter.h in RaspberryPilot project is placed under the MIT license
 
 Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
@@ -22,6 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-bool ms5611Init();
-bool ms5611GetMeasurementData(unsigned short *cm);
+typedef struct {
+	char  name[10]; //name of KALMAN_1D entity
+	float prevData;
+    float p;     // estimate covariance
+	float q; // covariance of process noise
+	float r;   // covariance of observation noise
+	float kGain; // Kalman gain
+} KALMAN_1D_STRUCT;
+
+
+float kalmanFilterOneDimCalc(float inData,KALMAN_1D_STRUCT *kalmanStruct);
+void initkalmanFilterOneDimEntity(KALMAN_1D_STRUCT *kalmanStruct,char *name, float prevData, float p,float q,float r, float kGain);	
 

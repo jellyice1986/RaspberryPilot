@@ -1,3 +1,37 @@
+/******************************************************************************
+The mpu6050.c in RaspberryPilot project is placed under the MIT license
+
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+=============================================================
+
+ATTENTION:
+
+The code in this file is mostly copied and rewritten from
+
+Jeff Rowberg:
+https://github.com/jrowberg/i2cdevlib
+
+******************************************************************************/
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -345,12 +379,9 @@ static unsigned short packetSize; // expected DMP packet size (default is 42 byt
 static unsigned char devStatus; // return status after each device operation (0 = success, !0 = error)
 static unsigned char mpuIntStatus; // holds actual interrupt status byte from MPU
 static unsigned char fifoBuffer[64]; // FIFO storage buffer
-static short xGyroOffset;  //fot auto calibration
-static short yGyroOffset;  //fot auto calibration
-static short zGyroOffset;  //fot auto calibration
-static float cal_mean_gx;  //fot auto calibration
-static float cal_mean_gy;  //fot auto calibration
-static float cal_mean_gz;  //fot auto calibration
+static short xGyroOffset; 
+static short yGyroOffset; 
+static short zGyroOffset;  
 static float yaw;
 static float pitch;
 static float roll;
@@ -367,18 +398,9 @@ static float asaX;
 static float asaY;
 static float asaZ;
 
-bool testConnection();
-unsigned char getDeviceID();
-void meansensors();
-void getAcceleration(short *x, short *y, short *z);
-float convertMpu6050Acceleration(short sampleValue);
-unsigned char getClockSource();
 void setClockSource(unsigned char source);
-unsigned char getFullScaleGyroRange();
 void setFullScaleGyroRange(unsigned char range);
-unsigned char getFullScaleAccelRange();
 void setFullScaleAccelRange(unsigned char range);
-unsigned char getSleepEnabled();
 void setSleepEnabled(unsigned char enabled);
 void setMemoryBank(unsigned char bank, unsigned char prefetchEnabled,
 		unsigned char userBank);
@@ -390,11 +412,8 @@ char getYGyroOffset();
 void setYGyroOffset(char offset);
 char getZGyroOffset();
 void setZGyroOffset(char offset);
-short getXGyroOffsetUser();
 void setXGyroOffsetUser(short offset);
-short getYGyroOffsetUser();
 void setYGyroOffsetUser(short offset);
-short getZGyroOffsetUser();
 void setZGyroOffsetUser(short offset);
 unsigned char getOTPBankValid();
 float ak8963SensitivityAdjustment(char asa);
@@ -402,7 +421,6 @@ void getMagnet(short* mx, short* my, short* mz);
 void setSlaveAddress(unsigned char num, unsigned char address);
 void setI2CMasterModeEnabled(unsigned char enabled);
 void setI2CBypassEnabled(char enabled);
-char getI2CBypassEnabled(void);
 unsigned char writeProgDMPConfigurationSet(const unsigned char *data,
 		unsigned short dataSize);
 unsigned char writeProgMemoryBlock(const unsigned char *data,
@@ -427,38 +445,26 @@ unsigned short getFIFOCount();
 unsigned char getFIFOByte();
 void getFIFOBytes(unsigned char *data, unsigned char length);
 void setFIFOByte(unsigned char data);
-unsigned char getMotionDetectionThreshold();
 void setMotionDetectionThreshold(unsigned char threshold);
-unsigned char getZeroMotionDetectionThreshold();
 void setZeroMotionDetectionThreshold(unsigned char threshold);
 unsigned char getMotionDetectionDuration();
 void setMotionDetectionDuration(unsigned char duration);
 unsigned char getZeroMotionDetectionDuration();
 void setZeroMotionDetectionDuration(unsigned char duration);
-char getFIFOEnabled();
 void setFIFOEnabled(char enabled);
-char getDMPEnabled();
 void setDMPEnabled(char enabled);
 void resetDMP();
 unsigned char getIntStatus();
 void setExternalFrameSync(unsigned char sync);
-void getMpu6050Rotation(short int * x, short int * y, short int * z);
-short int getRotationX();
-short int getRotationY();
-short int getRotationZ();
 void reset();
-char getXGyroOffsetTC();
 void setXGyroOffsetTC(char offset);
-char getYGyroOffsetTC();
 void setYGyroOffsetTC(char offset);
-char getZGyroOffsetTC();
 void setZGyroOffsetTC(char offset);
 unsigned char dmpInitialize();
 unsigned short dmpGetFIFOPacketSize();
 unsigned char dmpGetYawPitchRoll(float *data, float *q, float *gravity);
 unsigned char dmpGetGravity(float *gravity, float *q);
 unsigned char dmpGetGyro(short *data, const unsigned char* packet);
-unsigned char dmpGetGyro2(float *data, const unsigned char* packet);
 unsigned char dmpGetQuaternion(float *q, const unsigned char* packet);
 unsigned char sub_dmpGetQuaternion(short *qi, const unsigned char* packet);
 unsigned char dmpGetAccel(short *data, const unsigned char* packet);
@@ -1010,6 +1016,16 @@ const prog_uchar dmpUpdates[MPU6050_DMP_UPDATES_SIZE] PROGMEM = { 0x01, 0xB2,
 
 #endif
 
+/**
+ * Init MPU6050
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		bool
+ *
+ */
 bool mpu6050Init() {
 
 	if (checkI2cDeviceIsExist(MPU6050_ADDRESS)) {
@@ -1135,6 +1151,352 @@ bool mpu6050Init() {
 
 }
 
+/**
+ * set yaw
+ *
+ * @param t_yaw
+ * 		yaw
+ *
+ * @return
+ *		void
+ *
+ */
+void setYaw(float t_yaw) {
+	yaw = t_yaw;
+}
+
+/**
+ * set pitch
+ *
+ * @param t_pitch
+ * 		pitch
+ *
+ * @return
+ *		void
+ *
+ */
+void setPitch(float t_pitch) {
+	pitch = t_pitch;
+}
+
+/**
+ * set roll
+ *
+ * @param t_roll
+ * 		roll
+ *
+ * @return
+ *		void
+ *
+ */
+void setRoll(float t_roll) {
+	roll = t_roll;
+}
+
+/**
+ * get yaw
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		yaw
+ *
+ */
+float getYaw() {
+	return yaw;
+}
+
+/**
+ * get Pitch
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		pitch
+ *
+ */
+float getPitch() {
+	return pitch;
+}
+
+/**
+ * get roll
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		roll
+ *
+ */
+float getRoll() {
+	return roll;
+}
+
+/**
+ * set angular velocity of yaw
+ *
+ * @param t_yaw_gyro
+ * 		angular velocity of yaw
+ *
+ * @return
+ *		void
+ *
+ */
+void setYawGyro(float t_yaw_gyro) {
+	yawGyro = t_yaw_gyro;
+}
+
+/**
+ * set angular velocity of pitch
+ *
+ * @param t_pitch_gyro
+ * 		angular velocity of pitch
+ *
+ * @return
+ *		void
+ *
+ */
+void setPitchGyro(float t_pitch_gyro) {
+	pitchGyro = t_pitch_gyro;
+}
+
+/**
+ * set angular velocity of roll
+ *
+ * @param t_roll_gyro
+ * 		angular velocity of roll
+ *
+ * @return
+ *		void
+ *
+ */
+void setRollGyro(float t_roll_gyro) {
+	rollGyro = t_roll_gyro;
+}
+
+/**
+ * get angular velocity of yaw
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		angular velocity of yaw
+ *
+ */
+float getYawGyro() {
+	return yawGyro;
+}
+
+/**
+ * get angular velocity of pitch
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		angular velocity of pitch
+ *
+ */
+float getPitchGyro() {
+	return pitchGyro;
+}
+
+/**
+ * get angular velocity of roll
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		angular velocity of roll
+ *
+ */
+float getRollGyro() {
+	return rollGyro;
+}
+
+/**
+ * set gravity of x axis
+ *
+ * @param x_gravity
+ * 		gravity of x axis
+ *
+ * @return
+ *		void
+ *
+ */
+void setXGravity(float x_gravity) {
+	xGravity = x_gravity;
+}
+
+/**
+ * set gravity of y axis
+ *
+ * @param y_gravity
+ * 		gravity of y axis
+ *
+ * @return
+ *		void
+ *
+ */
+void setYGravity(float y_gravity) {
+	yGravity = y_gravity;
+}
+
+/**
+ * set gravity of z axis
+ *
+ * @param z_gravity
+ * 		gravity of z axis
+ *
+ * @return
+ *		void
+ *
+ */
+void setZGravity(float z_gravity) {
+	zGravity = z_gravity;
+}
+
+/**
+ * get gravity of x axis
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		gravity of x axis
+ *
+ */
+float getXGravity() {
+	return xGravity;
+}
+
+/**
+ * get gravity of y axis
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		gravity of y axis
+ *
+ */
+float getYGravity() {
+	return yGravity;
+}
+
+/**
+ * get gravity of z axis
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		gravity of z axis
+ *
+ */
+float getZGravity() {
+	return zGravity;
+}
+
+/**
+ * set accelerate of x axis
+ *
+ * @param x_acc
+ * 		accelerate of x axis
+ *
+ * @return
+ *		void
+ *
+ */
+void setXAcc(float x_acc) {
+	xAcc = x_acc;
+}
+
+/**
+ * set accelerate of y axis
+ *
+ * @param y_acc
+ * 		accelerate of y axis
+ *
+ * @return
+ *		void
+ *
+ */
+void setYAcc(float y_acc) {
+	yAcc = y_acc;
+}
+
+/**
+ * set accelerate of z axis
+ *
+ * @param z_acc
+ * 		accelerate of z axis
+ *
+ * @return
+ *		void
+ *
+ */
+void setZAcc(float z_acc) {
+	zAcc = z_acc;
+}
+
+/**
+ * get accelerate of x axis
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		accelerate of x axis
+ *
+ */
+float getXAcc() {
+	return xAcc;
+}
+
+/**
+ * get accelerate of y axis
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		accelerate of y axis
+ *
+ */
+float getYAcc() {
+	return yAcc;
+}
+
+/**
+ * get accelerate of z axis
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		accelerate of z axis
+ *
+ */
+float getZAcc() {
+	return zAcc;
+}
+
+/**
+ * get sensitivity of gyro
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		sensitivity
+ *
+ */
 float getGyroSensitivity() {
 	switch (scaleGyroRange) {
 	case MPU6050_GYRO_FS_250:
@@ -1155,6 +1517,16 @@ float getGyroSensitivity() {
 	}
 }
 
+/**
+ * get sensitivity of acceleration
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		sensitivity
+ *
+ */
 float getAccSensitivity() {
 	switch (scaleAccRange) {
 	case MPU6050_ACCEL_FS_2:
@@ -1175,6 +1547,16 @@ float getAccSensitivity() {
 	}
 }
 
+/**
+ * get the reciprocal of a sensitivity of gyro
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		sensitivity
+ *
+ */
 float getGyroSensitivityInv() {
 	switch (scaleGyroRange) {
 	case MPU6050_GYRO_FS_250:
@@ -1195,6 +1577,16 @@ float getGyroSensitivityInv() {
 	}
 }
 
+/**
+ * get the reciprocal of a sensitivity of acceleration
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		sensitivity
+ *
+ */
 float getAccSensitivityInv() {
 
 	switch (scaleAccRange) {
@@ -1216,299 +1608,8 @@ float getAccSensitivityInv() {
 	}
 }
 
-void meansensors() {
-	long i = 0;
-	float buff_gx = 0, buff_gy = 0, buff_gz = 0;
-	short ax_, ay_, az_, gx_, gy_, gz_;
-	float gx, gy, gz;
-
-	while (i < (AUTO_CAL_BUFFER_SIZE + 1)) {
-		// read raw gyro measurements from device
-		getMotion6RawData(&ax_, &ay_, &az_, &gx_, &gy_, &gz_);
-		gx = (gx_ * getGyroSensitivityInv());
-		gy = (gy_ * getGyroSensitivityInv());
-		gz = (gz_ * getGyroSensitivityInv());
-		//_DEBUG(DEBUG_NORMAL,"gx=%2.4f gy=%2.4f gz=%2.4f\n",gx,gy,gz);
-		if (i <= (AUTO_CAL_BUFFER_SIZE)) {
-			buff_gx = buff_gx + gx;
-			buff_gy = buff_gy + gy;
-			buff_gz = buff_gz + gz;
-		}
-		if (i == (AUTO_CAL_BUFFER_SIZE)) {
-			cal_mean_gx = (float) ((short) ((buff_gx / AUTO_CAL_BUFFER_SIZE)
-					* 10.0)) / 10.0;
-			cal_mean_gy = (float) ((short) ((buff_gy / AUTO_CAL_BUFFER_SIZE)
-					* 10.0)) / 10.0;
-			cal_mean_gz = (float) ((short) ((buff_gz / AUTO_CAL_BUFFER_SIZE)
-					* 10.0)) / 10.0;
-		}
-		i++;
-		usleep(5000); //Needed so we don't get repeated measures
-	}
-	_DEBUG(DEBUG_NORMAL,"mean gx=%2.4f, gy=%2.4f gz=%2.4f\n", cal_mean_gx, cal_mean_gy,
-			cal_mean_gz);
-
-}
-
-/** Verify the I2C connection.
- * Make sure the device is connected and responds as expected.
- * @return True if connection is valid, false otherwise
- */
-bool testConnection() {
-	return ((getDeviceID() > 0) ? true : false);
-}
-
-unsigned char getDeviceID() {
-	readBits(devAddr, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT,
-	MPU6050_WHO_AM_I_LENGTH, buffer);
-	return buffer[0];
-}
-
-void setYaw(float t_yaw) {
-	yaw = t_yaw;
-}
-
-void setPitch(float t_pitch) {
-	pitch = t_pitch;
-}
-
-void setRoll(float t_roll) {
-	roll = t_roll;
-}
-
-float getYaw() {
-	return yaw;
-}
-
-float getPitch() {
-	return pitch;
-}
-
-float getRoll() {
-	return roll;
-}
-
-void setYawGyro(float t_yaw_gyro) {
-	yawGyro = t_yaw_gyro;
-}
-
-void setPitchGyro(float t_pitch_gyro) {
-	pitchGyro = t_pitch_gyro;
-}
-
-void setRollGyro(float t_roll_gyro) {
-	rollGyro = t_roll_gyro;
-}
-
-float getYawGyro() {
-	return yawGyro;
-}
-
-float getPitchGyro() {
-	return pitchGyro;
-}
-
-float getRollGyro() {
-	return rollGyro;
-}
-
-void setXGravity(float x_gravity) {
-	xGravity = x_gravity;
-}
-
-void setYGravity(float y_gravity) {
-	yGravity = y_gravity;
-}
-
-void setZGravity(float z_gravity) {
-	zGravity = z_gravity;
-}
-
-float getXGravity() {
-	return xGravity;
-}
-
-float getYGravity() {
-	return yGravity;
-}
-
-float getZGravity() {
-	return zGravity;
-}
-
-void setXAcc(float x_acc) {
-	xAcc = x_acc;
-}
-
-void setYAcc(float y_acc) {
-	yAcc = y_acc;
-}
-
-void setZAcc(float z_acc) {
-	zAcc = z_acc;
-}
-
-float getXAcc() {
-	return xAcc;
-}
-
-float getYAcc() {
-	return yAcc;
-}
-
-float getZAcc() {
-	return zAcc;
-}
-
-// GYRO_*OUT_* registers
-
-/** Get 3-axis gyroscope readings.
- * These gyroscope measurement registers, along with the accelerometer
- * measurement registers, temperature measurement registers, and external sensor
- * data registers, are composed of two sets of registers: an internal register
- * set and a user-facing read register set.
- * The data within the gyroscope sensors' internal register set is always
- * updated at the Sample Rate. Meanwhile, the user-facing read register set
- * duplicates the internal register set's data values whenever the serial
- * interface is idle. This guarantees that a burst read of sensor registers will
- * read measurements from the same sampling instant. Note that if burst reads
- * are not used, the user is responsible for ensuring a set of single byte reads
- * correspond to a single sampling instant by checking the Data Ready interrupt.
- *
- * Each 16-bit gyroscope measurement has a full scale defined in FS_SEL
- * (Register 27). For each full scale setting, the gyroscopes' sensitivity per
- * LSB in GYRO_xOUT is shown in the table below:
- *
- * <pre>
- * FS_SEL | Full Scale Range   | LSB Sensitivity
- * -------+--------------------+----------------
- * 0      | +/- 250 degrees/s  | 131 LSB/deg/s
- * 1      | +/- 500 degrees/s  | 65.5 LSB/deg/s
- * 2      | +/- 1000 degrees/s | 32.8 LSB/deg/s
- * 3      | +/- 2000 degrees/s | 16.4 LSB/deg/s
- * </pre>
- *
- * @param x 16-bit signed integer container for X-axis rotation
- * @param y 16-bit signed integer container for Y-axis rotation
- * @param z 16-bit signed integer container for Z-axis rotation
- * @see getMotion6RawData()
- * @see MPU6050_RA_GYRO_XOUT_H
- */
-void getMpu6050Rotation(short int * x, short int * y, short int * z) {
-	readBytes(devAddr, MPU6050_RA_GYRO_XOUT_H, 6, buffer);
-	*x = (((short int) buffer[0]) << 8) | buffer[1];
-	*y = (((short int) buffer[2]) << 8) | buffer[3];
-	*z = (((short int) buffer[4]) << 8) | buffer[5];
-//   _DEBUG(DEBUG_NORMAL,"raw gyro: x=%d, y=%d, z=%d \n",*x,*y,*z);
-}
-/** Get X-axis gyroscope reading.
- * @return X-axis rotation measurement in 16-bit 2's complement format
- * @see getMotion6RawData()
- * @see MPU6050_RA_GYRO_XOUT_H
- */
-short int getRotationX() {
-	readBytes(devAddr, MPU6050_RA_GYRO_XOUT_H, 2, buffer);
-	return (((short int) buffer[0]) << 8) | buffer[1];
-}
-/** Get Y-axis gyroscope reading.
- * @return Y-axis rotation measurement in 16-bit 2's complement format
- * @see getMotion6RawData()
- * @see MPU6050_RA_GYRO_YOUT_H
- */
-short int getRotationY() {
-	readBytes(devAddr, MPU6050_RA_GYRO_YOUT_H, 2, buffer);
-	return (((short int) buffer[0]) << 8) | buffer[1];
-}
-/** Get Z-axis gyroscope reading.
- * @return Z-axis rotation measurement in 16-bit 2's complement format
- * @see getMotion6RawData()
- * @see MPU6050_RA_GYRO_ZOUT_H
- */
-short int getRotationZ() {
-	readBytes(devAddr, MPU6050_RA_GYRO_ZOUT_H, 2, buffer);
-	return (((short int) buffer[0]) << 8) | buffer[1];
-}
-
-/** Get 3-axis accelerometer readings.
- * These registers store the most recent accelerometer measurements.
- * Accelerometer measurements are written to these registers at the Sample Rate
- * as defined in Register 25.
- *
- * The accelerometer measurement registers, along with the temperature
- * measurement registers, gyroscope measurement registers, and external sensor
- * data registers, are composed of two sets of registers: an internal register
- * set and a user-facing read register set.
- *
- * The data within the accelerometer sensors' internal register set is always
- * updated at the Sample Rate. Meanwhile, the user-facing read register set
- * duplicates the internal register set's data values whenever the serial
- * interface is idle. This guarantees that a burst read of sensor registers will
- * read measurements from the same sampling instant. Note that if burst reads
- * are not used, the user is responsible for ensuring a set of single byte reads
- * correspond to a single sampling instant by checking the Data Ready interrupt.
- *
- * Each 16-bit accelerometer measurement has a full scale defined in ACCEL_FS
- * (Register 28). For each full scale setting, the accelerometers' sensitivity
- * per LSB in ACCEL_xOUT is shown in the table below:
- *
- * <pre>
- * AFS_SEL | Full Scale Range | LSB Sensitivity
- * --------+------------------+----------------
- * 0       | +/- 2g           | 8192 LSB/mg
- * 1       | +/- 4g           | 4096 LSB/mg
- * 2       | +/- 8g           | 2048 LSB/mg
- * 3       | +/- 16g          | 1024 LSB/mg
- * </pre>
- *
- * @param x 16-bit signed integer container for X-axis acceleration
- * @param y 16-bit signed integer container for Y-axis acceleration
- * @param z 16-bit signed integer container for Z-axis acceleration
- * @see MPU6050_RA_GYRO_XOUT_H
- */
-
-void getAcceleration(short *x, short *y, short *z) {
-	readBytes(devAddr, MPU6050_RA_ACCEL_XOUT_H, 6, buffer);
-	*x = (((short) buffer[0]) << 8) | buffer[1];
-	*y = (((short) buffer[2]) << 8) | buffer[3];
-	*z = (((short) buffer[4]) << 8) | buffer[5];
-}
-
-/*
- void getAcceleration(float *x, float *y, float *z) {
- readBytes(devAddr, MPU6050_RA_ACCEL_XOUT_H, 6, buffer);
- *x = (((short )buffer[0]) << 8) | buffer[1];
- *y = (((short )buffer[2]) << 8) | buffer[3];
- *z = (((short )buffer[4]) << 8) | buffer[5];
-
-
- *x = convertMpu6050Acceleration((((short )buffer[0]) << 8) | buffer[1]);
- *y = convertMpu6050Acceleration((((short )buffer[2]) << 8) | buffer[3]);
- *z = convertMpu6050Acceleration((((short )buffer[4]) << 8) | buffer[5]);
-
- }
- */
-
-float convertMpu6050Acceleration(short sampleValue) {
-	float value = ((float) sampleValue
-			/ (float) ((float) 16384 / (float) (1 << getFullScaleAccelRange())));
-	//	_DEBUG(DEBUG_NORMAL,"%s %d: sampleValue=%d\n",__func__,__LINE__, sampleValue);
-	//	_DEBUG(DEBUG_NORMAL,"%s %d: return value=%2.2f\n",__func__,__LINE__,value);
-	return value;
-}
-
-/** Get clock source setting.
- * @return Current clock source setting
- * @see MPU6050_RA_PWR_MGMT_1
- * @see MPU6050_PWR1_CLKSEL_BIT
- * @see MPU6050_PWR1_CLKSEL_LENGTH
- */
-unsigned char getClockSource() {
-	readBits(devAddr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLKSEL_BIT,
-	MPU6050_PWR1_CLKSEL_LENGTH, buffer);
-	return buffer[0];
-}
-
-/** Set clock source setting.
+/** 
+ * Set clock source setting.
  * An internal 8MHz oscillator, gyroscope based clock, or external sources can
  * be selected as the MPU-60X0 clock source. When the internal 8 MHz oscillator
  * or an external source is chosen as the clock source, the MPU-60X0 can operate
@@ -1532,20 +1633,20 @@ unsigned char getClockSource() {
  * 7       | Stops the clock and keeps the timing generator in reset
  * </pre>
  *
- * @param source New clock source setting
- * @see getClockSource()
- * @see MPU6050_RA_PWR_MGMT_1
- * @see MPU6050_PWR1_CLKSEL_BIT
- * @see MPU6050_PWR1_CLKSEL_LENGTH
+ * @param source
+ *		 New clock source setting
+ *
+ * @return
+ *		void
+ *
  */
 void setClockSource(unsigned char source) {
 	writeBits(devAddr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLKSEL_BIT,
 	MPU6050_PWR1_CLKSEL_LENGTH, source);
 }
 
-// GYRO_CONFIG register
-
-/** Get full-scale gyroscope range.
+/** 
+ * Get full-scale gyroscope range.
  * The FS_SEL parameter allows setting the full-scale range of the gyro sensors,
  * as described in the table below.
  *
@@ -1556,24 +1657,28 @@ void setClockSource(unsigned char source) {
  * 3 = +/- 2000 degrees/sec
  * </pre>
  *
- * @return Current full-scale gyroscope range setting
- * @see MPU6050_GYRO_FS_250
- * @see MPU6050_RA_GYRO_CONFIG
- * @see MPU6050_GCONFIG_FS_SEL_BIT
- * @see MPU6050_GCONFIG_FS_SEL_LENGTH
+ * @param 
+ *		void
+ *
+ * @return 
+ * 		Current full-scale gyroscope range setting
+ *
  */
 unsigned char getFullScaleGyroRange() {
 	readBits(devAddr, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT,
 	MPU6050_GCONFIG_FS_SEL_LENGTH, buffer);
 	return buffer[0];
 }
-/** Set full-scale gyroscope range.
- * @param range New full-scale gyroscope range value
- * @see getFullScaleRange()
- * @see MPU6050_GYRO_FS_250
- * @see MPU6050_RA_GYRO_CONFIG
- * @see MPU6050_GCONFIG_FS_SEL_BIT
- * @see MPU6050_GCONFIG_FS_SEL_LENGTH
+
+/** 
+ * Set full-scale gyroscope range.
+ *
+ * @param range
+ *		 New full-scale gyroscope range value
+ *
+ * @return 
+ * 		void
+ *
  */
 void setFullScaleGyroRange(unsigned char range) {
 	writeBits(devAddr, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT,
@@ -1581,32 +1686,15 @@ void setFullScaleGyroRange(unsigned char range) {
 	scaleGyroRange = range;
 }
 
-/** Get full-scale accelerometer range.
- * The FS_SEL parameter allows setting the full-scale range of the accelerometer
- * sensors, as described in the table below.
+/**
+ * Set full-scale accelerometer range.
  *
- * <pre>
- * 0 = +/- 2g
- * 1 = +/- 4g
- * 2 = +/- 8g
- * 3 = +/- 16g
- * </pre>
+ * @param range
+ *		 New full-scale accelerometer range setting
  *
- * @return Current full-scale accelerometer range setting
- * @see MPU6050_ACCEL_FS_2
- * @see MPU6050_RA_ACCEL_CONFIG
- * @see MPU6050_ACONFIG_AFS_SEL_BIT
- * @see MPU6050_ACONFIG_AFS_SEL_LENGTH
- */
-unsigned char getFullScaleAccelRange() {
-	readBits(devAddr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_AFS_SEL_BIT,
-	MPU6050_ACONFIG_AFS_SEL_LENGTH, buffer);
-	return buffer[0];
-}
-
-/** Set full-scale accelerometer range.
- * @param range New full-scale accelerometer range setting
- * @see getFullScaleAccelRange()
+ * @return 
+ * 		void
+ *
  */
 void setFullScaleAccelRange(unsigned char range) {
 	writeBits(devAddr, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_AFS_SEL_BIT,
@@ -1614,17 +1702,31 @@ void setFullScaleAccelRange(unsigned char range) {
 	scaleAccRange = range;
 }
 
-/** Get raw 6-axis motion sensor readings (accel/gyro).
+/** 
+ * Get raw 6-axis motion sensor readings (accel/gyro).
  * Retrieves all currently available motion sensor values.
- * @param ax 16-bit signed integer container for accelerometer X-axis value
- * @param ay 16-bit signed integer container for accelerometer Y-axis value
- * @param az 16-bit signed integer container for accelerometer Z-axis value
- * @param gx 16-bit signed integer container for gyroscope X-axis value
- * @param gy 16-bit signed integer container for gyroscope Y-axis value
- * @param gz 16-bit signed integer container for gyroscope Z-axis value
- * @see getAcceleration()
- * @see getRotation()
- * @see MPU6050_RA_ACCEL_XOUT_H
+ *
+ * @param ax
+ *		 16-bit signed integer container for accelerometer X-axis value
+ *
+ * @param ay
+ *		 16-bit signed integer container for accelerometer Y-axis value
+ *
+ * @param az
+ *		 16-bit signed integer container for accelerometer Z-axis value
+ *
+ * @param gx
+ *		 16-bit signed integer container for gyroscope X-axis value
+ *
+ * @param gy
+ *		 16-bit signed integer container for gyroscope Y-axis value
+ *
+ * @param gz
+ *		 16-bit signed integer container for gyroscope Z-axis value
+ *
+ * @return 
+ * 		void
+ *
  */
 void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,
 		short* gz) {
@@ -1638,34 +1740,37 @@ void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,
 	*gz = (((short) buffer[4]) << 8) | buffer[5];
 }
 
-/** Get sleep mode status.
- * Setting the SLEEP bit in the register puts the device into very low power
- * sleep mode. In this mode, only the serial interface and internal registers
- * remain active, allowing for a very low standby current. Clearing this bit
- * puts the device back into normal mode. To save power, the individual standby
- * selections for each of the gyros should be used if any gyro axis is not used
- * by the application.
- * @return Current sleep mode enabled status
- * @see MPU6050_RA_PWR_MGMT_1
- * @see MPU6050_PWR1_SLEEP_BIT
- */
-unsigned char getSleepEnabled() {
-	readBit(devAddr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, buffer);
-	return buffer[0];
-}
-
-/** Set sleep mode status.
- * @param enabled New sleep mode enabled status
- * @see getSleepEnabled()
- * @see MPU6050_RA_PWR_MGMT_1
- * @see MPU6050_PWR1_SLEEP_BIT
+/** 
+ * Set sleep mode status.
+ * 
+ * @param enabled
+ *		 New sleep mode enabled status
+ *
+ * @return 
+ * 		void
+ *
  */
 void setSleepEnabled(unsigned char enabled) {
 	writeBit(devAddr, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, enabled);
 }
 
-// BANK_SEL register
 
+/** 
+ * Set memory bank
+ * 
+ * @param bank
+ *		address
+ * 
+ * @param prefetchEnabled
+ *		enable prefetch or not
+ * 
+ * @param userBank
+ *		user bank or not
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setMemoryBank(unsigned char bank, unsigned char prefetchEnabled,
 		unsigned char userBank) {
 	bank &= 0x1F;
@@ -1675,92 +1780,198 @@ void setMemoryBank(unsigned char bank, unsigned char prefetchEnabled,
 		bank |= 0x40;
 	writeByte(devAddr, MPU6050_RA_BANK_SEL, bank);
 }
-// MEM_START_ADDR register
 
+/** 
+ * Set memory start address
+ * 
+ * @param address
+ *		address
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setMemoryStartAddress(unsigned char address) {
 	writeByte(devAddr, MPU6050_RA_MEM_START_ADDR, address);
 }
 
-// MEM_R_W register
+/** 
+ * read memory byte
+ * 
+ * @param 
+ *		void
+ *
+ * @return 
+ * 		byte
+ *
+ */
 unsigned char readMemoryByte() {
 	readByte(devAddr, MPU6050_RA_MEM_R_W, buffer);
 	return buffer[0];
 }
+
+/** 
+ * get offset of x gyro
+ * 
+ * @param 
+ *		void
+ *
+ * @return 
+ * 		offset
+ *
+ */
 char getXGyroOffset() {
 	readBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, buffer);
 	return buffer[0];
 }
 
+/** 
+ * set offset of x gyro
+ * 
+ * @param offset
+ *		offset
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setXGyroOffset(char offset) {
 	writeBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
-// YG_OFFS_TC register
+/** 
+ * get offset of y gyro
+ * 
+ * @param 
+ *		void
+ *
+ * @return 
+ * 		offset
+ *
+ */
 char getYGyroOffset() {
 	readBits(devAddr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, buffer);
 	return buffer[0];
 }
 
+/** 
+ * set offset of y gyro
+ * 
+ * @param offset
+ *		offset
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setYGyroOffset(char offset) {
 	writeBits(devAddr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
-// ZG_OFFS_TC register
+/** 
+ * get offset of z gyro
+ * 
+ * @param 
+ *		void
+ *
+ * @return 
+ * 		offset
+ *
+ */
 char getZGyroOffset() {
 	readBits(devAddr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, buffer);
 	return buffer[0];
 }
+
+/** 
+ * set offset of z gyro
+ * 
+ * @param offset
+ *		offset
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setZGyroOffset(char offset) {
 	writeBits(devAddr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
-// XG_OFFS_USR* registers
-
-short getXGyroOffsetUser() {
-	readBytes(devAddr, MPU6050_RA_XG_OFFS_USRH, 2, buffer);
-	return (((short) buffer[0]) << 8) | buffer[1];
-}
+/** 
+ * set user offset of x gyro
+ * 
+ * @param offset
+ *		offset
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setXGyroOffsetUser(short offset) {
 	writeWord(devAddr, MPU6050_RA_XG_OFFS_USRH, offset);
 }
 
-// YG_OFFS_USR* register
-
-short getYGyroOffsetUser() {
-	readBytes(devAddr, MPU6050_RA_YG_OFFS_USRH, 2, buffer);
-	return (((short) buffer[0]) << 8) | buffer[1];
-}
+/** 
+ * set user offset of y gyro
+ * 
+ * @param offset
+ *		offset
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setYGyroOffsetUser(short offset) {
 	writeWord(devAddr, MPU6050_RA_YG_OFFS_USRH, offset);
 }
 
-// ZG_OFFS_USR* register
-
-short getZGyroOffsetUser() {
-	readBytes(devAddr, MPU6050_RA_ZG_OFFS_USRH, 2, buffer);
-	return (((short) buffer[0]) << 8) | buffer[1];
-}
+/** 
+ * set user offset of z gyro
+ * 
+ * @param offset
+ *		offset
+ *
+ * @return 
+ * 		void
+ *
+ */
 void setZGyroOffsetUser(short offset) {
 	writeWord(devAddr, MPU6050_RA_ZG_OFFS_USRH, offset);
 }
 
-// XG_OFFS_TC register
+/** 
+ * get the flag of OTP bank valid
+ * 
+ * @param 
+ *		void
+ *
+ * @return 
+ * 		flag
+ *
+ */
 unsigned char getOTPBankValid() {
 	readBit(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OTP_BNK_VLD_BIT, buffer);
 	return buffer[0];
 }
 
-/** Set the I2C address of the specified slave (0-3).
- * @param num Slave number (0-3)
- * @param address New address for specified slave
- * @see getSlaveAddress()
- * @see MPU6050_RA_I2C_SLV0_ADDR
+/** 
+ * Set the I2C address of the specified slave (0-3).
+ * 
+ * @param num 
+ *		Slave number (0-3)
+ * 
+ * @param address 
+ *		New address for specified slave
+ *
+ * @return 
+ *		void
+ *
  */
 void setSlaveAddress(unsigned char num, unsigned char address) {
 	if (num > 3)
@@ -1768,53 +1979,50 @@ void setSlaveAddress(unsigned char num, unsigned char address) {
 	writeByte(devAddr, MPU6050_RA_I2C_SLV0_ADDR + num * 3, address);
 }
 
-/** Set I2C Master Mode enabled status.
- * @param enabled New I2C Master Mode enabled status
- * @see getI2CMasterModeEnabled()
- * @see MPU6050_RA_USER_CTRL
- * @see MPU6050_USERCTRL_I2C_MST_EN_BIT
+/** 
+ * Set I2C Master Mode enabled status.
+ *
+ * @param enabled 
+ *		New I2C Master Mode enabled status
+ *
+ * @return
+ *		void	
+ * 
  */
 void setI2CMasterModeEnabled(unsigned char enabled) {
 	writeBit(devAddr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_EN_BIT,
 			enabled);
 }
 
-/** Get I2C bypass enabled status.
+/** 
+ * Set I2C bypass enabled status.
  * When this bit is equal to 1 and I2C_MST_EN (Register 106 bit[5]) is equal to
  * 0, the host application processor will be able to directly access the
  * auxiliary I2C bus of the MPU-60X0. When this bit is equal to 0, the host
  * application processor will not be able to directly access the auxiliary I2C
  * bus of the MPU-60X0 regardless of the state of I2C_MST_EN (Register 106
  * bit[5]).
- * @return Current I2C bypass enabled status
- * @see MPU9150_RA_INT_PIN_CFG
- * @see MPU9150_INTCFG_I2C_BYPASS_EN_BIT
- */
-char getI2CBypassEnabled() {
-	readBit(devAddr, 0x37, 1, buffer);
-	return buffer[0];
-}
-/** Set I2C bypass enabled status.
- * When this bit is equal to 1 and I2C_MST_EN (Register 106 bit[5]) is equal to
- * 0, the host application processor will be able to directly access the
- * auxiliary I2C bus of the MPU-60X0. When this bit is equal to 0, the host
- * application processor will not be able to directly access the auxiliary I2C
- * bus of the MPU-60X0 regardless of the state of I2C_MST_EN (Register 106
- * bit[5]).
- * @param enabled New I2C bypass enabled status
- * @see MPU9150_RA_INT_PIN_CFG
- * @see MPU9150_INTCFG_I2C_BYPASS_EN_BIT
+ *
+ * @param enabled 
+ * 		New I2C bypass enabled status
+ *
+ * @return
+ *		void	
+ * 
  */
 void setI2CBypassEnabled(char enabled) {
 	writeBit(devAddr, 0x37, 1, enabled);
 }
 
-/** Reset the I2C Master.
- * This bit resets the I2C Master when set to 1 while I2C_MST_EN equals 0.
- * This bit automatically clears to 0 after the reset has been triggered.
- * @see MPU6050_RA_USER_CTRL
- * @see MPU6050_USERCTRL_I2C_MST_RESET_BIT
- */
+/** 
+* Reset the I2C Master.
+* This bit resets the I2C Master when set to 1 while I2C_MST_EN equals 0.
+* This bit automatically clears to 0 after the reset has been triggered.
+* 
+* @return
+*		void
+*
+*/
 void resetI2CMaster() {
 	writeBit(devAddr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_RESET_BIT,
 	true);
@@ -1856,12 +2064,7 @@ unsigned char writeDMPConfigurationSet(const unsigned char *data,
 		// write data or perform special action
 		if (length > 0) {
 			// regular block of data to write
-			/*Serial.print("Writing config block to bank ");
-			 Serial.print(bank);
-			 Serial.print(", offset ");
-			 Serial.print(offset);
-			 Serial.print(", length=");
-			 Serial.println(length);*/
+
 			if (useProgMem) {
 				if (sizeof(progBuffer) < length)
 					progBuffer = (unsigned char *) realloc(progBuffer, length);
@@ -1884,15 +2087,10 @@ unsigned char writeDMPConfigurationSet(const unsigned char *data,
 			} else {
 				special = data[i++];
 			}
-			/*Serial.print("Special command code ");
-			 Serial.print(special, HEX);
-			 Serial.println(" found...");*/
-			if (special == 0x01) {
-				// enable DMP-related interrupts
 
-				//setIntZeroMotionEnabled(true);
-				//setIntFIFOBufferOverflowEnabled(true);
-				//setIntDMPEnabled(true);
+			if (special == 0x01) {
+
+				// enable DMP-related interrupts
 				writeByte(devAddr, MPU6050_RA_INT_ENABLE, 0x32); // single operation
 
 				success = true;
@@ -1996,23 +2194,7 @@ unsigned char writeMemoryBlock(const unsigned char *data,
 			setMemoryStartAddress(address);
 			readBytes(devAddr, MPU6050_RA_MEM_R_W, chunkSize, verifyBuffer);
 			if (memcmp(progBuffer, verifyBuffer, chunkSize) != 0) {
-				/*Serial.print("Block write verification error, bank ");
-				 Serial.print(bank, DEC);
-				 Serial.print(", address ");
-				 Serial.print(address, DEC);
-				 Serial.print("!\nExpected:");
-				 for (j = 0; j < chunkSize; j++) {
-				 Serial.print(" 0x");
-				 if (progBuffer[j] < 16) Serial.print("0");
-				 Serial.print(progBuffer[j], HEX);
-				 }
-				 Serial.print("\nReceived:");
-				 for (uint8_t j = 0; j < chunkSize; j++) {
-				 Serial.print(" 0x");
-				 if (verifyBuffer[i + j] < 16) Serial.print("0");
-				 Serial.print(verifyBuffer[i + j], HEX);
-				 }
-				 Serial.print("\n");*/
+
 				free(verifyBuffer);
 				if (useProgMem)
 					free(progBuffer);
@@ -2163,60 +2345,6 @@ void setMotionDetectionThreshold(unsigned char threshold) {
 	writeByte(devAddr, MPU6050_RA_MOT_THR, threshold);
 }
 
-/** Get motion detection event acceleration threshold.
- * This register configures the detection threshold for Motion interrupt
- * generation. The unit of MOT_THR is 1LSB = 2mg. Motion is detected when the
- * absolute value of any of the accelerometer measurements exceeds this Motion
- * detection threshold. This condition increments the Motion detection duration
- * counter (Register 32). The Motion detection interrupt is triggered when the
- * Motion Detection counter reaches the time count specified in MOT_DUR
- * (Register 32).
- *
- * The Motion interrupt will indicate the axis and polarity of detected motion
- * in MOT_DETECT_STATUS (Register 97).
- *
- * For more details on the Motion detection interrupt, see Section 8.3 of the
- * MPU-6000/MPU-6050 Product Specification document as well as Registers 56 and
- * 58 of this document.
- *
- * @return Current motion detection acceleration threshold value (LSB = 2mg)
- * @see MPU6050_RA_MOT_THR
- */
-unsigned char getMotionDetectionThreshold() {
-	readByte(devAddr, MPU6050_RA_MOT_THR, buffer);
-	return buffer[0];
-}
-
-/** Get zero motion detection event acceleration threshold.
- * This register configures the detection threshold for Zero Motion interrupt
- * generation. The unit of ZRMOT_THR is 1LSB = 2mg. Zero Motion is detected when
- * the absolute value of the accelerometer measurements for the 3 axes are each
- * less than the detection threshold. This condition increments the Zero Motion
- * duration counter (Register 34). The Zero Motion interrupt is triggered when
- * the Zero Motion duration counter reaches the time count specified in
- * ZRMOT_DUR (Register 34).
- *
- * Unlike Free Fall or Motion detection, Zero Motion detection triggers an
- * interrupt both when Zero Motion is first detected and when Zero Motion is no
- * longer detected.
- *
- * When a zero motion event is detected, a Zero Motion Status will be indicated
- * in the MOT_DETECT_STATUS register (Register 97). When a motion-to-zero-motion
- * condition is detected, the status bit is set to 1. When a zero-motion-to-
- * motion condition is detected, the status bit is set to 0.
- *
- * For more details on the Zero Motion detection interrupt, see Section 8.4 of
- * the MPU-6000/MPU-6050 Product Specification document as well as Registers 56
- * and 58 of this document.
- *
- * @return Current zero motion detection acceleration threshold value (LSB = 2mg)
- * @see MPU6050_RA_ZRMOT_THR
- */
-unsigned char getZeroMotionDetectionThreshold() {
-	readByte(devAddr, MPU6050_RA_ZRMOT_THR, buffer);
-	return buffer[0];
-}
-
 /** Set zero motion detection event acceleration threshold.
  * @param threshold New zero motion detection acceleration threshold value (LSB = 2mg)
  * @see getZeroMotionDetectionThreshold()
@@ -2284,19 +2412,7 @@ void setZeroMotionDetectionDuration(unsigned char duration) {
 	writeByte(devAddr, MPU6050_RA_ZRMOT_DUR, duration);
 }
 
-/** Get FIFO enabled status.
- * When this bit is set to 0, the FIFO buffer is disabled. The FIFO buffer
- * cannot be written to or read from while disabled. The FIFO buffer's state
- * does not change unless the MPU-60X0 is power cycled.
- * @return Current FIFO enabled status
- * @see MPU6050_RA_USER_CTRL
- * @see MPU6050_USERCTRL_FIFO_EN_BIT
- */
-char getFIFOEnabled() {
-	readBit(devAddr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_FIFO_EN_BIT,
-			buffer);
-	return buffer[0];
-}
+
 /** Set FIFO enabled status.
  * @param enabled New FIFO enabled status
  * @see getFIFOEnabled()
@@ -2306,11 +2422,6 @@ char getFIFOEnabled() {
 void setFIFOEnabled(char enabled) {
 	writeBit(devAddr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_FIFO_EN_BIT,
 			enabled);
-}
-
-char getDMPEnabled() {
-	readBit(devAddr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_DMP_EN_BIT, buffer);
-	return buffer[0];
 }
 
 void setDMPEnabled(char enabled) {
@@ -2345,35 +2456,16 @@ void setExternalFrameSync(unsigned char sync) {
 	MPU6050_CFG_EXT_SYNC_SET_LENGTH, sync);
 }
 
-char getXGyroOffsetTC() {
-	readBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
-	MPU6050_TC_OFFSET_LENGTH, buffer);
-	return buffer[0];
-}
 void setXGyroOffsetTC(char offset) {
 	writeBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
-// YG_OFFS_TC register
-
-char getYGyroOffsetTC() {
-	readBits(devAddr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
-	MPU6050_TC_OFFSET_LENGTH, buffer);
-	return buffer[0];
-}
 void setYGyroOffsetTC(char offset) {
 	writeBits(devAddr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
-// ZG_OFFS_TC register
-
-char getZGyroOffsetTC() {
-	readBits(devAddr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
-	MPU6050_TC_OFFSET_LENGTH, buffer);
-	return buffer[0];
-}
 void setZGyroOffsetTC(char offset) {
 	writeBits(devAddr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT,
 	MPU6050_TC_OFFSET_LENGTH, offset);
@@ -2545,21 +2637,6 @@ unsigned char dmpGetGravity(float *gravity, float *q) {
 	return 0;
 }
 
-unsigned char dmpGetGyro2(float *data, const unsigned char* packet) {
-	// TODO: accommodate different arrangements of sent data (ONLY default supported now)
-	if (packet == 0)
-		packet = dmpPacketBuffer;
-	data[0] = (float) (((((unsigned int) packet[16] << 24)
-			| ((unsigned int) packet[17] << 16)
-			| ((unsigned int) packet[18] << 8) | packet[19])));
-	data[1] = (float) (((((unsigned int) packet[20] << 24)
-			| ((unsigned int) packet[21] << 16)
-			| ((unsigned int) packet[22] << 8) | packet[23])));
-	data[2] = (float) (((((unsigned int) packet[24] << 24)
-			| ((unsigned int) packet[25] << 16)
-			| ((unsigned int) packet[26] << 8) | packet[27])));
-	return 0;
-}
 unsigned char dmpGetGyro(short *data, const unsigned char* packet) {
 
 	if (packet == 0)

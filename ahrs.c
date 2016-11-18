@@ -25,7 +25,7 @@ SOFTWARE.
 
 ATTENTION:
 
-The code in this file is mostly copied from
+The code in this file is mostly copied and rewritten from
 
 X-IO Technologies:
 http://x-io.co.uk/open-source-imu-and-ahrs-algorithms/

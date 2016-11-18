@@ -31,9 +31,11 @@ SOFTWARE.
 #include "flyControler.h"
 #include "vl53l0x.h"
 #include "srf02.h"
-#include "motorControl.h"
+#include "ms5611.h"
 #include "mpu6050.h"
 #include "altHold.h"
+#include "kalmanFilter.h"
+#include "motorControl.h"
 
 #define ALTHOLD_CHECK_CYCLE_TIME 0
 #define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
@@ -44,14 +46,14 @@ static float aslLong = 0.f;
 static float aslAlpha = 0.3f;   	// Short term smoothing
 static float aslLongAlpha = 0.6f;   	// Long term smoothing
 static float altHoldAccSpeedAlpha = 0.5f;
-static float altHoldSpeedAlpha = 0.6f;
+static float altHoldSpeedAlpha = 0.9f;
 static float altHoldSpeedDeadband = 0.f;
 static float altHoldAccSpeedDeadband = 3.f;
 static float altHoldSpeed = 0.f;
 static float altHoldAccSpeed = 0.f;
 static float altHoldAltSpeed = 0.f;
-static float altHoldAccSpeedGain = 0.3f;
-static float altHoldAltSpeedGain = 3.f;
+static float altHoldAccSpeedGain = 0.1f;
+static float altHoldAltSpeedGain = 5.f;
 static float factorForPowerLevelAndAlt = 15.f;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;
@@ -61,6 +63,7 @@ static unsigned short startAlt = 0;  		//cm
 static unsigned short targetAlt = 0;
 static pthread_t altHoldThreadId;
 static pthread_mutex_t altHoldIsUpdateMutex;
+static KALMAN_1D_STRUCT altholdKalmanFilterEntry;
 
 static void setAltHoldIsReady(bool v);
 static void setMaxAlt(unsigned short v);
@@ -95,6 +98,7 @@ bool initAltHold() {
 			return false;
 		}
 
+		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
 		setMaxAlt(150);  		//cm
 		setStartAlt(0);  		//cm
 
@@ -106,7 +110,7 @@ bool initAltHold() {
 			_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
 			return 	false;
 		}
-
+		
 		setMaxAlt(500);		//cm
 		setStartAlt(0);		//cm
 		
@@ -114,9 +118,12 @@ bool initAltHold() {
 
 
 	case ALTHOLD_MODULE_MS5611:
-
-		//unavailable
-		return false;
+		
+		if(!ms5611Init()){
+			_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
+			return 	false;
+		}
+		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,50.f, 0.f);
 
 		break;
 		
@@ -140,7 +147,7 @@ bool initAltHold() {
 	} else {
 		_DEBUG(DEBUG_NORMAL, "start altHold thread...\n");
 	}
-
+	
 	setAltHoldIsReady(true);
 
 	return true;
@@ -410,8 +417,7 @@ void *altHoldUpdate(void *arg) {
 				
 			case ALTHOLD_MODULE_MS5611:
 				
-				//unavailable
-				result = false;
+				result = ms5611GetMeasurementData(&data);
 				break;
 
 			default:
@@ -422,6 +428,7 @@ void *altHoldUpdate(void *arg) {
 
 			if (result) {
 				
+				data=(unsigned short)kalmanFilterOneDimCalc((float)data,&altholdKalmanFilterEntry);
 				aslRaw = (float) data;
 				
 				updateSpeedByAcceleration();
