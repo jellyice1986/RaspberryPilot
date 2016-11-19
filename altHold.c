@@ -39,6 +39,8 @@ SOFTWARE.
 
 #define ALTHOLD_CHECK_CYCLE_TIME 0
 #define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
+//#define MODULE_TYPE ALTHOLD_MODULE_SRF02
+//#define MODULE_TYPE ALTHOLD_MODULE_MS5611
 
 static float aslRaw = 0.f;
 static float asl = 0.f;
@@ -59,7 +61,6 @@ static bool altHoldIsReady = false;
 static bool enableAltHold = false;
 static bool altholdIsUpdate = false;
 static unsigned short maxAlt = 50; 		//cm
-static unsigned short startAlt = 0;  		//cm
 static unsigned short targetAlt = 0;
 static pthread_t altHoldThreadId;
 static pthread_mutex_t altHoldIsUpdateMutex;
@@ -68,8 +69,6 @@ static KALMAN_1D_STRUCT altholdKalmanFilterEntry;
 static void setAltHoldIsReady(bool v);
 static void setMaxAlt(unsigned short v);
 static unsigned short getMaxAlt();
-static void setStartAlt(unsigned short v);
-static unsigned short getStartAlt();
 static void *altHoldThread(void *arg);
 static float getAccWithoutGravity();
 static void updateSpeedByAcceleration();
@@ -100,7 +99,6 @@ bool initAltHold() {
 
 		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
 		setMaxAlt(150);  		//cm
-		setStartAlt(0);  		//cm
 
 		break;
 
@@ -112,7 +110,6 @@ bool initAltHold() {
 		}
 		
 		setMaxAlt(500);		//cm
-		setStartAlt(0);		//cm
 		
 		break;
 
@@ -123,7 +120,9 @@ bool initAltHold() {
 			_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
 			return 	false;
 		}
-		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,50.f, 0.f);
+		
+		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,15.f,1.f,50.f, 0.f);
+		setMaxAlt(500); 	//cm
 
 		break;
 		
@@ -151,20 +150,6 @@ bool initAltHold() {
 	setAltHoldIsReady(true);
 
 	return true;
-}
-
-/**
- * get current altitude
- *
- * @param
- * 		void
- *
- * @return
- *		altHold
- *
- */
-float getAsl(void) {
-	return asl;
 }
 
 /**
@@ -249,34 +234,6 @@ void setMaxAlt(unsigned short v) {
  */
 unsigned short getMaxAlt() {
 	return maxAlt;
-}
-
-/**
- * set the start value of altitude
- *
- * @param
- * 		start value of altitude
- *
- * @return
- *		void
- *
- */
-void setStartAlt(unsigned short v) {
-	startAlt = v;
-}
-
-/**
- * get the start value of altitude
- *
- * @param
- * 		void
- *
- * @return
- *		start value of altitude
- *
- */
-unsigned short getStartAlt() {
-	return startAlt;
 }
 
 /**

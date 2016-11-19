@@ -39,4 +39,7 @@ void setAdjustPeriod(unsigned short period);
 unsigned short getAdjustPeriod();
 void setAltitudePidOutputLimitation(float v);
 float getAltitudePidOutputLimitation(void);
+void setAltStartPoint(float v);
+float getAltStartPoint();
+
 

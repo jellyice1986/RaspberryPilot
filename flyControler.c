@@ -60,7 +60,8 @@ static float gyroLimit;
 static float yawCenterPoint;
 static float maxThrottleOffset;
 static float altitudePidOutputLimitation;
-float SlopeThrottleOffsetGain=1.f;
+static float SlopeThrottleOffsetGain=1.f;
+static float altStartPoint;
 
 
 /**
@@ -403,6 +404,32 @@ float yawTransform(float originPoint) {
 }
 
 /**
+ * record start altitude
+ *
+ * @param v
+ *               start altitude
+ *
+ * @return
+ *		void
+ */
+void setAltStartPoint(float v){
+	altStartPoint=v;
+}
+
+/**
+ * get start altitude
+ *
+ * @param 
+ *               void
+ *
+ * @return
+ *		start altitude
+ */
+float getAltStartPoint(){
+	return altStartPoint;
+}
+
+/**
  * set a value to limit the PID output of attitude
  *
  * @param limitation
@@ -532,10 +559,12 @@ void getAltHoldAltPidOutput() {
 
 	altHoltAltOutput =
 			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude()),
+					pidCalculation(&altHoldAltSettings, max(getCurrentAltHoldAltitude()-getAltStartPoint(),0.f)),
 					-getAltitudePidOutputLimitation(),
 					getAltitudePidOutputLimitation());
-	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f\n",getCurrentAltHoldAltitude());
+	
+	//_DEBUG(DEBUG_NORMAL,"getPidSp(&altHoldAltSettings)=%f\n",getPidSp(&altHoldAltSettings));
+	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f,getAltStartPoint=%f\n",getCurrentAltHoldAltitude(),getAltStartPoint());
 	//_DEBUG(DEBUG_NORMAL,"altHoltAltOutput=%f\n",altHoltAltOutput);
 }
 

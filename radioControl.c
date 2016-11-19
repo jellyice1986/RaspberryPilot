@@ -135,7 +135,7 @@ void *radioTransmitThread(void *arg) {
 		 */
 		snprintf(message, sizeof(message),
 				"@%.1f:%.1f:%.1f:%.1f:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
-				getRoll(), getPitch(), getYaw(), getAsl(),
+				getRoll(), getPitch(), getYaw(), getCurrentAltHoldAltitude(),
 				(int) getPidSp(&rollAttitudePidSettings),
 				(int) getPidSp(&pitchAttitudePidSettings),
 				(int) (getYawCenterPoint() + getPidSp(&yawAttitudePidSettings)),
@@ -359,6 +359,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&altHoldAltSettings);
 				resetPidRecord(&altHoldlSpeedSettings);
 				setYawCenterPoint(0);
+				setAltStartPoint(0.f);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
 			} else {
@@ -366,6 +367,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				if (getPidSp(&yawAttitudePidSettings) == 321.0) {
 					_DEBUG(DEBUG_NORMAL, "START Flying\n");
 					setYawCenterPoint(getYaw());
+					setAltStartPoint(getCurrentAltHoldAltitude());
 					setPidSp(&yawAttitudePidSettings, 0);
 				}
 				
