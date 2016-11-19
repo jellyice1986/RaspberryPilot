@@ -42,21 +42,20 @@ SOFTWARE.
 //#define MODULE_TYPE ALTHOLD_MODULE_SRF02
 //#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
 
-
 static float aslRaw = 0.f;
 static float asl = 0.f;
 static float aslLong = 0.f;
-static float aslAlpha = 0.3f;   	// Short term smoothing
-static float aslLongAlpha = 0.6f;   	// Long term smoothing
+static float aslAlpha = 0.6f;   	// Short term smoothing
+static float aslLongAlpha = 0.9f;   	// Long term smoothing
 static float altHoldAccSpeedAlpha = 0.5f;
-static float altHoldSpeedAlpha = 0.9f;
-static float altHoldSpeedDeadband = 0.f;
+static float altHoldSpeedAlpha = 0.7f;
+static float altHoldSpeedDeadband = 3.f;
 static float altHoldAccSpeedDeadband = 3.f;
 static float altHoldSpeed = 0.f;
 static float altHoldAccSpeed = 0.f;
 static float altHoldAltSpeed = 0.f;
-static float altHoldAccSpeedGain = 0.1f;
-static float altHoldAltSpeedGain = 5.f;
+static float altHoldAccSpeedGain = 0.3f;
+static float altHoldAltSpeedGain = 3.f;
 static float factorForPowerLevelAndAlt = 15.f;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;

@@ -23,6 +23,7 @@ SOFTWARE.
 ******************************************************************************/
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include "commonLib.h"
 #include "i2c.h"

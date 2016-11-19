@@ -27,6 +27,7 @@ SOFTWARE.
 #include "vl53l0x_api.h"
 #include "vl53l0x_platform.h"
 #include "commonLib.h"
+#include "i2c.h"
 #include "vl53l0x.h"
 
 #define VERSION_REQUIRED_MAJOR 1
