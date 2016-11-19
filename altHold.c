@@ -38,9 +38,10 @@ SOFTWARE.
 #include "motorControl.h"
 
 #define ALTHOLD_CHECK_CYCLE_TIME 0
-#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
+#define MODULE_TYPE ALTHOLD_MODULE_MS5611
 //#define MODULE_TYPE ALTHOLD_MODULE_SRF02
-//#define MODULE_TYPE ALTHOLD_MODULE_MS5611
+//#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
+
 
 static float aslRaw = 0.f;
 static float asl = 0.f;
@@ -98,7 +99,7 @@ bool initAltHold() {
 		}
 
 		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
-		setMaxAlt(150);  		//cm
+		setMaxAlt(100);  		//cm
 
 		break;
 
@@ -108,8 +109,8 @@ bool initAltHold() {
 			_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
 			return 	false;
 		}
-		
-		setMaxAlt(500);		//cm
+		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
+		setMaxAlt(400);		//cm
 		
 		break;
 
@@ -169,7 +170,7 @@ bool getEnableAltHold() {
 /**
  * set the flag to indicate whether enable althold or not
  *
- * @param
+ * @param v
  * 		altHold is ready or not
  *
  * @return
@@ -197,7 +198,7 @@ bool getAltHoldIsReady() {
 /**
  * set the flag to indicate whether althold is ready or not
  *
- * @param
+ * @param v
  * 		altHold is ready or not
  *
  * @return
@@ -211,7 +212,7 @@ void setAltHoldIsReady(bool v) {
 /**
  * set the maximum value of altitude
  *
- * @param
+ * @param v
  * 		maximum value of altitude
  *
  * @return
@@ -332,7 +333,7 @@ bool updateAltHold() {
 /**
  *  AltHold thread, updates altitude and vertical speed
  *
- * @param
+ * @param arg
  * 		arg
  *
  * @return
@@ -427,7 +428,7 @@ void *altHoldUpdate(void *arg) {
  *  convert the percentage of throttle  which is receive from
  *  remote controler into targer altitude
  *
- * @param
+ * @param v
  * 		 percentage of throttle (1 to 100)
  *
  * @return
@@ -445,7 +446,7 @@ unsigned short convertTargetAltFromeRemoteControler(unsigned short v) {
  *  get a defeault power level with a altitude, you should make the factor and your Raspberry Pilot match well
  *
  * @param
- * 		 altitude
+ * 		 void
  *
  * @return
  *		power level

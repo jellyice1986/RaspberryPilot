@@ -80,7 +80,7 @@ static float temperature;
 bool ms5611Init() {
 
 	if (checkI2cDeviceIsExist(MS5611_ADDR_CSB_LOW)) {
-		_DEBUG(DEBUG_NORMAL, "(%s-%d) S5611 exist\n", __func__, __LINE__);
+		_DEBUG(DEBUG_NORMAL, "(%s-%d) MS5611 exist\n", __func__, __LINE__);
 	} else {
 		_ERROR("(%s-%d) MS5611 dowsn't exist\n", __func__, __LINE__);
 		return false;

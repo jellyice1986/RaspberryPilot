@@ -59,6 +59,14 @@ bool vl53l0xInit() {
 	VL53L0X_Dev_t *pVl53l0xDevice = &vl53l0xDevice;
 	int32_t status_int;
 
+
+	if (checkI2cDeviceIsExist(VL53L0X_ADDRESS)) {
+		_DEBUG(DEBUG_NORMAL, "(%s-%d) VL53L0X_ exist\n", __func__, __LINE__);
+	} else {
+		_ERROR("(%s-%d) VL53L0X_ dowsn't exist\n", __func__, __LINE__);
+		return false;
+	}
+
 	pVl53l0xDevice->I2cDevAddr = VL53L0X_ADDRESS;
 
 	/*
