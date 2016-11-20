@@ -40,13 +40,15 @@ SOFTWARE.
  */
 float kalmanFilterOneDimCalc(float inData,KALMAN_1D_STRUCT *kalmanStruct){                        
 
+	float result=0.f;
+	
     kalmanStruct->p = kalmanStruct->p+kalmanStruct->q;
     kalmanStruct->kGain = kalmanStruct->p/(kalmanStruct->p+kalmanStruct->r);
-    inData = kalmanStruct->prevData+(kalmanStruct->kGain*(inData-kalmanStruct->prevData));
-    kalmanStruct->p = (1-kalmanStruct->kGain)*kalmanStruct->p;
-	kalmanStruct->prevData = inData;
+    result = kalmanStruct->prevData+(kalmanStruct->kGain*(inData-kalmanStruct->prevData));
+    kalmanStruct->p = (1.f-kalmanStruct->kGain)*kalmanStruct->p;
+	kalmanStruct->prevData = result;
 
-    return inData;
+    return result;
 }
 
 /**

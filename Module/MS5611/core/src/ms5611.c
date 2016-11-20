@@ -47,7 +47,7 @@ SOFTWARE.
 #define MS5611_TEMP_D2_OSR_2048 0x56
 #define MS5611_TEMP_D2_OSR_4096 0x58
 #define MS5611_ADC_MSB          0xF6
-#define CONST_SEA_PRESSURE 		1022.2f //Hsinchu city
+#define CONST_SEA_PRESSURE 		1016.3f //Hsinchu city
 #define CONST_PF 				0.1902630958f //(1/5.25588f)
 #define CONST_PF2 				153.8461538461538f //(1/0.0065)
 
@@ -90,7 +90,7 @@ bool ms5611Init() {
 	deltaTemp = 0;
 	temperature = 0;
 	resetMs5611();
-	usleep(10000);
+	usleep(20000);
 	readCalibrationDataFromProm();
 
 	return true;
@@ -124,9 +124,8 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
 	*cm = (unsigned short)(((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
 			* (tmp + 273.15f)) * CONST_PF2 * 100.f);
-	
 	//_DEBUG(DEBUG_NORMAL, "ms5611 rawAltitude=%d, mbar=%.2f, temp=%.2f\n", *cm,press, tmp);
-
+	
 	return true;
 }
 

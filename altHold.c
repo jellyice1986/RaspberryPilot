@@ -56,7 +56,7 @@ static float altHoldAccSpeed = 0.f;
 static float altHoldAltSpeed = 0.f;
 static float altHoldAccSpeedGain = 0.3f;
 static float altHoldAltSpeedGain = 3.f;
-static float factorForPowerLevelAndAlt = 15.f;
+static float factorForPowerLevelAndAlt = 10.f;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;
 static bool altholdIsUpdate = false;
@@ -121,7 +121,7 @@ bool initAltHold() {
 			return 	false;
 		}
 		
-		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,15.f,1.f,50.f, 0.f);
+		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,30.f,1.f,200.f, 0.f);
 		setMaxAlt(500); 	//cm
 
 		break;
