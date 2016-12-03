@@ -42,12 +42,15 @@ SOFTWARE.
 static int serialFd;
 static pthread_t radioThreadId;
 static pthread_t transmitThreadId;
+static bool logIsEnable;
 
 void *radioReceiveThread(void *arg);
 void *radioTransmitThread(void *arg);
 short processRadioMessages(int fd, char *buf, short lenth);
 bool extractPacketInfo(char *buf, int lenth,
 		char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+bool checkLogIsEnable();
+void setLogIsEnable(bool v);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -92,6 +95,35 @@ bool radioControlInit() {
 }
 
 /**
+ * check whether we should send more log to remote controler or not
+ *
+ * @param 
+ * 		void
+ *
+ * @return
+ *		bool
+ *
+ */
+bool checkLogIsEnable(){
+	return logIsEnable;
+}
+
+/**
+ * set whether we should send more log to remote controler or not
+ *
+ * @param 
+ * 		v
+ *
+ * @return
+ *		void
+ *
+ */
+
+void setLogIsEnable(bool v){
+	logIsEnable=v;
+}
+
+/**
  *  transmit packets to remot controler
  *
  * @param arg
@@ -133,9 +165,10 @@ void *radioTransmitThread(void *arg) {
 		 cw2 throttle: 15
 		 #
 		 */
-		snprintf(message, sizeof(message),
-				"@%.1f:%.1f:%.1f:%.1f:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
-				getRoll(), getPitch(), getYaw(), getCurrentAltHoldAltitude(),
+		if(checkLogIsEnable()){
+			snprintf(message, sizeof(message),
+				"@%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
+				(int)getRoll(), (int)getPitch(), (int)getYaw(), (int)getCurrentAltHoldAltitude(),
 				(int) getPidSp(&rollAttitudePidSettings),
 				(int) getPidSp(&pitchAttitudePidSettings),
 				(int) (getYawCenterPoint() + getPidSp(&yawAttitudePidSettings)),
@@ -144,7 +177,11 @@ void *radioTransmitThread(void *arg) {
 				getThrottlePowerLevel(), getMotorPowerLevelCCW1(),
 				getMotorPowerLevelCW1(), getMotorPowerLevelCCW2(),
 				getMotorPowerLevelCW2());
-
+		}else{
+			snprintf(message, sizeof(message),
+				"@%d:%d:%d:%d#",
+				(int)getRoll(), (int)getPitch(), (int)getYaw(), (int)getCurrentAltHoldAltitude());
+		}
 		if ('#' != message[strlen(message) - 1]) {
 			_DEBUG(DEBUG_NORMAL, ("invilid package\n"));
 		} else {
@@ -491,6 +528,12 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setAltitudePidOutputLimitation(parameterF);
 		_DEBUG(DEBUG_NORMAL, "getAltitudePidOutputLimitation: %5.3f\n",
 				getAltitudePidOutputLimitation());
+		/***/
+		parameter = atoi(
+						packet[SETUP_FACTOR_LOG_ENABLED]);
+				setLogIsEnable(parameter);
+				_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n",
+						checkLogIsEnable());
 		/***/
 		break;
 
