@@ -241,8 +241,9 @@ void *radioReceiveThread(void *arg) {
 				}
 
 			}
+		}else{
+			usleep(RECEIVE_TIMER);
 		}
-		usleep(500);
 	}
 
 	pthread_exit((void *) 1234);
@@ -415,6 +416,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 						LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
 								getAngularLimit()));
 				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 1.0));
+
+				//_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
 			}
 			pthread_mutex_unlock(&controlMotorMutex);
 

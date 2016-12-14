@@ -33,6 +33,7 @@ typedef struct {
 	float iLimit; //limitation of integral
 	float dgain; //Kd
 	float err; //current error
+	float deadBand;
 	struct timeval last_tv;
 	float last_error; //last error  of pid calculation
 } PID_STRUCT;
@@ -49,7 +50,7 @@ extern PID_STRUCT altHoldlSpeedSettings;
 void pidInit(void);
 float pidCalculation(PID_STRUCT *pid, float process_point);
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
-		float set_point, float shift, float ilimit);
+		float set_point, float shift, float ilimit,float deadBand);
 void resetPidRecord(PID_STRUCT *pid);
 void setPidError(PID_STRUCT *pi, float value);
 float getPidSperror(PID_STRUCT *pi);

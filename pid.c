@@ -53,6 +53,9 @@ SOFTWARE.
 #define DEFAULT_ROLL_ATTITUDE_SHIFT 0.0
 #define DEFAULT_PITCH_ATTITUDE_SHIFT  0.0
 #define DEFAULT_YAW_ATTITUDE_SHIFT 0.0
+#define DEFAULT_ROLL_ATTITUDE_DEADBAND 0.05
+#define DEFAULT_PITCH_ATTITUDE_DEADBAND 0.05
+#define DEFAULT_YAW_ATTITUDE_DEADBAND 0.05
 
 PID_STRUCT rollAttitudePidSettings;
 PID_STRUCT pitchAttitudePidSettings;
@@ -82,6 +85,9 @@ PID_STRUCT yawAttitudePidSettings;
 #define DEFAULT_ROLL_RATE_SHIFT 0.0
 #define DEFAULT_PITCH_RATE_SHIFT 0.0
 #define DEFAULT_YAW_RATE_SHIFT 0.0
+#define DEFAULT_ROLL_RATE_DEADBAND 1.0
+#define DEFAULT_PITCH_RATE_DEADBAND 1.0
+#define DEFAULT_YAW_RATE_DEADBAND 1.0
 
 PID_STRUCT rollRatePidSettings;
 PID_STRUCT pitchRatePidSettings;
@@ -96,6 +102,8 @@ PID_STRUCT yawRatePidSettings;
 #define DEFAULT_ALTHOLD_ALT_I_LIMIT 0.0
 #define DEFAULT_ALTHOLD_ALT_SP 0.0
 #define DEFAULT_ALTHOLD_ALT_SHIFT 0.0
+#define DEFAULT_ALTHOLD_ALT_DEADBAND 0.0
+
 PID_STRUCT altHoldAltSettings;
 
 /**
@@ -107,6 +115,7 @@ PID_STRUCT altHoldAltSettings;
 #define DEFAULT_ALTHOLD_SPEED_I_LIMIT 0.0
 #define DEFAULT_ALTHOLD_SPEED_SP 0.0
 #define DEFAULT_ALTHOLD_SPEED_SHIFT  0.0
+#define DEFAULT_ALTHOLD_SPEED_DEADBAND 0.0
 
 PID_STRUCT altHoldlSpeedSettings;
 
@@ -126,15 +135,15 @@ void pidInit() {
 	pidTune(&rollAttitudePidSettings, DEFAULT_ROLL_ATTITUDE_P_GAIN,
 	DEFAULT_ROLL_ATTITUDE_I_GAIN, DEFAULT_ROLL_ATTITUDE_D_GAIN,
 	DEFAULT_ROLL_ATTITUDE_SP, DEFAULT_ROLL_ATTITUDE_SHIFT,
-	DEFAULT_ROLL_ATTITUDE_I_LIMIT);
+	DEFAULT_ROLL_ATTITUDE_I_LIMIT,DEFAULT_ROLL_ATTITUDE_DEADBAND);
 	pidTune(&pitchAttitudePidSettings, DEFAULT_PITCH_ATTITUDE_P_GAIN,
 	DEFAULT_PITCH_ATTITUDE_I_GAIN, DEFAULT_PITCH_ATTITUDE_D_GAIN,
 	DEFAULT_PITCH_ATTITUDE_SP, DEFAULT_PITCH_ATTITUDE_SHIFT,
-	DEFAULT_PITCH_ATTITUDE_I_LIMIT);
+	DEFAULT_PITCH_ATTITUDE_I_LIMIT,DEFAULT_PITCH_ATTITUDE_DEADBAND);
 	pidTune(&yawAttitudePidSettings, DEFAULT_YAW_ATTITUDE_P_GAIN,
 	DEFAULT_YAW_ATTITUDE_I_GAIN, DEFAULT_YAW_ATTITUDE_D_GAIN,
 	DEFAULT_YAW_ATTITUDE_SP, DEFAULT_YAW_ATTITUDE_SHIFT,
-	DEFAULT_YAW_ATTITUDE_I_LIMIT);
+	DEFAULT_YAW_ATTITUDE_I_LIMIT,DEFAULT_YAW_ATTITUDE_DEADBAND);
 	setName(&rollAttitudePidSettings, "ROLL_A");
 	setName(&pitchAttitudePidSettings, "PITCH_A");
 	setName(&yawAttitudePidSettings, "YAW_A");
@@ -147,15 +156,15 @@ void pidInit() {
 	pidTune(&rollRatePidSettings, DEFAULT_ROLL_RATE_P_GAIN,
 	DEFAULT_ROLL_RATE_I_GAIN, DEFAULT_ROLL_RATE_D_GAIN,
 	DEFAULT_ROLL_RATE_SP, DEFAULT_ROLL_RATE_SHIFT,
-	DEFAULT_ROLL_RATE_I_LIMIT);
+	DEFAULT_ROLL_RATE_I_LIMIT,DEFAULT_ROLL_RATE_DEADBAND);
 	pidTune(&pitchRatePidSettings, DEFAULT_PITCH_RATE_P_GAIN,
 	DEFAULT_PITCH_RATE_I_GAIN, DEFAULT_PITCH_RATE_D_GAIN,
 	DEFAULT_PITCH_RATE_SP, DEFAULT_PITCH_RATE_SHIFT,
-	DEFAULT_PITCH_RATE_I_LIMIT);
+	DEFAULT_PITCH_RATE_I_LIMIT,DEFAULT_PITCH_RATE_DEADBAND);
 	pidTune(&yawRatePidSettings, DEFAULT_YAW_RATE_P_GAIN,
 	DEFAULT_YAW_RATE_I_GAIN, DEFAULT_YAW_RATE_D_GAIN,
 	DEFAULT_YAW_RATE_SP, DEFAULT_YAW_RATE_SHIFT,
-	DEFAULT_YAW_RATE_I_LIMIT);
+	DEFAULT_YAW_RATE_I_LIMIT,DEFAULT_YAW_RATE_DEADBAND);
 	setName(&rollRatePidSettings, "ROLL_R");
 	setName(&pitchRatePidSettings, "PITCH_R");
 	setName(&yawRatePidSettings, "YAW_R");
@@ -167,7 +176,7 @@ void pidInit() {
 	pidTune(&altHoldAltSettings, DEFAULT_ALTHOLD_ALT_P_GAIN,
 	DEFAULT_ALTHOLD_ALT_I_GAIN, DEFAULT_ALTHOLD_ALT_D_GAIN,
 	DEFAULT_ALTHOLD_ALT_SP, DEFAULT_ALTHOLD_ALT_SHIFT,
-	DEFAULT_ALTHOLD_ALT_I_LIMIT);
+	DEFAULT_ALTHOLD_ALT_I_LIMIT,DEFAULT_ALTHOLD_ALT_DEADBAND);
 	setName(&altHoldAltSettings, "VH");
 	resetPidRecord(&altHoldAltSettings);
 
@@ -175,7 +184,7 @@ void pidInit() {
 	pidTune(&altHoldlSpeedSettings, DEFAULT_ALTHOLD_SPEED_P_GAIN,
 	DEFAULT_ALTHOLD_SPEED_I_GAIN, DEFAULT_ALTHOLD_SPEED_D_GAIN,
 	DEFAULT_ALTHOLD_SPEED_SP, DEFAULT_ALTHOLD_SPEED_SHIFT,
-	DEFAULT_ALTHOLD_SPEED_I_LIMIT);
+	DEFAULT_ALTHOLD_SPEED_I_LIMIT,DEFAULT_ALTHOLD_SPEED_DEADBAND);
 	setName(&altHoldlSpeedSettings, "VS");
 	resetPidRecord(&altHoldlSpeedSettings);
 }
@@ -211,7 +220,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 				+ (float)(tv.tv_usec - pid->last_tv.tv_usec)*0.000001f);
 
 		//P term
-		pid->err = (pid->sp + pid->spShift) - (pid->pv);
+		pid->err = deadband((pid->sp + pid->spShift) - (pid->pv), pid->deadBand) ;
 
 		//I term
 		pid->integral += (pid->err * timeDiff);
@@ -227,7 +236,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 		result = (pterm + iterm + dterm);
 
 #if 0 //Debug
-		if(0==strncmp(pid->name,"ROLL_A",strlen("ROLL_A"))){
+		if(0==strncmp(pid->name,"ROLL_R",strlen("ROLL_R"))){
 			_DEBUG(DEBUG_NORMAL,"name       =%s\n"	,getName(pid));
 			_DEBUG(DEBUG_NORMAL,"timeDiff   =%.3f\n",timeDiff);
 			_DEBUG(DEBUG_NORMAL,"result     =%.3f\n",result);
@@ -275,12 +284,15 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
  * @param iLimit
  *		limition for output of I item
  *
+ * @param deadBand
+ *		dead band
+ *
  * @return
  *		output of PID controler
  *
  */
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
-		float set_point, float shift, float iLimit) {
+		float set_point, float shift, float iLimit,float deadBand) {
 
 	pid->pgain = p_gain;
 	pid->igain = i_gain;
@@ -288,6 +300,7 @@ void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
 	pid->dgain = d_gain;
 	pid->sp = set_point;
 	pid->spShift = shift;
+	pid->deadBand=deadBand;
 }
 
 /**
