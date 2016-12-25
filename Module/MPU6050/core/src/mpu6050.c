@@ -45,6 +45,7 @@ https://github.com/jrowberg/i2cdevlib
 #include "commonLib.h"
 #include "i2c.h"
 #include "ahrs.h"
+#include "kalmanFilter.h"
 #include "mpu6050.h"
 
 #define pgm_read_byte(p) (*(const unsigned char *)(p))
@@ -397,6 +398,12 @@ static float zGravity;
 static float asaX;
 static float asaY;
 static float asaZ;
+static KALMAN_1D_STRUCT axKalmanFilterEntry;
+static KALMAN_1D_STRUCT ayKalmanFilterEntry;
+static KALMAN_1D_STRUCT azKalmanFilterEntry;
+static KALMAN_1D_STRUCT gxKalmanFilterEntry;
+static KALMAN_1D_STRUCT gyKalmanFilterEntry;
+static KALMAN_1D_STRUCT gzKalmanFilterEntry;
 
 void setClockSource(unsigned char source);
 void setFullScaleGyroRange(unsigned char range);
@@ -1035,12 +1042,21 @@ bool mpu6050Init() {
 		return false;
 	}
 
+#if 1
+	initkalmanFilterOneDimEntity(&axKalmanFilterEntry,"AX", 0.f,10.f,0.01,0.01, 0.f);
+	initkalmanFilterOneDimEntity(&ayKalmanFilterEntry,"AY", 0.f,10.f,0.01,0.01, 0.f);
+	initkalmanFilterOneDimEntity(&azKalmanFilterEntry,"AZ", 0.f,10.f,0.01,0.01, 0.f);
+	initkalmanFilterOneDimEntity(&gxKalmanFilterEntry,"GX", 0.f,10.f,10.f,5.f, 0.f);
+	initkalmanFilterOneDimEntity(&gyKalmanFilterEntry,"GY", 0.f,10.f,10.f,5.f, 0.f);
+	initkalmanFilterOneDimEntity(&gzKalmanFilterEntry,"GZ", 0.f,10.f,10.f,5.f, 0.f);
+#endif
+
 	devAddr = MPU6050_DEFAULT_ADDRESS;
 	scaleGyroRange = 0;
 	scaleAccRange = 0;
-	xGyroOffset = 12;  //pitch
-	yGyroOffset = -46;  // row
-	zGyroOffset = -10; //row
+	xGyroOffset = 22;  //pitch
+	yGyroOffset = -15;  // row
+	zGyroOffset = 4; //yaw
 
 #if  defined(MPU_DMP) || defined(MPU_DMP_YAW)	
 	dmpReady = false;
@@ -2722,6 +2738,15 @@ void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
 	*gx=(float)sgx*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
 	*gy=(float)sgy*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
 	*gz=(float)sgz*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
+
+#if 1 //kalman filter
+	*ax=kalmanFilterOneDimCalc(*ax,&axKalmanFilterEntry);
+	*ay=kalmanFilterOneDimCalc(*ay,&ayKalmanFilterEntry);
+	*az=kalmanFilterOneDimCalc(*az,&azKalmanFilterEntry);
+	*gx=kalmanFilterOneDimCalc(*gx,&gxKalmanFilterEntry);
+	*gy=kalmanFilterOneDimCalc(*gy,&gyKalmanFilterEntry);
+	*gz=kalmanFilterOneDimCalc(*gz,&gzKalmanFilterEntry);
+#endif	
 
 }
 

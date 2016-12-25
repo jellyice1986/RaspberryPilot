@@ -597,7 +597,7 @@ void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
  */
 float getThrottleOffsetByAltHold(bool updateAltHoldOffset) {
 
-	static float output = 0;
+	static float output = 0.f;
 
 	if (updateAltHoldOffset) {
 

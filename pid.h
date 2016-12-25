@@ -68,4 +68,6 @@ void setILimit(PID_STRUCT *pid, float v);
 float getILimit(PID_STRUCT *pid);
 void setDGain(PID_STRUCT *pid, float gain);
 float getDGain(PID_STRUCT *pid);
+void setPidDeadBand(PID_STRUCT *pi, float value);
+float getPidDeadBand(PID_STRUCT *pi);
 

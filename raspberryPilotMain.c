@@ -190,6 +190,12 @@ bool raspberryPilotInit() {
 	if (!piSystemInit()) {
 		_ERROR("(%s-%d) Init Raspberry Pi failed!\n", __func__, __LINE__);
 		return false;
+	}else{
+		securityMechanismInit();
+		pidInit();
+#ifndef MPU_DMP	
+		ahrsInit();
+#endif	
 	}
 
 	if (!flyControlerInit()) {
@@ -215,12 +221,6 @@ bool raspberryPilotInit() {
 		_ERROR("(%s-%d) radioControler init failed\n", __func__, __LINE__);
 		return false;
 	}
-
-	securityMechanismInit();
-	pidInit();
-#ifndef MPU_DMP	
-	ahrsInit();
-#endif
 
 	_DEBUG(DEBUG_NORMAL, "(%s-%d) Raspberry Pilot init done\n", __func__,
 			__LINE__);

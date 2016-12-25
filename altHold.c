@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include "commonLib.h"
@@ -33,30 +34,22 @@ SOFTWARE.
 #include "srf02.h"
 #include "ms5611.h"
 #include "mpu6050.h"
-#include "altHold.h"
+#include "pid.h"
 #include "kalmanFilter.h"
 #include "motorControl.h"
+#include "altHold.h"
 
-#define ALTHOLD_CHECK_CYCLE_TIME 0
 #define MODULE_TYPE ALTHOLD_MODULE_MS5611
 //#define MODULE_TYPE ALTHOLD_MODULE_SRF02
 //#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
+#define ALTHOLD_UPDATE_PERIOD 100000
 
 static float aslRaw = 0.f;
-static float asl = 0.f;
-static float aslLong = 0.f;
-static float aslAlpha = 0.6f;   	// Short term smoothing
-static float aslLongAlpha = 0.9f;   	// Long term smoothing
-static float altHoldAccSpeedAlpha = 0.5f;
-static float altHoldSpeedAlpha = 0.7f;
-static float altHoldSpeedDeadband = 3.f;
-static float altHoldAccSpeedDeadband = 3.f;
+static float altHoldSpeedDeadband = 5.f;
+static float altHoldAccSpeedDeadband = 0.5;
 static float altHoldSpeed = 0.f;
 static float altHoldAccSpeed = 0.f;
 static float altHoldAltSpeed = 0.f;
-static float altHoldAccSpeedGain = 0.3f;
-static float altHoldAltSpeedGain = 3.f;
-static float factorForPowerLevelAndAlt = 10.f;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;
 static bool altholdIsUpdate = false;
@@ -71,7 +64,6 @@ static void setMaxAlt(unsigned short v);
 static unsigned short getMaxAlt();
 static void *altHoldThread(void *arg);
 static float getAccWithoutGravity();
-static void updateSpeedByAcceleration();
 static void *altHoldUpdate(void *arg);
 
 /**
@@ -98,7 +90,9 @@ bool initAltHold() {
 		}
 
 		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
-		setMaxAlt(100);  		//cm
+		setPidDeadBand(&altHoldAltSettings, 5.0);
+		setPidDeadBand(&altHoldlSpeedSettings, 5.0);
+		setMaxAlt(150);  		//cm
 
 		break;
 
@@ -122,7 +116,9 @@ bool initAltHold() {
 		}
 		
 		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,30.f,1.f,200.f, 0.f);
-		setMaxAlt(500); 	//cm
+		setPidDeadBand(&altHoldAltSettings, 30.0);
+		setPidDeadBand(&altHoldlSpeedSettings, 30.0);
+		setMaxAlt(200); 	//cm
 
 		break;
 		
@@ -252,30 +248,6 @@ float getAccWithoutGravity() {
 }
 
 /**
- * updates speed by acceleration
- *
- * @param
- * 		void
- *
- * @return
- *		void
- *
- */
-void updateSpeedByAcceleration() {
-
-	if (getAltHoldIsReady()) {
-
-		altHoldAccSpeed = altHoldAccSpeed * altHoldAccSpeedAlpha
-				+ (1.f - altHoldAccSpeedAlpha)
-						* deadband(getAccWithoutGravity() * 100.f,
-								altHoldAccSpeedDeadband) * altHoldAccSpeedGain;
-		_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
-				__func__, __LINE__, altHoldAccSpeed);
-	}
-
-}
-
-/**
  * get current altitude
  *
  * @param
@@ -286,7 +258,7 @@ void updateSpeedByAcceleration() {
  *
  */
 float getCurrentAltHoldAltitude() {
-	return asl;
+	return aslRaw;
 }
 
 /**
@@ -341,24 +313,21 @@ bool updateAltHold() {
  */
 void *altHoldUpdate(void *arg) {
 
+	static float lastAslRaw=0.0;
+	static float lastAcl=0.0;
 	unsigned short data = 0;
+	unsigned long interval=0;
+	unsigned long sum=0;
+	unsigned int count=0;
 	bool result = false;
-
-#if ALTHOLD_CHECK_CYCLE_TIME
 	struct timeval tv;
 	struct timeval tv2;
-#endif
 
-	while (!getLeaveFlyControlerFlag()) {
+	while (!getLeaveFlyControlerFlag()&&getAltHoldIsReady()) {
 
-#if ALTHOLD_CHECK_CYCLE_TIME /*debug: check cycle time of this loop*/
-		gettimeofday(&tv,NULL);
-		_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
-		tv2.tv_usec=tv.tv_usec;
-		tv2.tv_sec=tv.tv_sec;
-#endif		
+		gettimeofday(&tv,NULL);	
 
-		if (getAltHoldIsReady()) {
+		if(0!=tv2.tv_usec){
 
 			switch (MODULE_TYPE) {
 
@@ -380,42 +349,49 @@ void *altHoldUpdate(void *arg) {
 			default:
 				
 				result = false;
-				break;
 			}
 
 			if (result) {
 				
-				data=(unsigned short)kalmanFilterOneDimCalc((float)data,&altholdKalmanFilterEntry);
-				aslRaw = (float) data;
+				count++;
+				sum+=(long)kalmanFilterOneDimCalc((float)data,&altholdKalmanFilterEntry);
+				interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
+					
+				if(interval>=ALTHOLD_UPDATE_PERIOD){			
 				
-				updateSpeedByAcceleration();
+					//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);
+					aslRaw=(float)(sum/(float)count);
+					altHoldAltSpeed = deadband((aslRaw - lastAslRaw)/(float)(interval*0.000001),altHoldSpeedDeadband);
+					altHoldAccSpeed = deadband(lastAcl * (float)(interval*0.0001),altHoldAccSpeedDeadband);
+					altHoldSpeed = altHoldAltSpeed + altHoldAccSpeed ;
 
-				asl = asl * aslAlpha + aslRaw * (1.f - aslAlpha);
-				aslLong = aslLong * aslLongAlpha
-						+ aslRaw * (1.f - aslLongAlpha);
-				altHoldAltSpeed = deadband((asl - aslLong),
-						altHoldSpeedDeadband) * altHoldAltSpeedGain;
-				altHoldSpeed = altHoldAltSpeed * altHoldSpeedAlpha
-						+ altHoldAccSpeed * (1.f - altHoldSpeedAlpha);
+					pthread_mutex_lock(&altHoldIsUpdateMutex);
+					altholdIsUpdate = true;
+					pthread_mutex_unlock(&altHoldIsUpdateMutex);
 
-				pthread_mutex_lock(&altHoldIsUpdateMutex);
-				altholdIsUpdate = true;
-				pthread_mutex_unlock(&altHoldIsUpdateMutex);
-
-				_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,
-						"(%s-%d) altHoldAltSpeed=%.3f\n", __func__, __LINE__,
-						altHoldAltSpeed);
-				_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
+					lastAslRaw=aslRaw;
+					lastAcl=getAccWithoutGravity();
+					count=0;
+					sum=0;
+					tv2.tv_usec=tv.tv_usec;
+					tv2.tv_sec=tv.tv_sec;
+					_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
+						__func__, __LINE__,altHoldAltSpeed);				
+					_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
+						__func__, __LINE__, altHoldAccSpeed);
+					_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
 						__func__, __LINE__, altHoldSpeed);
-				_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
+					_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
 						__func__, __LINE__, aslRaw);
-				_DEBUG_HOVER(DEBUG_HOVER_FILTERED_ALTITUDE,
-						"(%s-%d) asl=%.3f aslLong=%.3f\n", __func__, __LINE__,
-						asl, aslLong);
 
+				}				
 			} else {
 				usleep(500);
 			}
+			
+		}else{
+			tv2.tv_usec=tv.tv_usec;
+			tv2.tv_sec=tv.tv_sec;
 		}
 	}
 
@@ -436,8 +412,8 @@ void *altHoldUpdate(void *arg) {
  */
 unsigned short convertTargetAltFromeRemoteControler(unsigned short v) {
 
-	targetAlt = LIMIT_MIN_MAX_VALUE(LIMIT_MIN_MAX_VALUE(v,0,100)*5, 0,
-			getMaxAlt());
+	targetAlt = (unsigned short)(getMaxAlt()*0.01*(float)v);
+	//_DEBUG(DEBUG_NORMAL, "targetAlt=%d\n",targetAlt);
 	return targetAlt;
 }
 
@@ -454,12 +430,8 @@ unsigned short convertTargetAltFromeRemoteControler(unsigned short v) {
 unsigned short getDefaultPowerLevelWithTargetAlt() {
 
 	unsigned short ret = 0;
-
-	ret =
-			LIMIT_MIN_MAX_VALUE(
-					MIN_POWER_LEVEL+(unsigned short)((float)targetAlt*factorForPowerLevelAndAlt),
-					MIN_POWER_LEVEL, MAX_POWER_LEVEL);
-
+	ret= min(getMinPowerLevel()+(unsigned short)((1.0-exp((double)-targetAlt*0.0095))*1300.0),getMaxPowerLeve());
+	//_DEBUG(DEBUG_NORMAL, "throttle=%d\n",ret);
 	return ret;
 }
 

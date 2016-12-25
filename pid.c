@@ -102,7 +102,7 @@ PID_STRUCT yawRatePidSettings;
 #define DEFAULT_ALTHOLD_ALT_I_LIMIT 0.0
 #define DEFAULT_ALTHOLD_ALT_SP 0.0
 #define DEFAULT_ALTHOLD_ALT_SHIFT 0.0
-#define DEFAULT_ALTHOLD_ALT_DEADBAND 0.0
+#define DEFAULT_ALTHOLD_ALT_DEADBAND 5.0
 
 PID_STRUCT altHoldAltSettings;
 
@@ -115,7 +115,7 @@ PID_STRUCT altHoldAltSettings;
 #define DEFAULT_ALTHOLD_SPEED_I_LIMIT 0.0
 #define DEFAULT_ALTHOLD_SPEED_SP 0.0
 #define DEFAULT_ALTHOLD_SPEED_SHIFT  0.0
-#define DEFAULT_ALTHOLD_SPEED_DEADBAND 0.0
+#define DEFAULT_ALTHOLD_SPEED_DEADBAND 5.0
 
 PID_STRUCT altHoldlSpeedSettings;
 
@@ -319,6 +319,37 @@ void resetPidRecord(PID_STRUCT *pid) {
 	pid->last_error = 0.f;
 	pid->last_tv.tv_usec = 0;
 	pid->last_tv.tv_sec = 0;
+}
+
+/**
+ *  set dead band of PID controler
+ *
+ * @param pi
+ * 		PID entity
+ *
+ * @param value
+ * 		dead band of PID controler
+ *
+ * @return
+ *		 void
+ *
+ */
+void setPidDeadBand(PID_STRUCT *pi, float value) {
+	pi->deadBand= value;
+}
+
+/**
+ *  get dead band of PID controler
+ *
+ * @param pi
+ * 		PID entity
+ *		
+ * @return
+ *		 dead band of PID controler
+ *
+ */
+float getPidDeadBand(PID_STRUCT *pi) {
+	return pi->deadBand;
 }
 
 /**
