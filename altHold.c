@@ -82,6 +82,20 @@ bool initAltHold() {
 
 	switch (MODULE_TYPE) {
 
+	case ALTHOLD_MODULE_MS5611:
+		
+		if(!ms5611Init()){
+			_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
+			return 	false;
+		}
+		
+		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,30.f,1.f,200.f, 0.f);
+		setPidDeadBand(&altHoldAltSettings, 30.0);
+		setPidDeadBand(&altHoldlSpeedSettings, 30.0);
+		setMaxAlt(200); 	//cm
+
+		break;
+
 	case ALTHOLD_MODULE_VL53L0X:
 
 		if (!vl53l0xInit()) {
@@ -102,32 +116,15 @@ bool initAltHold() {
 			_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
 			return 	false;
 		}
+
 		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
 		setMaxAlt(400);		//cm
 		
 		break;
 
-
-	case ALTHOLD_MODULE_MS5611:
-		
-		if(!ms5611Init()){
-			_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
-			return 	false;
-		}
-		
-		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,30.f,1.f,200.f, 0.f);
-		setPidDeadBand(&altHoldAltSettings, 30.0);
-		setPidDeadBand(&altHoldlSpeedSettings, 30.0);
-		setMaxAlt(200); 	//cm
-
-		break;
-		
 	default:
 
 		return false;
-
-		break;
-
 	}
 
 	if (pthread_mutex_init(&altHoldIsUpdateMutex, NULL) != 0) {
@@ -325,69 +322,70 @@ void *altHoldUpdate(void *arg) {
 
 	while (!getLeaveFlyControlerFlag()&&getAltHoldIsReady()) {
 
-		gettimeofday(&tv,NULL);	
-
+		gettimeofday(&tv,NULL);
+	
 		if(0!=tv2.tv_usec){
 
-			switch (MODULE_TYPE) {
+				switch (MODULE_TYPE) {
 
-			case ALTHOLD_MODULE_VL53L0X:
-
-				result = vl53l0xGetMeasurementData(&data);
-				break;
-
-			case ALTHOLD_MODULE_SRF02:
-				
-				result = srf02GetMeasurementData(&data);
-				break;
-				
-			case ALTHOLD_MODULE_MS5611:
-				
+			        case ALTHOLD_MODULE_MS5611:
+					
 				result = ms5611GetMeasurementData(&data);
 				break;
 
-			default:
-				
-				result = false;
-			}
+				case ALTHOLD_MODULE_VL53L0X:
 
-			if (result) {
+					result = vl53l0xGetMeasurementData(&data);
+					break;
+
+				case ALTHOLD_MODULE_SRF02:
 				
-				count++;
-				sum+=(long)kalmanFilterOneDimCalc((float)data,&altholdKalmanFilterEntry);
-				interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
+					result = srf02GetMeasurementData(&data);
+					break;
+				
+				default:
+				
+					result = false;
+				}
+
+				if (result) {
 					
-				if(interval>=ALTHOLD_UPDATE_PERIOD){			
-				
-					//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);
-					aslRaw=(float)(sum/(float)count);
-					altHoldAltSpeed = deadband((aslRaw - lastAslRaw)/(float)(interval*0.000001),altHoldSpeedDeadband);
-					altHoldAccSpeed = deadband(lastAcl * (float)(interval*0.0001),altHoldAccSpeedDeadband);
-					altHoldSpeed = altHoldAltSpeed + altHoldAccSpeed ;
+					count++;
+					sum+=(long)kalmanFilterOneDimCalc((float)data,&altholdKalmanFilterEntry);
+					interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
+					
+					if(interval>=ALTHOLD_UPDATE_PERIOD){			
+							
+							//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);				
+							aslRaw=(float)(sum/(float)count);
+							altHoldAltSpeed = deadband((aslRaw - lastAslRaw)/(float)(interval*0.000001),altHoldSpeedDeadband);
+							altHoldAccSpeed = deadband(lastAcl * (float)(interval*0.0001),altHoldAccSpeedDeadband);
+							altHoldSpeed = altHoldAltSpeed + altHoldAccSpeed ;
 
-					pthread_mutex_lock(&altHoldIsUpdateMutex);
-					altholdIsUpdate = true;
-					pthread_mutex_unlock(&altHoldIsUpdateMutex);
+							pthread_mutex_lock(&altHoldIsUpdateMutex);
+							altholdIsUpdate = true;
+							pthread_mutex_unlock(&altHoldIsUpdateMutex);
 
-					lastAslRaw=aslRaw;
-					lastAcl=getAccWithoutGravity();
-					count=0;
-					sum=0;
-					tv2.tv_usec=tv.tv_usec;
-					tv2.tv_sec=tv.tv_sec;
-					_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
-						__func__, __LINE__,altHoldAltSpeed);				
-					_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
-						__func__, __LINE__, altHoldAccSpeed);
-					_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
-						__func__, __LINE__, altHoldSpeed);
-					_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
-						__func__, __LINE__, aslRaw);
+							lastAslRaw=aslRaw;
+							lastAcl=getAccWithoutGravity();
+							count=0;
+							sum=0;
+							tv2.tv_usec=tv.tv_usec;
+							tv2.tv_sec=tv.tv_sec;	
+	
+							_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
+									__func__, __LINE__,altHoldAltSpeed);				
+							_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
+									__func__, __LINE__, altHoldAccSpeed);
+							_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
+									__func__, __LINE__, altHoldSpeed);
+							_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
+									__func__, __LINE__, aslRaw);
 
-				}				
-			} else {
-				usleep(500);
-			}
+					}			
+				} else {
+					usleep(500);
+				}
 			
 		}else{
 			tv2.tv_usec=tv.tv_usec;

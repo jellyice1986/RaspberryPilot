@@ -120,7 +120,7 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 	sendPressCmdD1();
 	getDelay();
 	press = readPress();
-
+	
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
 	*cm = (unsigned short)(((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
 			* (tmp + 273.15f)) * CONST_PF2 * 100.f);

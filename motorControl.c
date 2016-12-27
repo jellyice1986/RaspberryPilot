@@ -99,10 +99,8 @@ void setupAllMotorPoewrLevel(unsigned short CW1, unsigned short CW2,
  *
  */
 void setupCcw1MotorPoewrLevel(unsigned short CCW1) {
-	if(motorPowerLevel_CCW1 != CCW1){
-	motorPowerLevel_CCW1 = CCW1;
-	pca9685SetPwm(SOFT_PWM_CCW1, motorPowerLevel_CCW1);
-	}
+	motorPowerLevel_CCW1 = LIMIT_MIN_MAX_VALUE(CCW1,0,getMaxPowerLeve());
+		pca9685SetPwm(SOFT_PWM_CCW1, motorPowerLevel_CCW1);
 }
 
 /**
@@ -116,10 +114,8 @@ void setupCcw1MotorPoewrLevel(unsigned short CCW1) {
  *
  */
 void setupCcw2MotorPoewrLevel(unsigned short CCW2) {
-	if(motorPowerLevel_CCW2 != CCW2){
-	motorPowerLevel_CCW2 = CCW2;
-	pca9685SetPwm(SOFT_PWM_CCW2, motorPowerLevel_CCW2);
-	}
+	motorPowerLevel_CCW2 = LIMIT_MIN_MAX_VALUE(CCW2,0,getMaxPowerLeve());
+		pca9685SetPwm(SOFT_PWM_CCW2, motorPowerLevel_CCW2);
 }
 
 /**
@@ -133,10 +129,8 @@ void setupCcw2MotorPoewrLevel(unsigned short CCW2) {
  *
  */
 void setupCw1MotorPoewrLevel(unsigned short CW1) {
-	if(motorPowerLevel_CW1 != CW1){
-	motorPowerLevel_CW1 = CW1;
-	pca9685SetPwm(SOFT_PWM_CW1, motorPowerLevel_CW1);
-	}
+	motorPowerLevel_CW1 = LIMIT_MIN_MAX_VALUE(CW1,0,getMaxPowerLeve());
+		pca9685SetPwm(SOFT_PWM_CW1, motorPowerLevel_CW1);
 }
 
 /**
@@ -150,10 +144,8 @@ void setupCw1MotorPoewrLevel(unsigned short CW1) {
  *
  */
 void setupCw2MotorPoewrLevel(unsigned short CW2) {
-	if(motorPowerLevel_CW2 != CW2){
-	motorPowerLevel_CW2 = CW2;
-	pca9685SetPwm(SOFT_PWM_CW2, motorPowerLevel_CW2);
-	}
+	motorPowerLevel_CW2 = LIMIT_MIN_MAX_VALUE(CW2,0,getMaxPowerLeve());
+		pca9685SetPwm(SOFT_PWM_CW2, motorPowerLevel_CW2);
 }
 
 /**

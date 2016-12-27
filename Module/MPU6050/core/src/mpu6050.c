@@ -1041,7 +1041,7 @@ bool mpu6050Init() {
 		_DEBUG(DEBUG_NORMAL, "MPU6050 dowsn't exist\n");
 		return false;
 	}
-
+	
 #if 1
 	initkalmanFilterOneDimEntity(&axKalmanFilterEntry,"AX", 0.f,10.f,0.01,0.01, 0.f);
 	initkalmanFilterOneDimEntity(&ayKalmanFilterEntry,"AY", 0.f,10.f,0.01,0.01, 0.f);

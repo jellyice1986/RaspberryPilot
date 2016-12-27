@@ -48,7 +48,7 @@ SOFTWARE.
 #else
 #define MAIN_DELAY_TIMER 500  
 #endif
-
+#define CONTROL_CYCLE_TIME 5000 //us
 #define CHECK_CYCLE_TIME_1 0
 #define CHECK_CYCLE_TIME_2 0
 
@@ -67,12 +67,13 @@ bool raspberryPilotInit();
 int main() {
 
 #if CHECK_CYCLE_TIME_1 |CHECK_CYCLE_TIME_2
-	struct timeval tv;
-	struct timeval tv2;
-	struct timeval tv3;
+	struct timeval tv1_c;
+	struct timeval tv1_l;
+	struct timeval tv2_c;
+	struct timeval tv2_l;
 #endif
-
-	short count = 0;
+	struct timeval tv_c;
+	struct timeval tv_l;
 	float yrpAttitude[3];
 	float pryRate[3];
 	float xyzAcc[3];
@@ -86,11 +87,13 @@ int main() {
 
 	while (!getLeaveFlyControlerFlag()) {
 
+		gettimeofday(&tv_c,NULL);
+
 #if CHECK_CYCLE_TIME_1 /*debug: check cycle time of this loop*/
-		gettimeofday(&tv,NULL);
-		_DEBUG(DEBUG_NORMAL,"duration=%d us\n",(tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
-		tv2.tv_usec=tv.tv_usec;
-		tv2.tv_sec=tv.tv_sec;
+		gettimeofday(&tv1_c,NULL);
+		_DEBUG(DEBUG_NORMAL,"cycle duration=%d us\n",(tv1_c.tv_sec-tv1_l.tv_sec)*1000000+(tv1_c.tv_usec-tv1_l.tv_usec));
+		tv1_l.tv_usec=tv1_c.tv_usec;
+		tv1_l.tv_sec=tv1_c.tv_sec;
 #endif
 
 		mpuResult = getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc,
@@ -104,13 +107,12 @@ int main() {
 
 #if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
 			if(!mpuResult) {
-				gettimeofday(&tv,NULL);
-				_DEBUG(DEBUG_NORMAL,"duration=%d us\n",(tv.tv_sec-tv3.tv_sec)*1000000+(tv.tv_usec-tv3.tv_usec));
-				tv3.tv_usec=tv.tv_usec;
-				tv3.tv_sec=tv.tv_sec;
+				gettimeofday(&tv2_c,NULL);
+				_DEBUG(DEBUG_NORMAL,"dmp duration=%d us\n",(tv2_c.tv_sec-tv2_l.tv_sec)*1000000+(tv2_c.tv_usec-tv2_l.tv_usec));
+				tv2_l.tv_usec=tv2_c.tv_usec;
+				tv2_l.tv_sec=tv2_c.tv_sec;
 			}
 #endif
-			count++;
 
 #ifdef MPU_DMP_YAW
 		if(0 == mpuResult)
@@ -127,7 +129,7 @@ int main() {
 			setXGravity(xyzGravity[0]);
 			setYGravity(xyzGravity[1]);
 			setZGravity(xyzGravity[2]);
-
+			
 			_DEBUG(DEBUG_ATTITUDE,
 					"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", __func__,
 					__LINE__, getRoll(), getPitch(), getYaw());
@@ -138,12 +140,14 @@ int main() {
 			_DEBUG(DEBUG_ACC, "(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",
 					__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
 
-			if (count >= getAdjustPeriod()) {
+    		if((unsigned long)((tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec)) >= (unsigned long)(getAdjustPeriod()*CONTROL_CYCLE_TIME)){
+
+				//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec));
 
 				pthread_mutex_lock(&controlMotorMutex);
 				if (flySystemIsEnable()) {
 
-					if (getPacketCounter() != MAX_COUNTER) {
+					if (getPacketCounter() < MAX_COUNTER) {
 						if (getPidSp(&yawAttitudePidSettings) != 321.0) {
 							motorControler();
 						} else {
@@ -163,13 +167,14 @@ int main() {
 				}
 				pthread_mutex_unlock(&controlMotorMutex);
 
-				count = 0;
-
+				tv_l.tv_usec=tv_c.tv_usec;
+				tv_l.tv_sec=tv_c.tv_sec;
 			}
 
 		}
 
 		usleep(MAIN_DELAY_TIMER);
+		
 	}
 
 	return 0;

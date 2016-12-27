@@ -396,7 +396,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&yawRatePidSettings);
 				resetPidRecord(&altHoldAltSettings);
 				resetPidRecord(&altHoldlSpeedSettings);
-				setYawCenterPoint(0);
+				setYawCenterPoint(0.f);
 				setAltStartPoint(0.f);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 
