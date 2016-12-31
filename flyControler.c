@@ -227,7 +227,7 @@ void motorControler() {
 	float centerThrottle = 0.f;
 
 	altThrottleOffset = (getAltHoldIsReady() && getEnableAltHold())?getThrottleOffsetByAltHold(updateAltHold()):0.f;
-	slopThrottleOffset = getSlopeThrottleOffset();
+	//slopThrottleOffset = getSlopeThrottleOffset();
 	centerThrottle = ((float)getThrottlePowerLevel() + altThrottleOffset)*slopThrottleOffset;
 
 	maxLimit = (float) min(

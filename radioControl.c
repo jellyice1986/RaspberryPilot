@@ -415,7 +415,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				setPidSp(&pitchAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
 								getAngularLimit()));
-				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 1.0));
+				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 3));
 
 				//_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
 			}
@@ -552,72 +552,78 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setPGain(&rollAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Roll P Gain=%4.6f\n",
 				getPGain(&rollAttitudePidSettings));
-
 		//attitude Roll I gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I]);
 		setIGain(&rollAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Roll I Gain=%4.6f\n",
 				getIGain(&rollAttitudePidSettings));
-
 		//attitude Roll I outputLimit
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I_LIMIT]);
 		setILimit(&rollAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Roll I Output Limit=%4.6f\n",
 				getILimit(&rollAttitudePidSettings));
-
 		//attitude Roll D gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_D]);
 		setDGain(&rollAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Roll D Gain=%4.6f\n",
 				getDGain(&rollAttitudePidSettings));
+		//attitude Roll DB
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_DB]);
+		setPidDeadBand(&rollAttitudePidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Attitude Roll DB=%4.6f\n",
+				getPidDeadBand(&rollAttitudePidSettings));
 
 		//attitude Pitch P gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_P]);
 		setPGain(&pitchAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Pitch P Gain=%4.6f\n",
 				getPGain(&pitchAttitudePidSettings));
-
 		//attitude Pitch I gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I]);
 		setIGain(&pitchAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Pitch I Gain=%4.6f\n",
 				getIGain(&pitchAttitudePidSettings));
-
 		//attitude Pitch I outputLimit
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I_LIMIT]);
 		setILimit(&pitchAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Pitch I Output Limit=%4.6f\n",
 				getILimit(&pitchAttitudePidSettings));
-
 		//attitude Pitch D gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_D]);
 		setDGain(&pitchAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Pitch D Gain=%4.6f\n",
 				getDGain(&pitchAttitudePidSettings));
+		//attitude Pitch DB
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_DB]);
+		setPidDeadBand(&pitchAttitudePidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Attitude Pitch DB=%4.6f\n",
+				getPidDeadBand(&pitchAttitudePidSettings));
 
 		//attitude Yaw P gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_P]);
 		setPGain(&yawAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Yaw P Gain=%4.6f\n",
 				getPGain(&yawAttitudePidSettings));
-
 		//attitude Yaw I gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I]);
 		setIGain(&yawAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Yaw I Gain=%4.6f\n",
 				getIGain(&yawAttitudePidSettings));
-
 		//attitude Yaw I outputLimit
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I_LIMIT]);
 		setILimit(&yawAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Yaw I Output Limit=%4.6f\n",
 				getILimit(&yawAttitudePidSettings));
-
 		//attitude Yaw D gain
 		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_D]);
 		setDGain(&yawAttitudePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Attitude Yaw D Gain=%4.6f\n",
 				getDGain(&yawAttitudePidSettings));
+		//attitude Yaw DB
+		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_DB]);
+		setPidDeadBand(&yawAttitudePidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Attitude Yaw DB=%4.6f\n",
+				getPidDeadBand(&yawAttitudePidSettings));
 
 		//Rate Roll P gain
 		parameterF = atof(packet[SETUP_PID_RATE_ROLL_P]);
@@ -639,6 +645,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&rollRatePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Rate Roll D Gain=%4.6f\n",
 				getDGain(&rollRatePidSettings));
+		//Rate Roll DB
+		parameterF = atof(packet[SETUP_PID_RATE_ROLL_DB]);
+		setPidDeadBand(&rollRatePidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Rate Roll DB=%4.6f\n",
+				getPidDeadBand(&rollRatePidSettings));
 
 		//Rate Pitch P gain
 		parameterF = atof(packet[SETUP_PID_RATE_PITCH_P]);
@@ -660,6 +671,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&pitchRatePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Rate Pitch D Gain=%4.6f\n",
 				getDGain(&pitchRatePidSettings));
+		//Rate Pitch DB
+		parameterF = atof(packet[SETUP_PID_RATE_PITCH_DB]);
+		setPidDeadBand(&pitchRatePidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Rate Pitch DB=%4.6f\n",
+				getPidDeadBand(&pitchRatePidSettings));
 
 		//Rate Yaw P gain
 		parameterF = atof(packet[SETUP_PID_RATE_YAW_P]);
@@ -681,6 +697,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&yawRatePidSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Rate Yaw D Gain=%4.6f\n",
 				getDGain(&yawRatePidSettings));
+		//Rate Yaw DB
+		parameterF = atof(packet[SETUP_PID_RATE_YAW_DB]);
+		setPidDeadBand(&yawRatePidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Rate Yaw DB=%4.6f\n",
+				getPidDeadBand(&yawRatePidSettings));
 
 		//Vertical Height P gain	
 		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
@@ -702,6 +723,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&altHoldAltSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Vertical Height D Gain=%4.6f\n",
 				getDGain(&altHoldAltSettings));
+		//Vertical Height DB
+		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_DB]);
+		setPidDeadBand(&altHoldAltSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Height DB=%4.6f\n",
+				getPidDeadBand(&altHoldAltSettings));
 
 		//Vertical Speed P gain	
 		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_P]);
@@ -723,6 +749,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setDGain(&altHoldlSpeedSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Vertical Speed D Gain=%4.6f\n",
 				getDGain(&altHoldlSpeedSettings));
+		//Vertical Height DB
+		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_DB]);
+		setPidDeadBand(&altHoldlSpeedSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Speed DB=%4.6f\n",
+				getPidDeadBand(&altHoldlSpeedSettings));
 
 		break;
 

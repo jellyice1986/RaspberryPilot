@@ -31,6 +31,8 @@ SOFTWARE.
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define LIMIT_MIN_MAX_VALUE(value,minVal,maxVal) (min(maxVal, max(minVal,value)))
+#define NON_ZERO(value) (value==0?1:value)
+
 
 #define LOG_ENABLE 						true
 #define DEBUG_NONE 						0x0

@@ -188,7 +188,7 @@ void pca9685SetPwm(unsigned char channel, unsigned short value) {
 		return;
 	}
 	
-	while(count<=30){
+	while(count<=5){
 		
 		if(writeByte(PCA9685_ADDRESS,
  			PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel, value & 0xFF)

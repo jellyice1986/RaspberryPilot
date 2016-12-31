@@ -358,7 +358,7 @@ void *altHoldUpdate(void *arg) {
 							
 							//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);				
 							aslRaw=(float)(sum/(float)count);
-							altHoldAltSpeed = deadband((aslRaw - lastAslRaw)/(float)(interval*0.000001),altHoldSpeedDeadband);
+							altHoldAltSpeed = deadband(((aslRaw - lastAslRaw)/(float)NON_ZERO(interval*0.000001)),altHoldSpeedDeadband);
 							altHoldAccSpeed = deadband(lastAcl * (float)(interval*0.0001),altHoldAccSpeedDeadband);
 							altHoldSpeed = altHoldAltSpeed + altHoldAccSpeed ;
 
@@ -428,7 +428,7 @@ unsigned short convertTargetAltFromeRemoteControler(unsigned short v) {
 unsigned short getDefaultPowerLevelWithTargetAlt() {
 
 	unsigned short ret = 0;
-	ret= min(getMinPowerLevel()+(unsigned short)((1.0-exp((double)-targetAlt*0.0095))*1300.0),getMaxPowerLeve());
+	ret= min(getMinPowerLevel()+(unsigned short)((1.0-exp((double)-targetAlt*0.0075))*1500.0),getMaxPowerLeve());
 	//_DEBUG(DEBUG_NORMAL, "throttle=%d\n",ret);
 	return ret;
 }

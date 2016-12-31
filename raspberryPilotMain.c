@@ -46,11 +46,13 @@ SOFTWARE.
 #ifdef MPU_DMP
 #define MAIN_DELAY_TIMER 2000 
 #else
-#define MAIN_DELAY_TIMER 500  
+#define MAIN_DELAY_TIMER 100  
 #endif
 #define CONTROL_CYCLE_TIME 5000 //us
 #define CHECK_CYCLE_TIME_1 0
 #define CHECK_CYCLE_TIME_2 0
+#define CHECK_CYCLE_TIME_3 0
+
 
 bool raspberryPilotInit();
 
@@ -91,7 +93,7 @@ int main() {
 
 #if CHECK_CYCLE_TIME_1 /*debug: check cycle time of this loop*/
 		gettimeofday(&tv1_c,NULL);
-		_DEBUG(DEBUG_NORMAL,"cycle duration=%d us\n",(tv1_c.tv_sec-tv1_l.tv_sec)*1000000+(tv1_c.tv_usec-tv1_l.tv_usec));
+		_DEBUG(DEBUG_NORMAL,"cycle duration=%ld us\n",(tv1_c.tv_sec-tv1_l.tv_sec)*1000000+(tv1_c.tv_usec-tv1_l.tv_usec));
 		tv1_l.tv_usec=tv1_c.tv_usec;
 		tv1_l.tv_sec=tv1_c.tv_sec;
 #endif
@@ -108,7 +110,7 @@ int main() {
 #if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
 			if(!mpuResult) {
 				gettimeofday(&tv2_c,NULL);
-				_DEBUG(DEBUG_NORMAL,"dmp duration=%d us\n",(tv2_c.tv_sec-tv2_l.tv_sec)*1000000+(tv2_c.tv_usec-tv2_l.tv_usec));
+				_DEBUG(DEBUG_NORMAL,"dmp duration=%ld us\n",(tv2_c.tv_sec-tv2_l.tv_sec)*1000000+(tv2_c.tv_usec-tv2_l.tv_usec));
 				tv2_l.tv_usec=tv2_c.tv_usec;
 				tv2_l.tv_sec=tv2_c.tv_sec;
 			}
@@ -142,8 +144,9 @@ int main() {
 
     		if((unsigned long)((tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec)) >= (unsigned long)(getAdjustPeriod()*CONTROL_CYCLE_TIME)){
 
-				//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec));
-
+#if CHECK_CYCLE_TIME_3
+				_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec));
+#endif
 				pthread_mutex_lock(&controlMotorMutex);
 				if (flySystemIsEnable()) {
 

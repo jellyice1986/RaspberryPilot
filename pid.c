@@ -53,9 +53,9 @@ SOFTWARE.
 #define DEFAULT_ROLL_ATTITUDE_SHIFT 0.0
 #define DEFAULT_PITCH_ATTITUDE_SHIFT  0.0
 #define DEFAULT_YAW_ATTITUDE_SHIFT 0.0
-#define DEFAULT_ROLL_ATTITUDE_DEADBAND 0.05
-#define DEFAULT_PITCH_ATTITUDE_DEADBAND 0.05
-#define DEFAULT_YAW_ATTITUDE_DEADBAND 0.05
+#define DEFAULT_ROLL_ATTITUDE_DEADBAND 0.5
+#define DEFAULT_PITCH_ATTITUDE_DEADBAND 0.5
+#define DEFAULT_YAW_ATTITUDE_DEADBAND 0.5
 
 PID_STRUCT rollAttitudePidSettings;
 PID_STRUCT pitchAttitudePidSettings;
@@ -85,9 +85,9 @@ PID_STRUCT yawAttitudePidSettings;
 #define DEFAULT_ROLL_RATE_SHIFT 0.0
 #define DEFAULT_PITCH_RATE_SHIFT 0.0
 #define DEFAULT_YAW_RATE_SHIFT 0.0
-#define DEFAULT_ROLL_RATE_DEADBAND 1.0
-#define DEFAULT_PITCH_RATE_DEADBAND 1.0
-#define DEFAULT_YAW_RATE_DEADBAND 1.0
+#define DEFAULT_ROLL_RATE_DEADBAND 1.5
+#define DEFAULT_PITCH_RATE_DEADBAND 1.5
+#define DEFAULT_YAW_RATE_DEADBAND 1.5
 
 PID_STRUCT rollRatePidSettings;
 PID_STRUCT pitchRatePidSettings;
@@ -227,7 +227,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 		pid->integral=LIMIT_MIN_MAX_VALUE(pid->integral,-pid->iLimit, pid->iLimit);
 
 		//D term
-		dterm = (pid->err - pid->last_error) / timeDiff;
+		dterm = (pid->err - pid->last_error) / NON_ZERO(timeDiff);
 
 		pterm = pid->pgain * pid->err;
 		iterm = pid->igain * pid->integral;
