@@ -129,6 +129,6 @@ void triggerSecurityMechanism() {
 
 	setPidSp(&rollAttitudePidSettings, 0.f);
 	setPidSp(&pitchAttitudePidSettings, 0.f);
-	setThrottlePowerLevel(max(getMinPowerLevel(), getThrottlePowerLevel() - 5));
+	setThrottlePowerLevel(max(getMinPowerLevel(), getThrottlePowerLevel() - 10));
 }
 

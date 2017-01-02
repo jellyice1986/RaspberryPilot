@@ -43,6 +43,8 @@ static int serialFd;
 static pthread_t radioThreadId;
 static pthread_t transmitThreadId;
 static bool logIsEnable;
+static unsigned long rev_success=0;
+static unsigned long rev_drop=0;
 
 void *radioReceiveThread(void *arg);
 void *radioTransmitThread(void *arg);
@@ -51,6 +53,7 @@ bool extractPacketInfo(char *buf, int lenth,
 		char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 bool checkLogIsEnable();
 void setLogIsEnable(bool v);
+bool checkPacketIsValid(char *buf, short lenth);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -183,7 +186,7 @@ void *radioTransmitThread(void *arg) {
 				(int)getRoll(), (int)getPitch(), (int)getYaw(), (int)getCurrentAltHoldAltitude());
 		}
 		if ('#' != message[strlen(message) - 1]) {
-			_DEBUG(DEBUG_NORMAL, ("invilid package\n"));
+			_DEBUG(DEBUG_NORMAL, "invilid package\n");
 		} else {
 			serialPuts(fd, message);
 			increasePacketCounter();
@@ -219,16 +222,22 @@ void *radioReceiveThread(void *arg) {
 
 		if (serialDataAvail(fd)) {
 
+			resetPacketCounter();
+
 			getChar = serialGetchar(fd);
 
 			if (getChar == '@') {
+				if(count!=0){
+					_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: '#' is lost, buf=%s \n",buf);
+					rev_drop++;
+				}
 				memset(buf, '\0', sizeof(buf));
 				buf[0] = getChar;
 				count = 1;
 			} else if ((getChar == '#') && (buf[0] == '@')
 					&& (count < sizeof(buf))) {
 				buf[count] = getChar;
-				processRadioMessages(fd, buf, sizeof(buf));
+				processRadioMessages(fd, buf, strlen(buf));
 				memset(buf, '\0', sizeof(buf));
 				count = 0;
 			} else {
@@ -236,6 +245,10 @@ void *radioReceiveThread(void *arg) {
 					buf[count] = getChar;
 					count++;
 				} else {
+					if(count!=0){
+						rev_drop++;
+						_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: bufer overflow buf=%s getChar=%c\n",buf,getChar);
+					}
 					memset(buf, '\0', sizeof(buf));
 					count = 0;
 				}
@@ -276,6 +289,10 @@ bool extractPacketInfo(char *buf, int lenth,
 		cmd[i - 1] = buf[i];
 	}
 	cmd[i - 1] = '\0';
+
+	//_DEBUG(DEBUG_NORMAL,"cmd=%s buf=%s lenth=%d\n",cmd,buf,lenth);
+
+	
 	i = 1;
 	token = strtok(cmd, ":");
 	strcpy(container[0], token);
@@ -295,6 +312,90 @@ bool extractPacketInfo(char *buf, int lenth,
 
 	return true;
 
+}
+
+/**
+ * get packet dropped rate
+ *
+ * @param 
+ * 		void
+ *
+ * @return
+ *		float
+ */
+void getPacketDropRate(){
+	_DEBUG(DEBUG_NORMAL, "rev_ok/drop = %ld/%ld\n",rev_drop,rev_success);
+}
+
+/**
+ * check whether packet is valid or not
+ *
+ * @param buf
+ * 		received packet
+ *
+ * @param lenth
+ * 		packet size
+ *
+ * @return
+ *		bool
+ */
+bool checkPacketIsValid(char *buf, short lenth){
+
+	int i=0;
+	int count=0;
+	int count2=0;
+	char a;
+
+	//_DEBUG(DEBUG_NORMAL, "length=%d %s \n",lenth,buf);
+
+	//check character in packet 
+	for(i=0;i<lenth;i++){
+		a=*(buf+i);
+		if(!((a=='@')|(a=='#')|(a==':')|(a=='-')|(a=='.')|(a>='0'&&a<='9'))){
+			_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid char: length=%d %s buf[%d]=%c \n",lenth,buf,i,a);
+			return false;
+		}
+		if(a==':'){
+			count++;
+		}
+	}
+
+	//check header
+	a=*(buf+1);
+	i=atoi(&a);
+
+	if(!(i>HEADER_BEGIN&&i<HEADER_END)){
+			_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid header: length=%d %s\n",lenth,buf);
+			return false;
+	}
+	
+	//check packet field
+	switch (i){
+		case HEADER_ENABLE_FLY_SYSTEM:
+			count2=ENABLE_FLY_SYSTEM_FIWLD_END-1;
+			break;
+		case HEADER_CONTROL_MOTION:
+			count2=CONTROL_MOTION_END-1;
+			break;
+		case HEADER_HALT_PI:
+			count2=0;
+			break;
+		case HEADER_SETUP_FACTOR:
+			count2=SETUP_FACTOR_END-1;
+			break;
+		case HEADER_SETUP_PID:
+			count2=SETUP_PID_END-1;
+			break;
+		default:
+			count2=-1;
+	}
+
+	if(count2!=count){
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: length=%d %s count2=%d count=%d\n",lenth,buf,count2,count);
+		return false;
+	}
+	
+	return true;
 }
 
 /**
@@ -320,10 +421,16 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	struct timeval tv_last;
 #endif
 
-	resetPacketCounter();
+	if (!(checkPacketIsValid(buf, lenth) && extractPacketInfo(buf, lenth, packet))){
 
-	if (!extractPacketInfo(buf, lenth, packet))
+		rev_drop++;
 		return false;
+
+	}else{
+	
+		rev_success++;
+
+	}
 
 	switch (atoi(packet[0])) {
 
@@ -338,7 +445,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		} else {
 			disenableFlySystem();
 		}
-
+		getPacketDropRate();
 		break;
 
 	case HEADER_CONTROL_MOTION:
@@ -439,7 +546,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	case HEADER_SETUP_FACTOR:
 		//setup factor
 
-		_DEBUG(DEBUG_NORMAL, "%s %d: %s\n", __func__, __LINE__, buf);
+		//_DEBUG(DEBUG_NORMAL, "%s %d: %s\n", __func__, __LINE__, buf);
 		/***/
 		parameter = atoi(packet[SETUP_FACTOR_PERIOD]);
 		if (parameter == 0) {

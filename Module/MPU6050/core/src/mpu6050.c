@@ -2863,15 +2863,17 @@ unsigned char dmpInitialize() {
 			_DEBUG(DEBUG_NORMAL,"Setting DMP and FIFO_OFLOW interrupts enabled...\n");
 			setIntEnabled(0x12);
 
-			_DEBUG(DEBUG_NORMAL,"Setting sample rate to 200Hz...\n");
-			setRate(4); // 1khz / (1 + 4) = 200 Hz
+			_DEBUG(DEBUG_NORMAL,"Setting sample rate to 1k Hz...\n");
+			setRate(0); // 1khz / (1 + 0) = 1k Hz
 
 			_DEBUG(DEBUG_NORMAL,"Setting clock source to Z Gyro...\n");
 			setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 
 			//20 HZ is for mpu9250,  too much noise......
-			_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 20Hz...\n");
-			setDLPFMode(MPU6050_DLPF_BW_20);
+			//_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 20Hz...\n");
+			//setDLPFMode(MPU6050_DLPF_BW_20);
+			_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 184Hz...\n");
+			setDLPFMode(MPU6050_DLPF_BW_188);
 
 			_DEBUG(DEBUG_NORMAL,"Setting external frame sync to TEMP_OUT_L[0]...\n");
 			setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L);
