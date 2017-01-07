@@ -1,6 +1,6 @@
 # RaspberryPilot
 
-RaspberryPilot is a open source quadcopter project based on Raspberry Pi, if you are interested how to make a quadcopter by raspberry pi, this project may be helpful to you. 
+RaspberryPilot is a open source quadcopter project based on Raspberry Pi, if you are interested in making a quadcopter by raspberry pi, this project may be helpful to you. 
 
 https://www.youtube.com/watch?v=K36LlLFxZs4
 
