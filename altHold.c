@@ -35,17 +35,17 @@ SOFTWARE.
 #include "ms5611.h"
 #include "mpu6050.h"
 #include "pid.h"
-#include "kalmanFilter.h"
 #include "motorControl.h"
 #include "altHold.h"
 
 #define MODULE_TYPE ALTHOLD_MODULE_MS5611
-//#define MODULE_TYPE ALTHOLD_MODULE_SRF02
 //#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
-#define ALTHOLD_UPDATE_PERIOD 100000
+//#define MODULE_TYPE ALTHOLD_MODULE_SRF02
+
+#define ALTHOLD_UPDATE_PERIOD 30000
 
 static float aslRaw = 0.f;
-static float altHoldSpeedDeadband = 5.f;
+static float altHoldSpeedDeadband = 30.f;
 static float altHoldAccSpeedDeadband = 0.5;
 static float altHoldSpeed = 0.f;
 static float altHoldAccSpeed = 0.f;
@@ -57,7 +57,6 @@ static unsigned short maxAlt = 50; 		//cm
 static unsigned short targetAlt = 0;
 static pthread_t altHoldThreadId;
 static pthread_mutex_t altHoldIsUpdateMutex;
-static KALMAN_1D_STRUCT altholdKalmanFilterEntry;
 
 static void setAltHoldIsReady(bool v);
 static void setMaxAlt(unsigned short v);
@@ -89,9 +88,7 @@ bool initAltHold() {
 			return 	false;
 		}
 		
-		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,30.f,1.f,200.f, 0.f);
-		setPidDeadBand(&altHoldAltSettings, 30.0);
-		setPidDeadBand(&altHoldlSpeedSettings, 30.0);
+		altHoldSpeedDeadband = 5.f;
 		setMaxAlt(200); 	//cm
 
 		break;
@@ -103,9 +100,7 @@ bool initAltHold() {
 			return false;
 		}
 
-		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
-		setPidDeadBand(&altHoldAltSettings, 5.0);
-		setPidDeadBand(&altHoldlSpeedSettings, 5.0);
+		altHoldSpeedDeadband = 5.f;
 		setMaxAlt(150);  		//cm
 
 		break;
@@ -117,8 +112,7 @@ bool initAltHold() {
 			return 	false;
 		}
 
-		initkalmanFilterOneDimEntity(&altholdKalmanFilterEntry,"ALT", 0.f,10.f,1.f,5.f, 0.f);
-		setMaxAlt(400);		//cm
+		setMaxAlt(200);		//cm
 		
 		break;
 
@@ -314,8 +308,6 @@ void *altHoldUpdate(void *arg) {
 	static float lastAcl=0.0;
 	unsigned short data = 0;
 	unsigned long interval=0;
-	unsigned long sum=0;
-	unsigned int count=0;
 	bool result = false;
 	struct timeval tv;
 	struct timeval tv2;
@@ -350,17 +342,16 @@ void *altHoldUpdate(void *arg) {
 
 				if (result) {
 					
-					count++;
-					sum+=(long)kalmanFilterOneDimCalc((float)data,&altholdKalmanFilterEntry);
 					interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
 					
 					if(interval>=ALTHOLD_UPDATE_PERIOD){			
 							
 							//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);				
-							aslRaw=(float)(sum/(float)count);
+
+							aslRaw=(float)data;
 							altHoldAltSpeed = deadband(((aslRaw - lastAslRaw)/(float)NON_ZERO(interval*0.000001)),altHoldSpeedDeadband);
-							altHoldAccSpeed = deadband(lastAcl * (float)(interval*0.0001),altHoldAccSpeedDeadband);
-							altHoldSpeed = altHoldAltSpeed + altHoldAccSpeed ;
+							altHoldAccSpeed = 0.3f *altHoldAccSpeed+0.7f * deadband(lastAcl * ((float)interval*0.001),altHoldAccSpeedDeadband);
+							altHoldSpeed = altHoldAltSpeed*0.2f + altHoldAccSpeed*0.8f;
 
 							pthread_mutex_lock(&altHoldIsUpdateMutex);
 							altholdIsUpdate = true;
@@ -368,8 +359,8 @@ void *altHoldUpdate(void *arg) {
 
 							lastAslRaw=aslRaw;
 							lastAcl=getAccWithoutGravity();
-							count=0;
-							sum=0;
+							//_DEBUG(DEBUG_NORMAL, "altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
+							
 							tv2.tv_usec=tv.tv_usec;
 							tv2.tv_sec=tv.tv_sec;	
 	

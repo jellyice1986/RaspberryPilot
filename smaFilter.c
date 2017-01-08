@@ -1,5 +1,5 @@
 /******************************************************************************
-The srf02.c in RaspberryPilot project is placed under the MIT license
+The smaFilter.c in RaspberryPilot project is placed under the MIT license
 
 Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
@@ -22,75 +22,76 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
 #include "commonLib.h"
-#include "kalmanFilter.h"
-#include "i2c.h"
-
-#define SRF02_ADD   		0x70
-#define SRF02_REG_CMD       0x00
-#define SRF02_REG_RANGE_H   0x02
-#define SRF02_CMD_CM      	0x51
-
-static KALMAN_1D_STRUCT srf02KalmanFilterEntry;
-
+#include <string.h>
+#include "smaFilter.h"
 
 /**
- * init SRF02
+ * init a  simple moving average  filter entity
  *
- * @param
- * 		void
+ * @param smaStruct
+ * 		 a SMA filter entity
+ *
+ * @param name
+ * 		 name of this entity
+ *
+ * @param movAgeSize
+ * 		 size of window of SMA
  *
  * @return
- *		bool
+ *		void
  *
  */
-bool srf02Init(){
+void initSmaFilterEntity(SMA_STRUCT *smaStruct,char *name, int movAgeSize){
 	
-	if (checkI2cDeviceIsExist(SRF02_ADD)) {
-		_DEBUG(DEBUG_NORMAL, "(%s-%d) SRF02 exist\n", __func__, __LINE__);
-	} else {
-		_ERROR("(%s-%d) SRF02 dowsn't exist\n", __func__, __LINE__);
-		return false;
-	}
+	strcpy(smaStruct->name, name);
+	memset(smaStruct->buf,0.f,SMA_BUFER_SIZE);
+	smaStruct->movAgeSize=LIMIT_MIN_MAX_VALUE(movAgeSize,0,SMA_BUFER_SIZE);
+	smaStruct->curIndex=0;
+ 
+}
 
-	initkalmanFilterOneDimEntity(&srf02KalmanFilterEntry,"SRF02", 0.f,10.f,1.f,5.f, 0.f);
-
-	return true;
+/**
+ * init a  simple moving average  filter entity
+ *
+ * @param smaStruct
+ * 		 a SMA filter entity
+ *
+ * @param val
+ * 		 value
+ *
+ * @return
+ *		void
+ *
+ */
+void pushSmaData(SMA_STRUCT *smaStruct, float val) { 
+	
+	smaStruct->buf[smaStruct->curIndex] = val; 
+	smaStruct->curIndex = (smaStruct->curIndex + 1) % smaStruct->movAgeSize;
 	
 }
 
 /**
- * get measurement data from SRF02
+ * init a  simple moving average  filter entity
  *
- * @param
- * 		data
+ * @param smaStruct
+ * 		 a SMA filter entity
  *
  * @return
- *		bool
+ *		float
  *
  */
-bool srf02GetMeasurementData(unsigned short *cm){
+float pullSmaData(SMA_STRUCT *smaStruct) {  
 
-
-	bool result=true;
-	unsigned char data[2];
-
-	result=writeByte(SRF02_ADD,SRF02_REG_CMD,SRF02_CMD_CM);
-	if(!result) return false;
-
-	usleep(500);
-
-	result=(readBytes(SRF02_ADD,SRF02_REG_RANGE_H,2,data)<0) ? false:true;
-	if(!result) return false;
-		
-	*cm =(unsigned short)kalmanFilterOneDimCalc(((data[0] << 8) | data[1]) ,&srf02KalmanFilterEntry);
-
-	usleep(500);
-
-	return true;
+	float sum = 0.0;  
+	int i=0;
+	
+	for(i=0; i<smaStruct->movAgeSize; i++) {  
+		sum += smaStruct->buf[i]; 
+	}  
+	
+	return (sum /(float)smaStruct->movAgeSize);
 }
+
 
 

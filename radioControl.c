@@ -422,14 +422,14 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 #endif
 
 	if (!(checkPacketIsValid(buf, lenth) && extractPacketInfo(buf, lenth, packet))){
-
 		rev_drop++;
 		return false;
-
+	}else if(atoi(packet[0])==HEADER_CONTROL_MOTION && atoi(packet[CONTROL_MOTION_PAYLOAD_LEN])!=strlen(buf)){
+		rev_drop++;
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid length: %s  \n",buf);
+		return false;
 	}else{
-	
 		rev_success++;
-
 	}
 
 	switch (atoi(packet[0])) {

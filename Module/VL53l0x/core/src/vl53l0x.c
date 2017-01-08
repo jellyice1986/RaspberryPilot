@@ -28,6 +28,7 @@ SOFTWARE.
 #include "vl53l0x_platform.h"
 #include "commonLib.h"
 #include "i2c.h"
+#include "kalmanFilter.h"
 #include "vl53l0x.h"
 
 #define VERSION_REQUIRED_MAJOR 1
@@ -37,6 +38,7 @@ SOFTWARE.
 
 static VL53L0X_Dev_t vl53l0xDevice;
 static bool vl53l0xIsReady = false;
+static KALMAN_1D_STRUCT vl53l0KalmanFilterEntry;
 
 static VL53L0X_Error singleRangingLongRangeInit();
 static void print_pal_error(VL53L0X_Error Status);
@@ -68,6 +70,8 @@ bool vl53l0xInit() {
 		return false;
 	}
 
+	initkalmanFilterOneDimEntity(&vl53l0KalmanFilterEntry,"VL53L0", 0.f,10.f,1.f,5.f, 0.f);
+	
 	pVl53l0xDevice->I2cDevAddr = VL53L0X_ADDRESS;
 
 	/*
@@ -269,7 +273,7 @@ bool vl53l0xGetMeasurementData(unsigned short *cm) {
 	Status = VL53L0X_PerformSingleRangingMeasurement(pDevice,
 			&RangingMeasurementData);
 
-	*cm = RangingMeasurementData.RangeMilliMeter*0.1f;
+	*cm =(unsigned short)kalmanFilterOneDimCalc((float)RangingMeasurementData.RangeMilliMeter*0.1f ,&vl53l0KalmanFilterEntry);
 
 	return ((Status == VL53L0X_ERROR_NONE) ? true : false);
 }
