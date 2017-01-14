@@ -28,6 +28,7 @@ SOFTWARE.
 #include <math.h>
 #include "commonLib.h"
 #include "i2c.h"
+#include "kalmanFilter.h"
 #include "smaFilter.h"
 #include "ms5611.h"
 
@@ -67,8 +68,8 @@ static unsigned short osr;
 static unsigned short calibration[6];
 static float deltaTemp;   //dt
 static float temperature;
-static SMA_STRUCT msc5611SmaFilterEntry;
-
+static SMA_STRUCT ms5611SmaFilterEntry;
+static KALMAN_1D_STRUCT ms5611KalmanFilterEntry;
 
 /**
  * Init MS5611
@@ -89,7 +90,9 @@ bool ms5611Init() {
 		return false;
 	}
 
-	initSmaFilterEntity(&msc5611SmaFilterEntry,"MS5611",15);
+	initSmaFilterEntity(&ms5611SmaFilterEntry,"MS5611",5);
+	initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
+	
 	osr = 4096;
 	deltaTemp = 0;
 	temperature = 0;
@@ -114,6 +117,7 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 
 	float tmp = 0;
 	float press = 0;
+	float rawAltitude=0.f;
 
 	//send cmd D2 and read tmp
 	sendTempCmdD2();
@@ -126,13 +130,12 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 	press = readPress();
 	
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
-	//*cm = (unsigned short)(((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
-	//	* (tmp + 273.15f)) * CONST_PF2 * 100.f);
+	//rawAltitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)* (tmp + 273.15f)) * CONST_PF2 * 100.f;
+	rawAltitude = (153.8462f * (tmp + 273.15f) * (1.0f - expf(0.190259f * logf(press / CONST_SEA_PRESSURE))))*100.f;
+	pushSmaData(&ms5611SmaFilterEntry,kalmanFilterOneDimCalc(rawAltitude,&ms5611KalmanFilterEntry));
+	*cm= (unsigned short) pullSmaData(&ms5611SmaFilterEntry);
 
-	pushSmaData(&msc5611SmaFilterEntry,(153.8462f * (tmp + 273.15f) * (1.0f - expf(0.190259f * logf(press / CONST_SEA_PRESSURE))))*100.f);
-	*cm= (unsigned short) pullSmaData(&msc5611SmaFilterEntry);
-	
-	//_DEBUG(DEBUG_NORMAL, "ms5611 rawAltitude=%d, mbar=%.2f, temp=%.2f\n", *cm,press, tmp);
+	//_DEBUG(DEBUG_NORMAL, "rawAltitude=%.2f, *cm=%d, mbar=%.2f, temp=%.2f\n", rawAltitude,*cm,press, tmp);
 	
 	return true;
 }

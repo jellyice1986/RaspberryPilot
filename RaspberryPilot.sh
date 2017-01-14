@@ -9,4 +9,4 @@
 ### END INIT INFO
 
 #sleep 20;
-sudo  /home/pi/TestCode/FlyControler/bin/RaspberryPilot &
+sudo  /home/pi/RaspberryPilot/bin/RaspberryPilot &

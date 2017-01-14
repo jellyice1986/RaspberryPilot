@@ -42,7 +42,7 @@ SOFTWARE.
 //#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
 //#define MODULE_TYPE ALTHOLD_MODULE_SRF02
 
-#define ALTHOLD_UPDATE_PERIOD 30000
+#define ALTHOLD_UPDATE_PERIOD 25000
 
 static float aslRaw = 0.f;
 static float altHoldSpeedDeadband = 30.f;
@@ -351,7 +351,7 @@ void *altHoldUpdate(void *arg) {
 							aslRaw=(float)data;
 							altHoldAltSpeed = deadband(((aslRaw - lastAslRaw)/(float)NON_ZERO(interval*0.000001)),altHoldSpeedDeadband);
 							altHoldAccSpeed = 0.3f *altHoldAccSpeed+0.7f * deadband(lastAcl * ((float)interval*0.001),altHoldAccSpeedDeadband);
-							altHoldSpeed = altHoldAltSpeed*0.2f + altHoldAccSpeed*0.8f;
+							altHoldSpeed = altHoldAltSpeed*0.1f + altHoldAccSpeed*0.9f;
 
 							pthread_mutex_lock(&altHoldIsUpdateMutex);
 							altholdIsUpdate = true;
