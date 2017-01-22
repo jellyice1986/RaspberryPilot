@@ -22,12 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
+#define FLIP_DELAY 		5000000
+#define FLIP_THRESHOLD		15.f
+#define FLIP_POWER 		300.f
+#define FLIP_NONE 		0x0
+#define FLIP_RIGHT 		0x1
+#define FLIP_LEFT 		0x2
+#define FLIP_FRONT 		0x4
+#define FLIP_BACK 		0x8
+
 extern pthread_mutex_t controlMotorMutex;
 
 void setLeaveFlyControlerFlag(bool v);
 bool getLeaveFlyControlerFlag();
 bool flyControlerInit();
 void motorControler();
+void motorControlerFlipping();
 void setYawCenterPoint(float point);
 float getYawCenterPoint();
 float yawTransform(float originPoint);
@@ -41,5 +51,10 @@ void setAltitudePidOutputLimitation(float v);
 float getAltitudePidOutputLimitation(void);
 void setAltStartPoint(float v);
 float getAltStartPoint();
-
+unsigned char getFlippingFlag();
+void setFlippingFlag(unsigned char val);
+unsigned char getFlippingStep();
+void setFlippingStep(unsigned char val);
+bool getFlippingIsEnable();
+void setFlippingIsEnable(bool val);
 

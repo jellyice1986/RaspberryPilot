@@ -29,6 +29,7 @@ SOFTWARE.
 #include <pthread.h>
 #include <wiringPi.h>
 #include <wiringSerial.h>
+#include <sys/time.h>
 #include "commonLib.h"
 #include "motorControl.h"
 #include "systemControl.h"
@@ -62,7 +63,9 @@ static float maxThrottleOffset;
 static float altitudePidOutputLimitation;
 static float SlopeThrottleOffsetGain=1.f;
 static float altStartPoint;
-
+static unsigned char flippingFlag=0x0;
+static unsigned char flipStep=0;
+static bool flipIsEnable=false;
 
 /**
  * Init paramtes and states for flyControler
@@ -90,6 +93,7 @@ bool flyControlerInit() {
 	setMotorGain(SOFT_PWM_CW1, 1);
 	setMotorGain(SOFT_PWM_CCW2, 1);
 	setMotorGain(SOFT_PWM_CW2, 1);
+	setFlippingIsEnable(false);
 	setAltitudePidOutputLimitation(15.f); // 15 cm/sec
 	rollAttitudeOutput = 0.f;
 	pitchAttitudeOutput = 0.f;
@@ -141,14 +145,14 @@ bool getLeaveFlyControlerFlag() {
 void getAttitudePidOutput() {
 
 	rollAttitudeOutput = LIMIT_MIN_MAX_VALUE(
-			pidCalculation(&rollAttitudePidSettings, getRoll()),
+			pidCalculation(&rollAttitudePidSettings, getRoll(),true,true,true),
 			-getGyroLimit(), getGyroLimit());
 	pitchAttitudeOutput = LIMIT_MIN_MAX_VALUE(
-			pidCalculation(&pitchAttitudePidSettings, getPitch()),
+			pidCalculation(&pitchAttitudePidSettings, getPitch(),true,true,true),
 			-getGyroLimit(), getGyroLimit());
 	yawAttitudeOutput =
 			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw())),
+					pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw()),true,true,true),
 					-getGyroLimit(), getGyroLimit());
 
 	_DEBUG(DEBUG_ATTITUDE_PID_OUTPUT,
@@ -175,9 +179,9 @@ void getRatePidOutput(float *rollRateOutput, float *pitchRateOutput,
 	setPidSp(&rollRatePidSettings, rollAttitudeOutput);
 	setPidSp(&pitchRatePidSettings, pitchAttitudeOutput);
 	setPidSp(&yawRatePidSettings, yawAttitudeOutput);
-	*rollRateOutput = pidCalculation(&rollRatePidSettings, getRollGyro());
-	*pitchRateOutput = pidCalculation(&pitchRatePidSettings, getPitchGyro());
-	*yawRateOutput = pidCalculation(&yawRatePidSettings, getYawGyro());
+	*rollRateOutput = pidCalculation(&rollRatePidSettings, getRollGyro(),true,true,true);
+	*pitchRateOutput = pidCalculation(&pitchRatePidSettings, getPitchGyro(),true,true,true);
+	*yawRateOutput = pidCalculation(&yawRatePidSettings, getYawGyro(),true,true,true);
 
 	_DEBUG(DEBUG_RATE_PID_OUTPUT,
 			"(%s-%d) rate pid output: roll=%.5f, pitch=%.5f, yaw=%.5f\n",
@@ -186,10 +190,10 @@ void getRatePidOutput(float *rollRateOutput, float *pitchRateOutput,
 }
 
 /**
- *  this function adjust motors by PID output
+ *  this function controls motors by PID output
  *
  * @param
- * 		whether update altHold offset or not
+ * 		void
  *
  * @return 
  *		void
@@ -319,6 +323,188 @@ void motorControler() {
 	setupCw2MotorPoewrLevel((unsigned short) outCw2);
 
 }
+	
+/**
+ *  this function controls motors while flipping
+ *
+ * @param
+ * 		void
+ *
+ * @return 
+ *		void
+ *
+ */
+void motorControlerFlipping() {
+
+	float rollRateOutput = 0.f;
+	float rollCcw1 = 0.f;
+	float rollCcw2 = 0.f;
+	float rollCw1 = 0.f;
+	float rollCw2 = 0.f;
+
+	float pitchRateOutput = 0.f;
+	float pitchCcw1 = 0.f;
+	float pitchCcw2 = 0.f;
+	float pitchCw1 = 0.f;
+	float pitchCw2 = 0.f;
+
+	float yawRateOutput = 0.f;
+	float yawCcw1 = 0.f;
+	float yawCcw2 = 0.f;
+	float yawCw1 = 0.f;
+	float yawCw2 = 0.f;
+
+	float outCcw1 = 0.f;
+	float outCcw2 = 0.f;
+	float outCw1 = 0.f;
+	float outCw2 = 0.f;
+
+	float maxLimit = 0.f;
+	float minLimit = 0.f;
+	float centerThrottle = 0.f;
+	short invert=1;
+	static struct timeval tv_last;
+	struct timeval tv;
+ 
+	gettimeofday(&tv, NULL);
+
+	if((unsigned long)((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)) < FLIP_DELAY){
+		setFlippingStep(0);
+		setFlippingFlag(FLIP_NONE);
+		motorControler();
+		return;
+	}
+
+	if(getFlippingStep()==1){
+		setFlippingStep(2);
+	}
+	
+	if(getZGravity()<0){
+		setFlippingStep(3);
+	}else{
+
+		if((getFlippingStep()==3)&&(getRoll()<=45.f)){
+			setFlippingStep(0);
+			setFlippingFlag(FLIP_NONE);
+			gettimeofday(&tv_last, NULL);
+			motorControler();
+			return;
+		}
+	}
+
+	centerThrottle = (float)getThrottlePowerLevel() ;
+	maxLimit = (float) getMaxPowerLeve();
+	minLimit = (float) getMinPowerLevel();
+
+	setPidSp(&rollAttitudePidSettings,
+			LIMIT_MIN_MAX_VALUE(0.f, -getAngularLimit(),
+			getAngularLimit()));
+	setPidSp(&pitchAttitudePidSettings,
+		LIMIT_MIN_MAX_VALUE(0.f, -getAngularLimit(),
+		getAngularLimit()));
+	setPidSp(&yawAttitudePidSettings,
+		LIMIT_MIN_MAX_VALUE(0.f, -getAngularLimit(),
+		getAngularLimit()));
+
+	if(getFlippingFlag()&(FLIP_LEFT|FLIP_RIGHT)){
+
+		setPidSp(&rollRatePidSettings, LIMIT_MIN_MAX_VALUE(
+						pidCalculation(&rollAttitudePidSettings, getRoll(),false,false,false),-getGyroLimit(), getGyroLimit()));
+		rollRateOutput = ((getFlippingFlag()&FLIP_LEFT)?-FLIP_POWER:FLIP_POWER)+ pidCalculation(&rollRatePidSettings, getRollGyro(),false,false,false);
+		
+	}else{
+		setPidSp(&rollRatePidSettings, LIMIT_MIN_MAX_VALUE(
+						pidCalculation(&rollAttitudePidSettings, getRoll(),true,true,true),-getGyroLimit(), getGyroLimit()));
+		rollRateOutput = pidCalculation(&rollRatePidSettings, getRollGyro(),true,true,true);
+	}
+
+	if(getFlippingFlag()&(FLIP_FRONT|FLIP_BACK)){
+
+		setPidSp(&pitchRatePidSettings, LIMIT_MIN_MAX_VALUE(
+						pidCalculation(&pitchAttitudePidSettings, getPitch(),false,false,false),-getGyroLimit(), getGyroLimit()));
+		pitchRateOutput = ((getFlippingFlag()&FLIP_BACK)?-FLIP_POWER:FLIP_POWER)+ pidCalculation(&pitchRatePidSettings, getPitchGyro(),false,false,false);
+		
+	}else{
+		setPidSp(&pitchRatePidSettings, LIMIT_MIN_MAX_VALUE(
+						pidCalculation(&pitchAttitudePidSettings, getPitch(),true,true,true),-getGyroLimit(), getGyroLimit()));
+		pitchRateOutput = pidCalculation(&pitchRatePidSettings, getPitchGyro(),true,true,true);
+	}
+
+
+	setPidSp(&yawRatePidSettings, LIMIT_MIN_MAX_VALUE(
+						pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw()),true,true,true),
+						-getGyroLimit(), getGyroLimit()));
+	yawRateOutput = pidCalculation(&yawRatePidSettings, getYawGyro(),true,true,true);
+
+	// rollCa>0
+	//    -  CCW2   CW2   +
+	//                 X
+	//    -   CW1    CCW1  +
+	//                H
+	//
+	// rollCa<0
+	//    +  CCW2   CW2    -
+	//                 X
+	//    +   CW1    CCW1  -
+	//            H
+
+	rollCcw1 = rollRateOutput;
+	rollCcw2 = -rollRateOutput;
+	rollCw1 = -rollRateOutput;
+	rollCw2 = rollRateOutput;
+
+	// pitchCa>0
+	//    +  CCW2   CW2    +
+	//                 X
+	//    -  CW1      CCW1   -
+	//            H
+	//
+	//pitchCa<0
+	//    -  CCW2   CW2   -
+	//                 X
+	//    +   CW1   CCW1  +
+	//            H
+
+	pitchCcw1 = -pitchRateOutput;
+	pitchCcw2 = pitchRateOutput;
+	pitchCw1 = -pitchRateOutput;
+	pitchCw2 = pitchRateOutput;
+
+	// yawCa>0
+	//    +   CCW2   CW2    -
+	//                  X
+	//    -    CW1   CCW1   +
+	//                 H
+	//
+	// yawCa<0
+	//    -  CCW2    CW2  +
+	//                 X
+	//    +   CW1   CCW1  -
+	//                 H
+
+	yawCcw1 = yawRateOutput;
+	yawCcw2 = yawRateOutput;
+	yawCw1 = -yawRateOutput;
+	yawCw2 = -yawRateOutput;
+
+	if(getZGravity()<0){
+		invert=-1.f;
+	}else{
+		invert=1;
+	}
+
+	outCcw1 = LIMIT_MIN_MAX_VALUE(centerThrottle + invert * (rollCcw1 + pitchCcw1 + yawCcw1),minLimit,maxLimit);
+	outCcw2 = LIMIT_MIN_MAX_VALUE(centerThrottle + invert * (rollCcw2 + pitchCcw2 + yawCcw2),minLimit,maxLimit);
+	outCw1 = LIMIT_MIN_MAX_VALUE(centerThrottle  + invert * (rollCw1 + pitchCw1 + yawCw1),minLimit,maxLimit);
+	outCw2 = LIMIT_MIN_MAX_VALUE(centerThrottle + invert * (rollCw2 + pitchCw2 + yawCw2),minLimit,maxLimit);
+
+	setupCcw1MotorPoewrLevel((unsigned short) outCcw1);
+	setupCcw2MotorPoewrLevel((unsigned short) outCcw2);
+	setupCw1MotorPoewrLevel((unsigned short) outCw1);
+	setupCw2MotorPoewrLevel((unsigned short) outCw2);
+}
+
+
 	
 /**
  *  get throttle offset for slope
@@ -559,7 +745,7 @@ void getAltHoldAltPidOutput() {
 
 	altHoltAltOutput =
 			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&altHoldAltSettings, max(getCurrentAltHoldAltitude()-getAltStartPoint(),0.f)),
+					pidCalculation(&altHoldAltSettings, max(getCurrentAltHoldAltitude()-getAltStartPoint(),0.f),true,true,true),
 					-getAltitudePidOutputLimitation(),
 					getAltitudePidOutputLimitation());
 	
@@ -581,7 +767,7 @@ void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
 
 	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
 	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings,
-			getCurrentAltHoldSpeed());
+			getCurrentAltHoldSpeed(),true,true,true);
 	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldSpeed=%f\n",getCurrentAltHoldSpeed());
 	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
 }
@@ -608,5 +794,89 @@ float getThrottleOffsetByAltHold(bool updateAltHoldOffset) {
 	}
 	//_DEBUG(DEBUG_NORMAL,"output =%f\n",output);
 	return output;
+}
+
+/**
+ *  get flip flag
+ *
+ * @param
+ * 		void
+ *
+ * @return 
+ *		flag
+ *
+ */
+unsigned char getFlippingFlag(){
+	return flippingFlag;
+}
+
+/**
+ *  set flip flag
+ *
+ * @param val
+ * 		flag
+ *
+ * @return 
+ *		void
+ *
+ */
+void setFlippingFlag(unsigned char val){
+	flippingFlag=val;
+}
+
+/**
+ *  get flip step
+ *
+ * @param 
+ * 		void
+ *
+ * @return 
+ *		step
+ *
+ */
+unsigned char getFlippingStep(){
+	return flipStep;
+}
+
+/**
+ *  set flip step
+ *
+ * @param val
+ * 		step
+ *
+ * @return 
+ *		void
+ *
+ */
+void setFlippingStep(unsigned char val){
+	flipStep=val;
+}
+
+/**
+ *  get flip step
+ *
+ * @param 
+ * 		void
+ *
+ * @return 
+ *		step
+ *
+ */
+bool getFlippingIsEnable(){
+	return flipIsEnable;
+}
+
+/**
+ *  Enable or disable flipping mechanism
+ *
+ * @param val
+ * 		bool
+ *
+ * @return 
+ *		void
+ *
+ */
+void setFlippingIsEnable(bool val){
+	flipIsEnable=val;
 }
 

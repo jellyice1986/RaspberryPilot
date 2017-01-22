@@ -1035,7 +1035,11 @@ const prog_uchar dmpUpdates[MPU6050_DMP_UPDATES_SIZE] PROGMEM = { 0x01, 0xB2,
  */
 bool mpu6050Init() {
 
-	if (checkI2cDeviceIsExist(MPU6050_ADDRESS)) {
+	if (checkI2cDeviceIsExist(MPU6050_ADDRESS_AD0_LOW)) {
+		devAddr = MPU6050_ADDRESS_AD0_LOW;
+		_DEBUG(DEBUG_NORMAL, "MPU6050 exist\n");
+	}else if(checkI2cDeviceIsExist(MPU6050_ADDRESS_AD0_HIGH)){
+		devAddr = MPU6050_ADDRESS_AD0_HIGH;
 		_DEBUG(DEBUG_NORMAL, "MPU6050 exist\n");
 	} else {
 		_DEBUG(DEBUG_NORMAL, "MPU6050 dowsn't exist\n");
@@ -1051,7 +1055,6 @@ bool mpu6050Init() {
 	initkalmanFilterOneDimEntity(&gzKalmanFilterEntry,"GZ", 0.f,10.f,10.f,5.f, 0.f);
 #endif
 
-	devAddr = MPU6050_DEFAULT_ADDRESS;
 	scaleGyroRange = 0;
 	scaleAccRange = 0;
 	xGyroOffset = 22;  //pitch

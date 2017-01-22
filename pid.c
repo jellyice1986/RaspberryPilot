@@ -202,7 +202,7 @@ void pidInit() {
  *		output of PID controler
  *
  */
-float pidCalculation(PID_STRUCT *pid, float processValue) {
+float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outputI,bool outputD) {
 
 	float pterm = 0.f;
 	float dterm = 0.f;
@@ -220,18 +220,24 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 				+ (float)(tv.tv_usec - pid->last_tv.tv_usec)*0.000001f);
 
 		//P term
+		if(outputP){
 		pid->err = deadband((pid->sp + pid->spShift) - (pid->pv), pid->deadBand) ;
+			pterm = pid->pgain * pid->err;
+		}
 
 		//I term
+		if(outputI){
 		pid->integral += (pid->err * timeDiff);
 		pid->integral=LIMIT_MIN_MAX_VALUE(pid->integral,-pid->iLimit, pid->iLimit);
+			iterm = pid->igain * pid->integral;
+		}
 
 		//D term
+		if(outputD){
 		dterm = (pid->err - pid->last_error) / NON_ZERO(timeDiff);
-
-		pterm = pid->pgain * pid->err;
-		iterm = pid->igain * pid->integral;
 		dterm = pid->dgain * dterm;
+			pid->last_error = pid->err;
+		}
 
 		result = (pterm + iterm + dterm);
 
@@ -253,7 +259,6 @@ float pidCalculation(PID_STRUCT *pid, float processValue) {
 #endif
 	}
 
-	pid->last_error = pid->err;
 	pid->last_tv.tv_sec = tv.tv_sec;
 	pid->last_tv.tv_usec = tv.tv_usec;
 
@@ -319,6 +324,25 @@ void resetPidRecord(PID_STRUCT *pid) {
 	pid->last_error = 0.f;
 	pid->last_tv.tv_usec = 0;
 	pid->last_tv.tv_sec = 0;
+}
+
+/**
+ *  update PID tv
+ *
+ * @param pid
+ * 		PID record
+ *
+ * @return
+ *		 void
+ *
+ */
+void updatePidTv(PID_STRUCT *pid) {
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	
+	pid->last_tv.tv_usec = tv.tv_usec;
+	pid->last_tv.tv_sec = tv.tv_sec;
 }
 
 /**

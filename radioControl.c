@@ -506,6 +506,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				setYawCenterPoint(0.f);
 				setAltStartPoint(0.f);
 				setPidSp(&yawAttitudePidSettings, 321.0);
+				setFlippingFlag(FLIP_NONE);
 
 			} else {
 
@@ -522,7 +523,27 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				setPidSp(&pitchAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
 								getAngularLimit()));
-				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 3));
+				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 4));
+
+				if(getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag()) ){
+
+					if(rollSpShift <= -FLIP_THRESHOLD){
+						setFlippingFlag(FLIP_LEFT);
+					}else if(rollSpShift >= FLIP_THRESHOLD){
+						setFlippingFlag(FLIP_RIGHT);
+					}
+
+					if(pitchSpShift <= -FLIP_THRESHOLD){
+						setFlippingFlag(FLIP_BACK);
+					}else if(pitchSpShift >= FLIP_THRESHOLD){
+						setFlippingFlag(FLIP_FRONT);
+					}
+
+					if(FLIP_NONE!=getFlippingFlag()){
+						setFlippingStep(1);
+					}
+					
+				}
 
 				//_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
 			}

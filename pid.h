@@ -48,7 +48,7 @@ extern PID_STRUCT altHoldAltSettings;
 extern PID_STRUCT altHoldlSpeedSettings;
 
 void pidInit(void);
-float pidCalculation(PID_STRUCT *pid, float process_point);
+float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outputI,bool outputD);
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
 		float set_point, float shift, float ilimit,float deadBand);
 void resetPidRecord(PID_STRUCT *pid);
@@ -70,4 +70,5 @@ void setDGain(PID_STRUCT *pid, float gain);
 float getDGain(PID_STRUCT *pid);
 void setPidDeadBand(PID_STRUCT *pi, float value);
 float getPidDeadBand(PID_STRUCT *pi);
+void updatePidTv(PID_STRUCT *pid);
 
