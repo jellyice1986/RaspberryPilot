@@ -661,6 +661,12 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				getAltitudePidOutputLimitation());
 		/***/
 		parameter = atoi(
+				packet[SETUP_FACTOR_FLIP_ENABLED]);
+		setFlippingIsEnable(parameter);
+		_DEBUG(DEBUG_NORMAL, "getFlippingIsEnable: %d\n",
+				getFlippingIsEnable());
+		/***/
+		parameter = atoi(
 						packet[SETUP_FACTOR_LOG_ENABLED]);
 				setLogIsEnable(parameter);
 				_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n",

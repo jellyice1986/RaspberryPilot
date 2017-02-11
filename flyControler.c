@@ -364,11 +364,12 @@ void motorControlerFlipping() {
 	float centerThrottle = 0.f;
 	short invert=1;
 	static struct timeval tv_last;
+	static float power=0;
 	struct timeval tv;
  
 	gettimeofday(&tv, NULL);
 
-	if((unsigned long)((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)) < FLIP_DELAY){
+	if((unsigned long)((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)) < FLIP_DELAY*1000000){
 		setFlippingStep(0);
 		setFlippingFlag(FLIP_NONE);
 		motorControler();
@@ -376,6 +377,7 @@ void motorControlerFlipping() {
 	}
 
 	if(getFlippingStep()==1){
+		power=FLIP_POWER;
 		setFlippingStep(2);
 	}
 	
@@ -383,9 +385,10 @@ void motorControlerFlipping() {
 		setFlippingStep(3);
 	}else{
 
-		if((getFlippingStep()==3)&&(getRoll()<=45.f)){
+		if((getFlippingStep()==3)&&(getRoll()<=30.f)){
 			setFlippingStep(0);
 			setFlippingFlag(FLIP_NONE);
+			power=0.f;
 			gettimeofday(&tv_last, NULL);
 			motorControler();
 			return;
@@ -395,6 +398,7 @@ void motorControlerFlipping() {
 	centerThrottle = (float)getThrottlePowerLevel() ;
 	maxLimit = (float) getMaxPowerLeve();
 	minLimit = (float) getMinPowerLevel();
+	power++;
 
 	setPidSp(&rollAttitudePidSettings,
 			LIMIT_MIN_MAX_VALUE(0.f, -getAngularLimit(),
@@ -410,7 +414,7 @@ void motorControlerFlipping() {
 
 		setPidSp(&rollRatePidSettings, LIMIT_MIN_MAX_VALUE(
 						pidCalculation(&rollAttitudePidSettings, getRoll(),false,false,false),-getGyroLimit(), getGyroLimit()));
-		rollRateOutput = ((getFlippingFlag()&FLIP_LEFT)?-FLIP_POWER:FLIP_POWER)+ pidCalculation(&rollRatePidSettings, getRollGyro(),false,false,false);
+		rollRateOutput = ((getFlippingFlag()&FLIP_LEFT)?-power:power)+ pidCalculation(&rollRatePidSettings, getRollGyro(),false,false,false);
 		
 	}else{
 		setPidSp(&rollRatePidSettings, LIMIT_MIN_MAX_VALUE(
@@ -422,7 +426,7 @@ void motorControlerFlipping() {
 
 		setPidSp(&pitchRatePidSettings, LIMIT_MIN_MAX_VALUE(
 						pidCalculation(&pitchAttitudePidSettings, getPitch(),false,false,false),-getGyroLimit(), getGyroLimit()));
-		pitchRateOutput = ((getFlippingFlag()&FLIP_BACK)?-FLIP_POWER:FLIP_POWER)+ pidCalculation(&pitchRatePidSettings, getPitchGyro(),false,false,false);
+		pitchRateOutput = ((getFlippingFlag()&FLIP_BACK)?-power:power)+ pidCalculation(&pitchRatePidSettings, getPitchGyro(),false,false,false);
 		
 	}else{
 		setPidSp(&pitchRatePidSettings, LIMIT_MIN_MAX_VALUE(
