@@ -13,7 +13,7 @@ Circuit:
 ![alt tag](https://github.com/jellyice1986/photo/blob/master/circuit.jpg)
 ![alt tag](https://github.com/jellyice1986/photo/blob/master/raspberry%20pilot%20B.jpg)
 
-RaspberryPilot is controled by RaspberryPilot APP with Android phone, there are two type of radio communication system as below
+RaspberryPilot is controled by RaspberryPilotApp (https://github.com/jellyice1986/RaspberryPilotApp) with Android phone, there are two type of radio communication system as below
 
 Type 1: communicat by using the blutetooth on smart phone, the communication range is about 10 meters
  
