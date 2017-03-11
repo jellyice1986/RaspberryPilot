@@ -41,12 +41,20 @@ SOFTWARE.
 #define DEFAULT_ADJUST_PERIOD 1
 #define DEFAULT_GYRO_LIMIT 50
 #define DEFAULT_ANGULAR_LIMIT 5000
+#define FLIP_THRESHOLD 	30.f
+#define FLIP_DELAY 		5 //sec
+#define FLIP_POWER 		290.f
 
 float getSlopeThrottleOffset();
 static void getAttitudePidOutput();
 void getAltHoldAltPidOutput();
 void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput);
 float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
+void setFlippingIsEnable(bool val);
+void setFlipThreadHold(unsigned char v);
+void setFlipDelay(unsigned char v);
+unsigned char getFlipDelay();
+void setFlipPower(unsigned short v);
 
 pthread_mutex_t controlMotorMutex;
 
@@ -63,9 +71,14 @@ static float maxThrottleOffset;
 static float altitudePidOutputLimitation;
 static float SlopeThrottleOffsetGain=1.f;
 static float altStartPoint;
-static unsigned char flippingFlag=0x0;
-static unsigned char flipStep=0;
-static bool flipIsEnable=false;
+
+//flip parameter
+static unsigned char flippingFlag;
+static unsigned char flipStep;
+static bool flipIsEnable;
+static unsigned char flipThreshold;
+static unsigned char flipDelay;
+static unsigned short flipPower;
 
 /**
  * Init paramtes and states for flyControler
@@ -93,7 +106,6 @@ bool flyControlerInit() {
 	setMotorGain(SOFT_PWM_CW1, 1);
 	setMotorGain(SOFT_PWM_CCW2, 1);
 	setMotorGain(SOFT_PWM_CW2, 1);
-	setFlippingIsEnable(false);
 	setAltitudePidOutputLimitation(15.f); // 15 cm/sec
 	rollAttitudeOutput = 0.f;
 	pitchAttitudeOutput = 0.f;
@@ -101,6 +113,14 @@ bool flyControlerInit() {
 	altHoltAltOutput = 0.f;
 	maxThrottleOffset = 1000.f;
 
+	//init flip parameter
+	flippingFlag=0x0;
+	flipStep=0;
+	setFlippingIsEnable(false);
+	setFlipThreadHold(FLIP_THRESHOLD);
+	setFlipDelay(FLIP_DELAY);
+	setFlipPower(FLIP_POWER);
+	
 	return true;
 }
 
@@ -369,7 +389,7 @@ void motorControlerFlipping() {
  
 	gettimeofday(&tv, NULL);
 
-	if((unsigned long)((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)) < FLIP_DELAY*1000000){
+	if((unsigned long)((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)) < getFlipDelay()*1000000){
 		setFlippingStep(0);
 		setFlippingFlag(FLIP_NONE);
 		motorControler();
@@ -377,7 +397,7 @@ void motorControlerFlipping() {
 	}
 
 	if(getFlippingStep()==1){
-		power=FLIP_POWER;
+		power=getFlipPower();
 		setFlippingStep(2);
 	}
 	
@@ -882,5 +902,89 @@ bool getFlippingIsEnable(){
  */
 void setFlippingIsEnable(bool val){
 	flipIsEnable=val;
+}
+
+/**
+ * setup flipping threahold
+ *
+ * @param v
+ * 		flipping threahold
+ *
+ * @return 
+ *		void
+ *
+ */
+void setFlipThreadHold(unsigned char v){
+	flipThreshold=v;
+}
+
+/**
+ * get flipping threahold
+ *
+ * @param v
+ * 		void
+ *
+ * @return 
+ *		flipping threahold
+ *
+ */
+unsigned char getFlipThreadHold(){
+	return flipThreshold;
+}
+
+/**
+ * setup flipping delay
+ *
+ * @param v
+ * 		flipping delay
+ *
+ * @return 
+ *		void
+ *
+ */
+void setFlipDelay(unsigned char v){
+	flipDelay=v;
+}
+
+/**
+ * get flipping delay
+ *
+ * @param v
+ * 		void
+ *
+ * @return 
+ *		flipping delay
+ *
+ */
+unsigned char getFlipDelay(){
+	return flipDelay;
+}
+
+/**
+ * setup flipping power
+ *
+ * @param v
+ * 		flipping power
+ *
+ * @return 
+ *		void
+ *
+ */
+void setFlipPower(unsigned short v){
+	flipPower=v;
+}
+
+/**
+ * get flipping power
+ *
+ * @param v
+ * 		void
+ *
+ * @return 
+ *		flipping power
+ *
+ */
+unsigned short getFlipPower(){
+	return flipPower;
 }
 

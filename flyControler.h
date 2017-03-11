@@ -22,9 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-#define FLIP_DELAY 		5 //sec
-#define FLIP_THRESHOLD		15.f
-#define FLIP_POWER 		290.f
 #define FLIP_NONE 		0x0
 #define FLIP_RIGHT 		0x1
 #define FLIP_LEFT 		0x2
@@ -57,4 +54,6 @@ unsigned char getFlippingStep();
 void setFlippingStep(unsigned char val);
 bool getFlippingIsEnable();
 void setFlippingIsEnable(bool val);
+unsigned short getFlipPower();
+unsigned char getFlipThreadHold();
 

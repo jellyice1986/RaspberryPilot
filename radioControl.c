@@ -527,15 +527,15 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 
 				if(getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag()) ){
 
-					if(rollSpShift <= -FLIP_THRESHOLD){
+					if(rollSpShift <= -getFlipThreadHold()){
 						setFlippingFlag(FLIP_LEFT);
-					}else if(rollSpShift >= FLIP_THRESHOLD){
+					}else if(rollSpShift >= getFlipThreadHold()){
 						setFlippingFlag(FLIP_RIGHT);
 					}
 
-					if(pitchSpShift <= -FLIP_THRESHOLD){
+					if(pitchSpShift <= -getFlipThreadHold()){
 						setFlippingFlag(FLIP_BACK);
-					}else if(pitchSpShift >= FLIP_THRESHOLD){
+					}else if(pitchSpShift >= getFlipThreadHold()){
 						setFlippingFlag(FLIP_FRONT);
 					}
 
