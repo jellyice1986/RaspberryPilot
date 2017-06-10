@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-#define SMA_BUFER_SIZE 50
+#define SMA_BUFER_SIZE 100
 
 typedef struct {
 	char  name[10]; //name of SMA entity

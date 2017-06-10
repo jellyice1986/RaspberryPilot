@@ -1046,7 +1046,7 @@ bool mpu6050Init() {
 		return false;
 	}
 	
-#if 1
+#if 0
 	initkalmanFilterOneDimEntity(&axKalmanFilterEntry,"AX", 0.f,10.f,0.01,0.01, 0.f);
 	initkalmanFilterOneDimEntity(&ayKalmanFilterEntry,"AY", 0.f,10.f,0.01,0.01, 0.f);
 	initkalmanFilterOneDimEntity(&azKalmanFilterEntry,"AZ", 0.f,10.f,0.01,0.01, 0.f);
@@ -2742,7 +2742,7 @@ void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
 	*gy=(float)sgy*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
 	*gz=(float)sgz*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
 
-#if 1 //kalman filter
+#if 0 //kalman filter
 	*ax=kalmanFilterOneDimCalc(*ax,&axKalmanFilterEntry);
 	*ay=kalmanFilterOneDimCalc(*ay,&ayKalmanFilterEntry);
 	*az=kalmanFilterOneDimCalc(*az,&azKalmanFilterEntry);

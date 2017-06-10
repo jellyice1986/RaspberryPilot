@@ -46,7 +46,7 @@ SOFTWARE.
 
 static float aslRaw = 0.f;
 static float altHoldSpeedDeadband = 30.f;
-static float altHoldAccSpeedDeadband = 0.5;
+static float altHoldAccSpeedDeadband = 5;
 static float altHoldSpeed = 0.f;
 static float altHoldAccSpeed = 0.f;
 static float altHoldAltSpeed = 0.f;
@@ -347,7 +347,7 @@ void *altHoldUpdate(void *arg) {
 					if(interval>=ALTHOLD_UPDATE_PERIOD){			
 							
 							//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);				
-
+#if 0
 							aslRaw=(float)data;
 							altHoldAltSpeed = deadband(((aslRaw - lastAslRaw)/(float)NON_ZERO(interval*0.000001)),altHoldSpeedDeadband);
 							altHoldAccSpeed = 0.3f *altHoldAccSpeed+0.7f * deadband(lastAcl * ((float)interval*0.001),altHoldAccSpeedDeadband);
@@ -359,7 +359,19 @@ void *altHoldUpdate(void *arg) {
 
 							lastAslRaw=aslRaw;
 							lastAcl=getAccWithoutGravity();
-							//_DEBUG(DEBUG_NORMAL, "altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
+#else
+							aslRaw=(float)data;
+							altHoldAccSpeed = deadband(getAccWithoutGravity() * 100.f,altHoldAccSpeedDeadband);
+							altHoldSpeed = altHoldSpeed*0.7f + altHoldAccSpeed*0.3f;
+
+							pthread_mutex_lock(&altHoldIsUpdateMutex);
+							altholdIsUpdate = true;
+							pthread_mutex_unlock(&altHoldIsUpdateMutex);
+
+#endif
+
+							
+							//_DEBUG(DEBUG_NORMAL, "aslRaw=%.3f altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",aslRaw,altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
 							
 							tv2.tv_usec=tv.tv_usec;
 							tv2.tv_sec=tv.tv_sec;	

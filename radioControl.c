@@ -237,7 +237,7 @@ void *radioReceiveThread(void *arg) {
 			} else if ((getChar == '#') && (buf[0] == '@')
 					&& (count < sizeof(buf))) {
 				buf[count] = getChar;
-				processRadioMessages(fd, buf, strlen(buf));
+				processRadioMessages(fd, buf, count+1);
 				memset(buf, '\0', sizeof(buf));
 				count = 0;
 			} else {

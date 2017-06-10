@@ -49,7 +49,7 @@ SOFTWARE.
 #define MS5611_TEMP_D2_OSR_2048 0x56
 #define MS5611_TEMP_D2_OSR_4096 0x58
 #define MS5611_ADC_MSB          0xF6
-#define CONST_SEA_PRESSURE 		1016.3f //Hsinchu city
+#define CONST_SEA_PRESSURE 		1007.0f //1016.3f Hsinchu city
 #define CONST_PF 				0.1902630958f //(1/5.25588f)
 #define CONST_PF2 				153.8461538461538f //(1/0.0065)
 
@@ -90,8 +90,8 @@ bool ms5611Init() {
 		return false;
 	}
 
-	initSmaFilterEntity(&ms5611SmaFilterEntry,"MS5611",5);
-	initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
+	initSmaFilterEntity(&ms5611SmaFilterEntry,"MS5611",20);
+	//initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
 	
 	osr = 4096;
 	deltaTemp = 0;
@@ -130,9 +130,9 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 	press = readPress();
 	
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
-	//rawAltitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)* (tmp + 273.15f)) * CONST_PF2 * 100.f;
-	rawAltitude = (153.8462f * (tmp + 273.15f) * (1.0f - expf(0.190259f * logf(press / CONST_SEA_PRESSURE))))*100.f;
-	pushSmaData(&ms5611SmaFilterEntry,kalmanFilterOneDimCalc(rawAltitude,&ms5611KalmanFilterEntry));
+	rawAltitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)* (tmp + 273.15f)) * CONST_PF2 * 100.f;
+	//pushSmaData(&ms5611SmaFilterEntry,kalmanFilterOneDimCalc(rawAltitude,&ms5611KalmanFilterEntry));
+	pushSmaData(&ms5611SmaFilterEntry,rawAltitude);
 	*cm= (unsigned short) pullSmaData(&ms5611SmaFilterEntry);
 
 	//_DEBUG(DEBUG_NORMAL, "rawAltitude=%.2f, *cm=%d, mbar=%.2f, temp=%.2f\n", rawAltitude,*cm,press, tmp);

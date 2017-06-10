@@ -43,7 +43,7 @@ SOFTWARE.
 #define DEFAULT_ANGULAR_LIMIT 5000
 #define FLIP_THRESHOLD 	30.f
 #define FLIP_DELAY 		5 //sec
-#define FLIP_POWER 		290.f
+#define FLIP_POWER 		300.f
 
 float getSlopeThrottleOffset();
 static void getAttitudePidOutput();
@@ -405,7 +405,7 @@ void motorControlerFlipping() {
 		setFlippingStep(3);
 	}else{
 
-		if((getFlippingStep()==3)&&(getRoll()<=30.f)){
+		if((getFlippingStep()==3)&&(getRoll()<=10.f)){
 			setFlippingStep(0);
 			setFlippingFlag(FLIP_NONE);
 			power=0.f;
