@@ -54,8 +54,8 @@ bool extractPacketInfo(char *buf, int lenth,
 bool checkLogIsEnable();
 void setLogIsEnable(bool v);
 bool checkPacketFieldIsValid(char *buf, short lenth);
-int hexStringToInt(char * hexString, int len);
-short getChecksum(char *buf, int len);
+unsigned int hexStringToInt(char * hexString, unsigned int len);
+unsigned short getChecksum(char *buf, unsigned int len);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -382,7 +382,7 @@ bool checkPacketFieldIsValid(char *buf, short lenth){
 			count2=CONTROL_MOTION_END-1;
 			break;
 		case HEADER_HALT_PI:
-			count2=0;
+			count2=HALT_PI_END-1;
 			break;
 		case HEADER_SETUP_FACTOR:
 			count2=SETUP_FACTOR_END-1;
@@ -415,17 +415,17 @@ bool checkPacketFieldIsValid(char *buf, short lenth){
  * @return
  * 		a number
  */
-int hexStringToInt(char * hexString, int len){
+unsigned int hexStringToInt(char * hexString, unsigned int len){
 
 	int i=0;
-	int result=0;
+	unsigned int result=0;
 	char hexTable[] = "0123456789ABCDEF";
 
 	for(i=0;i<len;i++){
 		result=(result<<4)+(strchr(hexTable,hexString[i])-hexTable);
 	}
 
-	//_DEBUG(DEBUG_NORMAL,"%s %d\n",__func__,result);
+	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,result);
 
 	return result;
 }
@@ -442,22 +442,58 @@ int hexStringToInt(char * hexString, int len){
  * @return
  * 		checksum
  */
-short getChecksum(char *buf,int len){
+unsigned short getChecksum(char *buf,unsigned int len){
 
 	int i;
-	int checksunm = 0;
+	unsigned int checksunm = 0;
 
 	for (i = 0; i < len; i = i + 2) {
 
-		checksunm += ((buf[i] & 0xFF) << 8) | ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00);
+		checksunm += (((buf[i] & 0xFF) << 8) | ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00));
 
-		checksunm = (checksunm & 0xffff) + (checksunm >> 16);
+		checksunm = ((checksunm & 0xFFFF) + (checksunm >> 16));
 	}
 
-	//_DEBUG(DEBUG_NORMAL,"%s %d\n",__func__,checksunm);
+	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,checksunm);
 	
-	return (short) checksunm;
+	return (unsigned short) checksunm;
 }
+
+/**
+ * get index of checksum
+ *
+ * @param header
+ * 		packet header
+ *
+ * @return
+ * 		index
+ */
+unsigned short getChecksumFieldIndex(unsigned int header){
+
+	unsigned short ret=0;
+		
+	switch (header){
+		case HEADER_ENABLE_FLY_SYSTEM:
+			ret=ENABLE_FLY_SYSTEM_CHECKSUM;
+			break;
+		case HEADER_CONTROL_MOTION:
+			ret=CONTROL_MOTION_CHECKSUM;
+			break;
+		case HEADER_HALT_PI:
+			ret=HALT_PI_CHECKSUM;
+			break;
+		case HEADER_SETUP_FACTOR:
+			ret=SETUP_FACTOR_CHECKSUM;
+			break;
+		case HEADER_SETUP_PID:
+			ret=SETUP_PID_CHECKSUM;
+			break;
+		default:
+			ret=-1;
+	}
+	return ret;
+}
+
 
 /**
  * Decode a received packet
@@ -487,9 +523,9 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n",buf);
 		rev_drop++;
 		return false;
-	}else if(!(getChecksum(buf,lenth-5)==(short)hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],4))){
+	}else if(!(getChecksum(buf,lenth-5)==(unsigned short)hexStringToInt(packet[getChecksumFieldIndex(atoi(packet[0]))],4))){
 		rev_drop++;
-		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid checksum: %s  getChecksum=%d hexStringToInt=%d\n",buf,getChecksum(buf,lenth-5),hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],4));
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid checksum: %s  getChecksum=0x%x hexStringToInt=0x%x\n",buf,getChecksum(buf,lenth-5),(unsigned short)hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],4));
 		return false;
 	}else{
 		rev_success++;
