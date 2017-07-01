@@ -398,12 +398,17 @@ static float zGravity;
 static float asaX;
 static float asaY;
 static float asaZ;
+
+#define MPU6050_KALMAN 0
+
+#if MPU6050_KALMAN
 static KALMAN_1D_STRUCT axKalmanFilterEntry;
 static KALMAN_1D_STRUCT ayKalmanFilterEntry;
 static KALMAN_1D_STRUCT azKalmanFilterEntry;
 static KALMAN_1D_STRUCT gxKalmanFilterEntry;
 static KALMAN_1D_STRUCT gyKalmanFilterEntry;
 static KALMAN_1D_STRUCT gzKalmanFilterEntry;
+#endif
 
 void setClockSource(unsigned char source);
 void setFullScaleGyroRange(unsigned char range);
@@ -1046,7 +1051,7 @@ bool mpu6050Init() {
 		return false;
 	}
 	
-#if 0
+#if MPU6050_KALMAN
 	initkalmanFilterOneDimEntity(&axKalmanFilterEntry,"AX", 0.f,10.f,0.01,0.01, 0.f);
 	initkalmanFilterOneDimEntity(&ayKalmanFilterEntry,"AY", 0.f,10.f,0.01,0.01, 0.f);
 	initkalmanFilterOneDimEntity(&azKalmanFilterEntry,"AZ", 0.f,10.f,0.01,0.01, 0.f);
@@ -2742,7 +2747,7 @@ void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
 	*gy=(float)sgy*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
 	*gz=(float)sgz*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
 
-#if 0 //kalman filter
+#if MPU6050_KALMAN
 	*ax=kalmanFilterOneDimCalc(*ax,&axKalmanFilterEntry);
 	*ay=kalmanFilterOneDimCalc(*ay,&ayKalmanFilterEntry);
 	*az=kalmanFilterOneDimCalc(*az,&azKalmanFilterEntry);

@@ -53,7 +53,9 @@ bool extractPacketInfo(char *buf, int lenth,
 		char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 bool checkLogIsEnable();
 void setLogIsEnable(bool v);
-bool checkPacketIsValid(char *buf, short lenth);
+bool checkPacketFieldIsValid(char *buf, short lenth);
+int hexStringToInt(char * hexString, int len);
+short getChecksum(char *buf, int len);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -112,7 +114,7 @@ bool checkLogIsEnable(){
 }
 
 /**
- * set whether we should send more log to remote controler or not
+ * whether we should send more log to remote controler or not
  *
  * @param 
  * 		v
@@ -125,6 +127,16 @@ bool checkLogIsEnable(){
 void setLogIsEnable(bool v){
 	logIsEnable=v;
 }
+
+void printPayload(unsigned char *payload,unsigned int len){
+
+	int j=0;
+	for(j=0;j<len;j++){
+		_DEBUG(DEBUG_NORMAL,"%x ", *(payload+j));
+	}
+	_DEBUG(DEBUG_NORMAL,"\n");
+}
+
 
 /**
  *  transmit packets to remot controler
@@ -339,30 +351,16 @@ void getPacketDropRate(){
  * @return
  *		bool
  */
-bool checkPacketIsValid(char *buf, short lenth){
+bool checkPacketFieldIsValid(char *buf, short lenth){
 
-	int i=0;
+	int i,j=0;
 	int count=0;
 	int count2=0;
-	char a;
 
 	//_DEBUG(DEBUG_NORMAL, "length=%d %s \n",lenth,buf);
 
-	//check character in packet 
-	for(i=0;i<lenth;i++){
-		a=*(buf+i);
-		if(!((a=='@')|(a=='#')|(a==':')|(a=='-')|(a=='.')|(a>='0'&&a<='9'))){
-			_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid char: length=%d %s buf[%d]=%c \n",lenth,buf,i,a);
-			return false;
-		}
-		if(a==':'){
-			count++;
-		}
-	}
-
 	//check header
-	a=*(buf+1);
-	i=atoi(&a);
+	i=atoi(buf+1);
 
 	if(!(i>HEADER_BEGIN&&i<HEADER_END)){
 			_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid header: length=%d %s\n",lenth,buf);
@@ -370,6 +368,12 @@ bool checkPacketIsValid(char *buf, short lenth){
 	}
 	
 	//check packet field
+	for(j=0;j<lenth;j++){
+		if(*(buf+j)==':'){
+			count++;
+		}
+	}
+	
 	switch (i){
 		case HEADER_ENABLE_FLY_SYSTEM:
 			count2=ENABLE_FLY_SYSTEM_FIWLD_END-1;
@@ -398,6 +402,63 @@ bool checkPacketIsValid(char *buf, short lenth){
 	return true;
 }
 
+
+/**
+ * convert a string  to int
+ *
+ * @param hexString
+ * 		String
+ *
+ * @param len
+ * 		length of payload
+ *
+ * @return
+ * 		a number
+ */
+int hexStringToInt(char * hexString, int len){
+
+	int i=0;
+	int result=0;
+	char hexTable[] = "0123456789ABCDEF";
+
+	for(i=0;i<len;i++){
+		result=(result<<4)+(strchr(hexTable,hexString[i])-hexTable);
+	}
+
+	//_DEBUG(DEBUG_NORMAL,"%s %d\n",__func__,result);
+
+	return result;
+}
+
+/**
+ * calculate checksum from a payload
+ *
+ * @param buf
+ * 		payload
+ *
+ * @param len
+ * 		length of payload
+ *
+ * @return
+ * 		checksum
+ */
+short getChecksum(char *buf,int len){
+
+	int i;
+	int checksunm = 0;
+
+	for (i = 0; i < len; i = i + 2) {
+
+		checksunm += ((buf[i] & 0xFF) << 8) | ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00);
+
+		checksunm = (checksunm & 0xffff) + (checksunm >> 16);
+	}
+
+	//_DEBUG(DEBUG_NORMAL,"%s %d\n",__func__,checksunm);
+	
+	return (short) checksunm;
+}
+
 /**
  * Decode a received packet
  *
@@ -416,17 +477,19 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	float pitchSpShift = 0;
 	float yawShiftValue = 0;
 	float throttlePercentage = 0.f;
+
 #if CHECK_RECEIVER_PERIOD	
 	struct timeval tv;
 	struct timeval tv_last;
 #endif
 
-	if (!(checkPacketIsValid(buf, lenth) && extractPacketInfo(buf, lenth, packet))){
+	if (!(checkPacketFieldIsValid(buf, lenth) && extractPacketInfo(buf, lenth, packet))){
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n",buf);
 		rev_drop++;
 		return false;
-	}else if(atoi(packet[0])==HEADER_CONTROL_MOTION && atoi(packet[CONTROL_MOTION_PAYLOAD_LEN])!=strlen(buf)){
+	}else if(!(getChecksum(buf,lenth-5)==(short)hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],4))){
 		rev_drop++;
-		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid length: %s  \n",buf);
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid checksum: %s  getChecksum=%d hexStringToInt=%d\n",buf,getChecksum(buf,lenth-5),hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],4));
 		return false;
 	}else{
 		rev_success++;

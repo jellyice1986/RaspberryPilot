@@ -69,7 +69,12 @@ static unsigned short calibration[6];
 static float deltaTemp;   //dt
 static float temperature;
 static SMA_STRUCT ms5611SmaFilterEntry;
+
+#define MS5611_KALMAN 0
+
+#if MS5611_KALMAN
 static KALMAN_1D_STRUCT ms5611KalmanFilterEntry;
+#endif
 
 /**
  * Init MS5611
@@ -90,8 +95,10 @@ bool ms5611Init() {
 		return false;
 	}
 
-	initSmaFilterEntity(&ms5611SmaFilterEntry,"MS5611",20);
-	//initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
+	initSmaFilterEntity(&ms5611SmaFilterEntry,"MS5611",70);
+#if MS5611_KALMAN
+	initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
+#endif
 	
 	osr = 4096;
 	deltaTemp = 0;
@@ -131,8 +138,11 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 	
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
 	rawAltitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)* (tmp + 273.15f)) * CONST_PF2 * 100.f;
-	//pushSmaData(&ms5611SmaFilterEntry,kalmanFilterOneDimCalc(rawAltitude,&ms5611KalmanFilterEntry));
+#if MS5611_KALMAN	
+	pushSmaData(&ms5611SmaFilterEntry,kalmanFilterOneDimCalc(rawAltitude,&ms5611KalmanFilterEntry));
+#else
 	pushSmaData(&ms5611SmaFilterEntry,rawAltitude);
+#endif
 	*cm= (unsigned short) pullSmaData(&ms5611SmaFilterEntry);
 
 	//_DEBUG(DEBUG_NORMAL, "rawAltitude=%.2f, *cm=%d, mbar=%.2f, temp=%.2f\n", rawAltitude,*cm,press, tmp);
