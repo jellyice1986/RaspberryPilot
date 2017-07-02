@@ -23,7 +23,7 @@ SOFTWARE.
 ******************************************************************************/
 
 #define TRANSMIT_TIMER 			30000
-#define RECEIVE_TIMER 			20000
+#define RECEIVE_TIMER 			10000
 #define SERIAL_BAUDRATE 		115200
 #define PACKET_FIELD_NUM 		50
 #define PACKET_FIELD_LENGTH 	20

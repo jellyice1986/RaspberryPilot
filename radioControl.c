@@ -420,9 +420,15 @@ unsigned int hexStringToInt(char * hexString, unsigned int len){
 	int i=0;
 	unsigned int result=0;
 	char hexTable[] = "0123456789ABCDEF";
+	char *charPointer;
 
 	for(i=0;i<len;i++){
-		result=(result<<4)+(strchr(hexTable,hexString[i])-hexTable);
+		charPointer=strchr(hexTable,hexString[i]);
+		if(NULL==charPointer){
+			result=0x0;
+			break;
+		}
+		result=(result<<4)+(charPointer-hexTable);
 	}
 
 	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,result);
@@ -451,7 +457,7 @@ unsigned short getChecksum(char *buf,unsigned int len){
 
 		checksunm += (((buf[i] & 0xFF) << 8) | ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00));
 
-		checksunm = ((checksunm & 0xFFFF) + (checksunm >> 16));
+		checksunm = ((checksunm & 0xFFFF) + ((checksunm >> 16)>0?1:0));
 	}
 
 	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,checksunm);
