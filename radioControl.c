@@ -457,12 +457,12 @@ unsigned short getChecksum(char *buf,unsigned int len){
 
 		checksunm += (((buf[i] & 0xFF) << 8) | ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00));
 
-		checksunm = ((checksunm & 0xFFFF) + ((checksunm >> 16)>0?1:0));
+		checksunm = (checksunm & 0xFFFF) + (checksunm >> 16);
 	}
 
 	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,checksunm);
 	
-	return (unsigned short) checksunm;
+	return (unsigned short)(checksunm & 0xFFFF);
 }
 
 /**
@@ -495,6 +495,7 @@ unsigned short getChecksumFieldIndex(unsigned int header){
 			ret=SETUP_PID_CHECKSUM;
 			break;
 		default:
+			_DEBUG(DEBUG_NORMAL,"%s can't find index, header=%d\n",__func__,header);
 			ret=-1;
 	}
 	return ret;
@@ -543,11 +544,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		// Enable or disable fly syatem
 
 		if (1 == atoi(packet[ENABLE_FLY_SYSTEM_FIWLD_ISENABLE])) {
-			if (!flySystemIsEnable()) {
+			_DEBUG(DEBUG_NORMAL,"Enable Flysystem\n");
 				enableFlySystem();
 				motorInit();
-			}
 		} else {
+			_DEBUG(DEBUG_NORMAL,"Disable Flysystem\n");
 			disenableFlySystem();
 		}
 		getPacketDropRate();

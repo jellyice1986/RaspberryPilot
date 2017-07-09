@@ -49,7 +49,7 @@ SOFTWARE.
 #define MS5611_TEMP_D2_OSR_2048 0x56
 #define MS5611_TEMP_D2_OSR_4096 0x58
 #define MS5611_ADC_MSB          0xF6
-#define CONST_SEA_PRESSURE 		1007.0f //1016.3f Hsinchu city
+#define CONST_SEA_PRESSURE 		1016.3f //Hsinchu city
 #define CONST_PF 				0.1902630958f //(1/5.25588f)
 #define CONST_PF2 				153.8461538461538f //(1/0.0065)
 
