@@ -377,7 +377,7 @@ void *altHoldUpdate(void *arg) {
 		}
 	}
 
-	pthread_exit((void *) 1234);
+	pthread_exit((void *) 0);
 
 }
 

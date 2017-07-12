@@ -22,7 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-#define MAX_COUNTER 10
+// (int)((x*1000000)/(TRANSMIT_TIMER)), x=sec 
+#define MAX_COUNTER 50  //2sec
 #define MIN_COUNTER 0
 
 void securityMechanismInit();

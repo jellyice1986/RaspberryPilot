@@ -46,9 +46,9 @@ SOFTWARE.
 #ifdef MPU_DMP
 #define MAIN_DELAY_TIMER 2000 
 #else
-#define MAIN_DELAY_TIMER 100  
+#define MAIN_DELAY_TIMER 1500  
 #endif
-#define CONTROL_CYCLE_TIME 5000 //us
+#define CONTROL_CYCLE_TIME 3000 //us
 #define CHECK_CYCLE_TIME_1 0
 #define CHECK_CYCLE_TIME_2 0
 #define CHECK_CYCLE_TIME_3 0

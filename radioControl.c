@@ -28,6 +28,7 @@ SOFTWARE.
 #include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <wiringSerial.h>
 #include "commonLib.h"
 #include "flyControler.h"
@@ -208,7 +209,7 @@ void *radioTransmitThread(void *arg) {
 		usleep(TRANSMIT_TIMER);
 	}
 
-	pthread_exit((void *) 1234);
+	pthread_exit((void *) 0);
 }
 
 /**
@@ -224,54 +225,68 @@ void *radioTransmitThread(void *arg) {
 void *radioReceiveThread(void *arg) {
 
 	int fd = *(int *) arg;
-	char buf[300];
+	char serialBuf[1024];
+	char buf[512];
 	char getChar;
 	unsigned char count = 0;
+	short i=0;
 
 	memset(buf, '\0', sizeof(buf));
 
 	while (!getLeaveFlyControlerFlag()) {
 
-		if (serialDataAvail(fd)) {
+		if (serialDataAvail(fd)){ 
 
-			resetPacketCounter();
+			memset(serialBuf, '\0', sizeof(serialBuf));
 
-			getChar = serialGetchar(fd);
+			if (!read (fd, serialBuf, sizeof(serialBuf)))
+    			goto ignore;
+			
+			for(i=0;i<sizeof(serialBuf);i++){
 
-			if (getChar == '@') {
-				if(count!=0){
-					_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: '#' is lost, buf=%s \n",buf);
-					rev_drop++;
-				}
-				memset(buf, '\0', sizeof(buf));
-				buf[0] = getChar;
-				count = 1;
-			} else if ((getChar == '#') && (buf[0] == '@')
-					&& (count < sizeof(buf))) {
-				buf[count] = getChar;
-				processRadioMessages(fd, buf, count+1);
-				memset(buf, '\0', sizeof(buf));
-				count = 0;
-			} else {
-				if (buf[0] == '@' && (count < sizeof(buf))) {
-					buf[count] = getChar;
-					count++;
-				} else {
+				getChar = serialBuf[i];
+
+				if( '\0' == getChar)
+					break;
+
+				if (getChar == '@') {
+					resetPacketCounter();
 					if(count!=0){
+						_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: '#' is lost, buf=%s \n",buf);
 						rev_drop++;
-						_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: bufer overflow buf=%s getChar=%c\n",buf,getChar);
 					}
 					memset(buf, '\0', sizeof(buf));
+					buf[0] = getChar;
+					count = 1;
+				} else if ((getChar == '#') && (buf[0] == '@')
+						&& (count < sizeof(buf))) {
+					buf[count] = getChar;
+					processRadioMessages(fd, buf, count+1);
+					memset(buf, '\0', sizeof(buf));
 					count = 0;
+				} else {
+					if (buf[0] == '@' && (count < sizeof(buf))) {
+						buf[count] = getChar;
+						count++;
+					} else {
+						if(count!=0){
+							rev_drop++;
+							_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: bufer overflow buf=%s getChar=%c\n",buf,getChar);
+						}
+						memset(buf, '\0', sizeof(buf));
+						count = 0;
+					}
 				}
 
 			}
 		}else{
 			usleep(RECEIVE_TIMER);
 		}
+ignore:		
+	;
 	}
 
-	pthread_exit((void *) 1234);
+	pthread_exit((void *) 0);
 }
 
 /**

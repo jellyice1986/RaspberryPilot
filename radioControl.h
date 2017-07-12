@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-#define TRANSMIT_TIMER 			30000
+#define TRANSMIT_TIMER 			40000
 #define RECEIVE_TIMER 			10000
 #define SERIAL_BAUDRATE 		115200
 #define PACKET_FIELD_NUM 		50
