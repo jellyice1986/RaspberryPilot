@@ -120,8 +120,8 @@ int main() {
 		if(0 == mpuResult)
 #endif
 			setYaw(yrpAttitude[0]);
-			setPitch(yrpAttitude[2]);
 			setRoll(yrpAttitude[1]);
+			setPitch(yrpAttitude[2]);
 			setYawGyro(-pryRate[2]);
 			setPitchGyro(pryRate[0]);
 			setRollGyro(-pryRate[1]);
@@ -148,6 +148,7 @@ int main() {
 				_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec));
 #endif
 				pthread_mutex_lock(&controlMotorMutex);
+
 				if (flySystemIsEnable()) {
 
 					if (getPacketCounter() < MAX_COUNTER) {
@@ -180,6 +181,7 @@ int main() {
 					setThrottlePowerLevel(0);
 					setupAllMotorPoewrLevel(0, 0, 0, 0);
 				}
+				
 				pthread_mutex_unlock(&controlMotorMutex);
 
 				tv_l.tv_usec=tv_c.tv_usec;

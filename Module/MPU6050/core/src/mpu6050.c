@@ -38,6 +38,7 @@ https://github.com/jrowberg/i2cdevlib
 #include <fcntl.h>
 #include <string.h>
 #include <linux/i2c-dev.h>
+#include <sys/time.h>
 #include <sys/ioctl.h>
 #include <memory.h>
 #include <math.h>
@@ -45,9 +46,19 @@ https://github.com/jrowberg/i2cdevlib
 #include "commonLib.h"
 #include "i2c.h"
 #include "ahrs.h"
+#include "smaFilter.h"
 #include "kalmanFilter.h"
 #include "mpu6050.h"
 
+#define MAG_X_MAX (10.2f)
+#define MAG_X_MIN (-3.7f)
+#define MAG_Y_MAX (9.7f)
+#define MAG_Y_MIN (-3.9f)
+
+#define	MAG_X_SHIFT ((MAG_X_MAX+MAG_X_MIN)*0.5f)
+#define	MAG_Y_SHIFT ((MAG_Y_MAX+MAG_Y_MIN)*0.5f)
+#define	MAG_X_FACTOR (1.f)
+#define	MAG_Y_FACTOR ((MAG_X_MAX-MAG_X_MIN)/(MAG_Y_MAX-MAG_Y_MIN))
 #define pgm_read_byte(p) (*(const unsigned char *)(p))
 #define AUTO_CAL_BUFFER_SIZE 10
 #define AUTO_CAL_GYRO_DEADZONE 0.1
@@ -55,6 +66,13 @@ https://github.com/jrowberg/i2cdevlib
 #define MPU6050_ADDRESS_AD0_HIGH    0x69 // address pin high (VCC)
 #define MPU6050_ADDRESS     		MPU6050_ADDRESS_AD0_LOW 
 #define MPU9150_RA_MAG_ADDRESS		0x0C
+#define MPU9150_RA_MAG_XOUT_L		0x03
+#define MPU9150_RA_MAG_XOUT_H		0x04
+#define MPU9150_RA_MAG_YOUT_L		0x05
+#define MPU9150_RA_MAG_YOUT_H		0x06
+#define MPU9150_RA_MAG_ZOUT_L		0x07
+#define MPU9150_RA_MAG_ZOUT_H		0x08
+#define MPU9150_RA_INT_PIN_CFG      0x37
 #define MPU6050_DEFAULT_ADDRESS     MPU6050_ADDRESS_AD0_LOW  //MPU6050_ADDRESS_AD0_LOW
 #define MPU6050_RA_XG_OFFS_TC       0x00 //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
 #define MPU6050_RA_YG_OFFS_TC       0x01 //[7] PWR_MODE, [6:1] YG_OFFS_TC, [0] OTP_BNK_VLD
@@ -372,14 +390,16 @@ https://github.com/jrowberg/i2cdevlib
 static unsigned char devAddr;
 static unsigned char scaleGyroRange;
 static unsigned char scaleAccRange;
-static char dmpReady;      // set true if DMP init was successful
 static unsigned char buffer[14];
 static unsigned char *dmpPacketBuffer;
 static unsigned short dmpPacketSize;
+#if  defined(MPU_DMP) || defined(MPU_DMP_YAW)
 static unsigned short packetSize; // expected DMP packet size (default is 42 bytes)
 static unsigned char devStatus; // return status after each device operation (0 = success, !0 = error)
 static unsigned char mpuIntStatus; // holds actual interrupt status byte from MPU
+static char dmpReady;      // set true if DMP init was successful
 static unsigned char fifoBuffer[64]; // FIFO storage buffer
+#endif
 static short xGyroOffset; 
 static short yGyroOffset; 
 static short zGyroOffset;  
@@ -398,6 +418,9 @@ static float zGravity;
 static float asaX;
 static float asaY;
 static float asaZ;
+static SMA_STRUCT x_magnetSmaFilterEntry;
+static SMA_STRUCT y_magnetSmaFilterEntry;
+static SMA_STRUCT z_magnetSmaFilterEntry;
 
 #define MPU6050_KALMAN 0
 
@@ -1107,67 +1130,89 @@ bool mpu6050Init() {
 	}
 #else
 
-	writeByte(devAddr, 0x6B, 0x08);		// PWR_MGMT_1 Reset Device
-	usleep(1000);
+
+	_DEBUG(DEBUG_NORMAL,"Resetting MPU6050 ...\n");
+	reset();
+	usleep(120000);// wait after reset
+
+	_DEBUG(DEBUG_NORMAL,"Disabling sleep mode...\n");
 	setSleepEnabled(false);
 	usleep(1000);
-	writeByte(devAddr, 0x6B, 0x01);		// PWR_MGMT_1 Clock Source
-	usleep(1000);
-	_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 20Hz...\n");
-	setDLPFMode(MPU6050_DLPF_BW_20);
-	usleep(1000);
+
+	_DEBUG(DEBUG_NORMAL,"Reading gyro offset values...\n");	
+	char xgOffset = getXGyroOffset();	
+	char ygOffset = getYGyroOffset();	
+	char zgOffset = getZGyroOffset();	
+	_DEBUG(DEBUG_NORMAL,"X gyro offset = %d\n", xgOffset);	
+	_DEBUG(DEBUG_NORMAL,"Y gyro offset = %d\n", ygOffset);	
+	_DEBUG(DEBUG_NORMAL,"Z gyro offset = %d\n", ygOffset);
+	
+	_DEBUG(DEBUG_NORMAL,"Setting sample rate to 1k Hz...\n");
+	setRate(0); // 1khz / (1 + 0) = 1k Hz
+	
+	_DEBUG(DEBUG_NORMAL,"Setting clock source to Z Gyro...\n");
 	setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 	usleep(1000);
-	//_DEBUG(DEBUG_NORMAL,"Setting sample rate to 200Hz...\n");
-	// setRate(4); // 1khz / (1 + 4) = 200 Hz
-	usleep(1000);
-	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
-	usleep(1000);
-	setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
-	usleep(1000);
-	setXGyroOffsetUser(0);
-	usleep(1000);
-	setYGyroOffsetUser(0);
-	usleep(1000);
-	setZGyroOffsetUser(0);
-	usleep(1000);
-	writeByte(devAddr, 0x6A, 0x20);        // Set I2C_MST_EN
-	usleep(1000);
-	writeByte(devAddr, 0x37, 0x10);        // Set INT_ANYRD_2CLEAR
-	usleep(1000);
-	writeByte(devAddr, 0x24, 0x4D);        // I2C_MST_CTRL, I2C Speed 400 kHz
+
+	_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 184Hz...\n");
+	setDLPFMode(MPU6050_DLPF_BW_188);
 	usleep(1000);
 
-	//set AK8963
-	setI2CMasterModeEnabled(false);
+	_DEBUG(DEBUG_NORMAL,"Setting gyro sensitivity to +/- 2000 deg/sec...\n");
+	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 	usleep(1000);
+
+	_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro offsets to previous values...\n");			
+	setXGyroOffsetTC(xgOffset);		
+	setYGyroOffsetTC(ygOffset);		
+	setZGyroOffsetTC(zgOffset);
+
+	_DEBUG(DEBUG_NORMAL,"Setting accel sensitivity to +/- 8 g...\n");
+	setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
+	usleep(1000);
+
+	_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",xGyroOffset, yGyroOffset, zGyroOffset);
+	setXGyroOffsetUser(xGyroOffset);
+	usleep(1000);
+	setYGyroOffsetUser(yGyroOffset);
+	usleep(1000);
+	setZGyroOffsetUser(zGyroOffset);
+	usleep(1000);
+
+	_DEBUG(DEBUG_NORMAL,"setup AK8963\n");
+	_DEBUG(DEBUG_NORMAL,"Disable MPU6050 master mode\n");
+	setI2CMasterModeEnabled(false);
+	usleep(5000);
+	
+	_DEBUG(DEBUG_NORMAL,"Enable MPU6050 bypass mode\n");
 	setI2CBypassEnabled(true);
-	usleep(10000);
+	usleep(1000);
+	
+	_DEBUG(DEBUG_NORMAL,"Reset AK8963\n");
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0B, 0x01);        // Reset Device
 	usleep(10000);
+
+	_DEBUG(DEBUG_NORMAL,"setup fuse ROM access mode\n");
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x0f); // Fuse ROM access mode
 	usleep(10000);
+
+	_DEBUG(DEBUG_NORMAL,"Read AK8963 Sensitivity Adjustment values\n");
 	readBytes(MPU9150_RA_MAG_ADDRESS, 0x10, 3, buffer); //read AK8963 Sensitivity Adjustment values
 	asaX = ak8963SensitivityAdjustment(buffer[0]);
 	asaY = ak8963SensitivityAdjustment(buffer[1]);
 	asaZ = ak8963SensitivityAdjustment(buffer[2]);
-	_DEBUG(DEBUG_NORMAL,"AK8963 Sensitivity Adjustment values: x=%f, y=%f, z=%f\n", asaX,
-			asaY, asaZ);
-	usleep(10000);
-	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00); // Power-down mode
-	usleep(10000);
-	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x06 | 0x10); // Continuous measurement mode 2 (100Hz)|Full Scale
-	//writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x02|0x10); // Continuous measurement mode 1 (8Hz)|Full Scale
-	usleep(10000);
-	setI2CMasterModeEnabled(true);
-	usleep(1000);
-	setI2CBypassEnabled(false);
-	usleep(1000);
-	writeByte(devAddr, 0x26, 0x02);		//I2C_SLV0_REG(0x26)
-	usleep(1000);
-	writeByte(devAddr, 0x25, MPU9150_RA_MAG_ADDRESS | 0x80);//I2C_SLV0_ADDR(0x25)
-	usleep(1000);
-	writeByte(devAddr, 0x27, 0x80 | 8);		//I2C_SLV0_CTRL
+	_DEBUG(DEBUG_NORMAL,"AK8963 Sensitivity Adjustment values: x=%f, y=%f, z=%f\n",asaX,asaY,asaZ);	
+
+	_DEBUG(DEBUG_NORMAL,"Setup power down mode and full scale mode (16 bits) \n");
+#ifdef	MAG_AK8963
+	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x06|0x10); // Continuous measurement mode 2|Full Scale
+#else
+	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00|0x10); // /Single measurement mode|Full Scale
+#endif
+
+	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",20);
+	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",20);
+	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",20);
 #endif
 
 	usleep(100000);
@@ -2515,10 +2560,10 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 
 	float q[4];		    // [w, x, y, z]         quaternion container
 	float gravity[3];   // [x, y, z]            gravity 
-	unsigned char result = 0;
 
 #if defined(MPU_DMP)|| defined(MPU_DMP_YAW)
 
+	unsigned char result = 0;
 	short acc[3];  		// [x, y, z] acc
 	short rate[3];// [x, y, z] rate
 	unsigned short fifoCount = 0;
@@ -2602,12 +2647,21 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 #endif
 	return result;
 #else
-	float ax = 0;
-	float ay = 0;
-	float az = 0;
-	float gx = 0;
-	float gy = 0;
-	float gz = 0;
+
+	float ax = 0.f;
+	float ay = 0.f;
+	float az = 0.f;
+	float gx = 0.f;
+	float gy = 0.f;
+	float gz = 0.f;
+	short s_mx=0;
+	short s_my=0;
+	short s_mz=0;
+	struct timeval tv;
+	static struct timeval last_tv;
+	static float mag_yaw=0.f;
+	
+	gettimeofday(&tv, NULL);
 
 	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 	IMUupdate(gx, gy, gz, ax, ay, az, q);
@@ -2626,9 +2680,34 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	xyzAcc[0] = ax;
 	xyzAcc[1] = ay;
 	xyzAcc[2] = az;
-	xyzMagnet[0] = 0.f;
-	xyzMagnet[1] = 0.f;
-	xyzMagnet[2] = 0.f;
+
+	//calculate Yaw by magnetometer
+	if((unsigned long)((tv.tv_sec-last_tv.tv_sec)*1000000+(tv.tv_usec-last_tv.tv_usec))>= 10000){
+
+		getMagnet(&s_mx, &s_my, &s_mz);
+		
+		xyzMagnet[0] = (((float)s_mx*0.1499389499389499f*asaX)-MAG_X_SHIFT)*MAG_X_FACTOR;
+		xyzMagnet[1] = (((float)s_my*0.1499389499389499f*asaY)-MAG_Y_SHIFT)*MAG_Y_FACTOR;
+		xyzMagnet[2] = ((float)s_mz*0.1499389499389499f*asaZ);
+		pushSmaData(&x_magnetSmaFilterEntry,xyzMagnet[0]);
+		pushSmaData(&y_magnetSmaFilterEntry,xyzMagnet[1]);
+		pushSmaData(&z_magnetSmaFilterEntry,xyzMagnet[2]);
+		xyzMagnet[0] = pullSmaData(&x_magnetSmaFilterEntry);
+		xyzMagnet[1] = pullSmaData(&y_magnetSmaFilterEntry);
+		xyzMagnet[2] = pullSmaData(&z_magnetSmaFilterEntry);
+		//_DEBUG(DEBUG_NORMAL,"mx=%.3f, my=%.3f, mz=%.3f\n",xyzMagnet[0],xyzMagnet[1],xyzMagnet[2]);
+				
+		yprAttitude[0] = xyzMagnet[0]* invSqrt((xyzMagnet[0]*xyzMagnet[0])+(xyzMagnet[1]*xyzMagnet[1]));
+		yprAttitude[0] = (xyzMagnet[1]<0?-1.f:1.f)*acos((yprAttitude[0] >1.f)?1.f:((yprAttitude[0] <-1.f)?-1.f:yprAttitude[0] ))*57.29578049044297;
+		
+		mag_yaw=yprAttitude[0];
+		last_tv.tv_usec = tv.tv_usec;
+		last_tv.tv_sec = tv.tv_sec;
+
+	}else{
+		yprAttitude[0]=mag_yaw;
+	}
+	
 	return 0;
 #endif
 }
@@ -2705,25 +2784,16 @@ unsigned char dmpGetQuaternion(float *q, const unsigned char* packet) {
  * @param mz magnet of z
  */
 void getMagnet(short* mx, short* my, short* mz) {
-#if 1
 
-	readBytes(devAddr, 0x49, 8, buffer); //I2C_MST_EN
-	*mx = ((((short)buffer[2]) << 8) | buffer[1]);
-	*my = ((((short)buffer[4]) << 8) | buffer[3]);
-	*mz = ((((short)buffer[6]) << 8) | buffer[5]);
-	
-	//_DEBUG(DEBUG_NORMAL,"mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
-	//_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
-#else
+#ifndef	MAG_AK8963
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x01);
-	usleep(10000);
-	readBytes(MPU9150_RA_MAG_ADDRESS, 0x02, 8, buffer);
-	*mx = (((short)buffer[1]) << 8) | buffer[2];
-	*my = (((short)buffer[3]) << 8) | buffer[4];
-	*mz = (((short)buffer[5]) << 8) | buffer[6];
-	_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
-	//_DEBUG(DEBUG_NORMAL,"mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
-#endif	
+#endif
+    readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_XOUT_L, 8, buffer);
+	*mx = ((((short)buffer[1]) << 8) | buffer[0]);
+    *my = ((((short)buffer[3]) << 8) | buffer[2]);
+    *mz = ((((short)buffer[5]) << 8) | buffer[4]);
+	//_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+	//_DEBUG(DEBUG_NORMAL,"RAW mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);	
 }
 
 float ak8963SensitivityAdjustment(char asa) {

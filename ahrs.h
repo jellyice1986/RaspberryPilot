@@ -24,5 +24,6 @@ SOFTWARE.
 
 void IMUupdate(float gx, float gy, float gz, float ax, float ay, float az,
 		float q[]);
+float invSqrt(float x);
 void ahrsInit();
 

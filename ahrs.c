@@ -57,8 +57,6 @@ static float exInt = 0, eyInt = 0, ezInt = 0;
 static struct timeval last_tv;
 static float q0 = 1, q1 = 0, q2 = 0, q3 = 0;
 
-float invSqrt(float x);
-
 /**
  * init ahrs
  *
