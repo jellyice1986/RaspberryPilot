@@ -54,11 +54,16 @@ https://github.com/jrowberg/i2cdevlib
 #define MAG_X_MIN (-3.7f)
 #define MAG_Y_MAX (9.7f)
 #define MAG_Y_MIN (-3.9f)
+#define MAG_Z_MAX (-6.3f)
+#define MAG_Z_MIN (-18.f)
 
 #define	MAG_X_SHIFT ((MAG_X_MAX+MAG_X_MIN)*0.5f)
 #define	MAG_Y_SHIFT ((MAG_Y_MAX+MAG_Y_MIN)*0.5f)
-#define	MAG_X_FACTOR (1.f)
-#define	MAG_Y_FACTOR ((MAG_X_MAX-MAG_X_MIN)/(MAG_Y_MAX-MAG_Y_MIN))
+#define	MAG_Z_SHIFT ((MAG_Z_MAX+MAG_Z_MIN)*0.5f)
+#define	MAG_XY_X_FACTOR (1.f)
+#define	MAG_XY_Y_FACTOR NON_ZERO((MAG_X_MAX-MAG_X_MIN)/(MAG_Y_MAX-MAG_Y_MIN))
+#define	MAG_XY_Z_FACTOR (1.f)
+
 #define pgm_read_byte(p) (*(const unsigned char *)(p))
 #define AUTO_CAL_BUFFER_SIZE 10
 #define AUTO_CAL_GYRO_DEADZONE 0.1
@@ -393,7 +398,7 @@ static unsigned char scaleAccRange;
 static unsigned char buffer[14];
 static unsigned char *dmpPacketBuffer;
 static unsigned short dmpPacketSize;
-#if  defined(MPU_DMP) || defined(MPU_DMP_YAW)
+#ifdef MPU_DMP_YAW
 static unsigned short packetSize; // expected DMP packet size (default is 42 bytes)
 static unsigned char devStatus; // return status after each device operation (0 = success, !0 = error)
 static unsigned char mpuIntStatus; // holds actual interrupt status byte from MPU
@@ -418,9 +423,14 @@ static float zGravity;
 static float asaX;
 static float asaY;
 static float asaZ;
+
+#if !defined(MPU_DMP_YAW)
+#ifdef MAGNETORMETER
 static SMA_STRUCT x_magnetSmaFilterEntry;
 static SMA_STRUCT y_magnetSmaFilterEntry;
 static SMA_STRUCT z_magnetSmaFilterEntry;
+#endif
+#endif 
 
 #define MPU6050_KALMAN 0
 
@@ -1089,7 +1099,7 @@ bool mpu6050Init() {
 	yGyroOffset = -15;  // row
 	zGyroOffset = 4; //yaw
 
-#if  defined(MPU_DMP) || defined(MPU_DMP_YAW)	
+#ifdef MPU_DMP_YAW
 	dmpReady = false;
 	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 	usleep(1000);
@@ -1129,7 +1139,6 @@ bool mpu6050Init() {
 
 	}
 #else
-
 
 	_DEBUG(DEBUG_NORMAL,"Resetting MPU6050 ...\n");
 	reset();
@@ -1179,15 +1188,24 @@ bool mpu6050Init() {
 	setZGyroOffsetUser(zGyroOffset);
 	usleep(1000);
 
+#ifdef MAGNETORMETER
+
 	_DEBUG(DEBUG_NORMAL,"setup AK8963\n");
 	_DEBUG(DEBUG_NORMAL,"Disable MPU6050 master mode\n");
 	setI2CMasterModeEnabled(false);
-	usleep(5000);
+	usleep(10000);
 	
 	_DEBUG(DEBUG_NORMAL,"Enable MPU6050 bypass mode\n");
 	setI2CBypassEnabled(true);
-	usleep(1000);
-	
+	usleep(10000);
+
+	if (checkI2cDeviceIsExist(MPU9150_RA_MAG_ADDRESS)) {
+		_DEBUG(DEBUG_NORMAL, "AK8963 exist\n");
+	}else {
+		_DEBUG(DEBUG_NORMAL, "AK8963 dowsn't exist\n");
+		return false;
+	}
+
 	_DEBUG(DEBUG_NORMAL,"Reset AK8963\n");
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0B, 0x01);        // Reset Device
 	usleep(10000);
@@ -1210,11 +1228,11 @@ bool mpu6050Init() {
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00|0x10); // /Single measurement mode|Full Scale
 #endif
 
-	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",20);
-	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",20);
-	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",20);
+	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",25);
+	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",25);
+	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",25);
 #endif
-
+#endif
 	usleep(100000);
 	return true;
 
@@ -2561,12 +2579,19 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	float q[4];		    // [w, x, y, z]         quaternion container
 	float gravity[3];   // [x, y, z]            gravity 
 
-#if defined(MPU_DMP)|| defined(MPU_DMP_YAW)
+#ifdef MPU_DMP_YAW
 
 	unsigned char result = 0;
 	short acc[3];  		// [x, y, z] acc
 	short rate[3];// [x, y, z] rate
 	unsigned short fifoCount = 0;
+	float ax=0.f;
+	float ay=0.f;
+	float az=0.f;
+	float gx=0.f;
+	float gy=0.f;
+	float gz=0.f;
+	static float yawtmp=0.f;
 
 	memset(q, 0, sizeof(q));
 	memset(gravity, 0, sizeof(gravity));
@@ -2591,36 +2616,13 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 		dmpGetQuaternion(q, fifoBuffer);
 		dmpGetGravity(gravity, q);
 		dmpGetYawPitchRoll(yprAttitude, q, gravity);
-
-#ifndef MPU_DMP_YAW
-		dmpGetGyro(rate, fifoBuffer);
-		dmpGetAccel(acc, fifoBuffer);
-		xyzGravity[0]=gravity[0];
-		xyzGravity[1]=gravity[1];
-		xyzGravity[2]=gravity[2];
-		yprRate[0]=(float)rate[0];
-		yprRate[1]=(float)rate[1];
-		yprRate[2]=(float)rate[2];
-		xyzAcc[0]=(float)acc[0]*getAccSensitivityInv();
-		xyzAcc[1]=(float)acc[1]*getAccSensitivityInv();
-		xyzAcc[2]=(float)acc[2]*getAccSensitivityInv();
-		yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
-		yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
-#endif	
+	
 		yprAttitude[0] = yprAttitude[0] * RA_TO_DE;
+		
 		result=0;
 	} else {
 		result=2;
 	}
-
-#ifdef MPU_DMP_YAW
-	float ax=0.f;
-	float ay=0.f;
-	float az=0.f;
-	float gx=0.f;
-	float gy=0.f;
-	float gz=0.f;
-	float yawtmp=0.f;
 
 	if(0==result) {
 		yawtmp=yprAttitude[0];
@@ -2630,11 +2632,9 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	IMUupdate(gx, gy,gz,ax,ay,az,q);
 	dmpGetGravity(gravity, q);
 	dmpGetYawPitchRoll(yprAttitude, q, gravity);
+	yprAttitude[0] = yawtmp;
 	yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
 	yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
-	if(0==result) {
-		yprAttitude[0]=yawtmp;
-	}
 	xyzGravity[0]=gravity[0];
 	xyzGravity[1]=gravity[1];
 	xyzGravity[2]=gravity[2];
@@ -2644,8 +2644,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	xyzAcc[0]=ax;
 	xyzAcc[1]=ay;
 	xyzAcc[2]=az;
-#endif
-	return result;
+
 #else
 
 	float ax = 0.f;
@@ -2654,21 +2653,62 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	float gx = 0.f;
 	float gy = 0.f;
 	float gz = 0.f;
+#ifdef MAGNETORMETER
 	short s_mx=0;
 	short s_my=0;
 	short s_mz=0;
 	struct timeval tv;
 	static struct timeval last_tv;
 	static float mag_yaw=0.f;
+	float newMagX=0.0f;
+	float newMagY=0.0f ;
+	float gyro_yaw=0.f;
+	static float last_gyro_yaw=0.f;
 	
 	gettimeofday(&tv, NULL);
+#endif
 
 	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 	IMUupdate(gx, gy, gz, ax, ay, az, q);
 	dmpGetGravity(gravity, q);
 	dmpGetYawPitchRoll(yprAttitude, q, gravity);
 
+#ifdef MAGNETORMETER	
+	gyro_yaw=yprAttitude[0] * RA_TO_DE;
+
+	//calculate Yaw by magnetometer
+	if((unsigned long)((tv.tv_sec-last_tv.tv_sec)*1000000+(tv.tv_usec-last_tv.tv_usec))>= 10000){
+
+		getMagnet(&s_mx, &s_my, &s_mz);
+		
+		//_DEBUG(DEBUG_NORMAL,"mx=%.3f, my=%.3f, mz=%.3f\n",(float)s_mx*0.1499389499389499f*asaX,(float)s_my*0.1499389499389499f*asaY,(float)s_mz*0.1499389499389499f*asaZ);
+		
+		xyzMagnet[0] = (((float)s_mx*0.1499389499389499f*asaX)-MAG_X_SHIFT)*MAG_XY_X_FACTOR;
+		xyzMagnet[1] = (((float)s_my*0.1499389499389499f*asaY)-MAG_Y_SHIFT)*MAG_XY_Y_FACTOR;
+		xyzMagnet[2] = (((float)s_mz*0.1499389499389499f*asaZ)-MAG_Z_SHIFT)*MAG_XY_Z_FACTOR;
+	
+		pushSmaData(&x_magnetSmaFilterEntry,xyzMagnet[0]);
+		pushSmaData(&y_magnetSmaFilterEntry,xyzMagnet[1]);
+		pushSmaData(&z_magnetSmaFilterEntry,xyzMagnet[2]);
+		xyzMagnet[0] = pullSmaData(&x_magnetSmaFilterEntry);
+		xyzMagnet[1] = pullSmaData(&y_magnetSmaFilterEntry);
+		xyzMagnet[2] = pullSmaData(&z_magnetSmaFilterEntry);
+		newMagX = xyzMagnet[0] *cos(yprAttitude[1]) + xyzMagnet[1] *sin(yprAttitude[2])*sin(yprAttitude[1]) + xyzMagnet[2] *cos(yprAttitude[2])*sin(yprAttitude[1]);
+		newMagY = xyzMagnet[1] *cos(yprAttitude[2]) - xyzMagnet[2] *sin(yprAttitude[2]);
+		yprAttitude[0] =  atan2( (float) newMagX, (float) newMagY ) * RA_TO_DE;
+
+		//_DEBUG(DEBUG_NORMAL,"mx=%.3f, my=%.3f, mz=%.3f\n",xyzMagnet[0],xyzMagnet[1],xyzMagnet[2]);
+		
+		mag_yaw=yprAttitude[0];
+		last_tv.tv_usec = tv.tv_usec;
+		last_tv.tv_sec = tv.tv_sec;
+
+	}else{
+		yprAttitude[0]=mag_yaw;
+	}
+#else
 	yprAttitude[0] = yprAttitude[0] * RA_TO_DE;
+#endif
 	yprAttitude[1] = yprAttitude[1] * RA_TO_DE;
 	yprAttitude[2] = yprAttitude[2] * RA_TO_DE;
 	xyzGravity[0] = gravity[0];
@@ -2680,39 +2720,11 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	xyzAcc[0] = ax;
 	xyzAcc[1] = ay;
 	xyzAcc[2] = az;
-
-	//calculate Yaw by magnetometer
-	if((unsigned long)((tv.tv_sec-last_tv.tv_sec)*1000000+(tv.tv_usec-last_tv.tv_usec))>= 10000){
-
-		getMagnet(&s_mx, &s_my, &s_mz);
-		
-		xyzMagnet[0] = (((float)s_mx*0.1499389499389499f*asaX)-MAG_X_SHIFT)*MAG_X_FACTOR;
-		xyzMagnet[1] = (((float)s_my*0.1499389499389499f*asaY)-MAG_Y_SHIFT)*MAG_Y_FACTOR;
-		xyzMagnet[2] = ((float)s_mz*0.1499389499389499f*asaZ);
-		pushSmaData(&x_magnetSmaFilterEntry,xyzMagnet[0]);
-		pushSmaData(&y_magnetSmaFilterEntry,xyzMagnet[1]);
-		pushSmaData(&z_magnetSmaFilterEntry,xyzMagnet[2]);
-		xyzMagnet[0] = pullSmaData(&x_magnetSmaFilterEntry);
-		xyzMagnet[1] = pullSmaData(&y_magnetSmaFilterEntry);
-		xyzMagnet[2] = pullSmaData(&z_magnetSmaFilterEntry);
-		//_DEBUG(DEBUG_NORMAL,"mx=%.3f, my=%.3f, mz=%.3f\n",xyzMagnet[0],xyzMagnet[1],xyzMagnet[2]);
-				
-		yprAttitude[0] = xyzMagnet[0]* invSqrt((xyzMagnet[0]*xyzMagnet[0])+(xyzMagnet[1]*xyzMagnet[1]));
-		yprAttitude[0] = (xyzMagnet[1]<0?-1.f:1.f)*acos((yprAttitude[0] >1.f)?1.f:((yprAttitude[0] <-1.f)?-1.f:yprAttitude[0] ))*57.29578049044297;
-		
-		mag_yaw=yprAttitude[0];
-		last_tv.tv_usec = tv.tv_usec;
-		last_tv.tv_sec = tv.tv_sec;
-
-	}else{
-		yprAttitude[0]=mag_yaw;
-	}
-	
-	return 0;
 #endif
-}
 
-/*FOR MCU6550 DMP*/
+	return 0;
+
+}
 
 unsigned short dmpGetFIFOPacketSize() {
 	return dmpPacketSize;

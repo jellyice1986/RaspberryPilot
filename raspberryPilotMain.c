@@ -39,16 +39,10 @@ SOFTWARE.
 #include "pca9685.h"
 #include "altHold.h"
 #include "securityMechanism.h"
-#ifndef MPU_DMP	
 #include "ahrs.h"
-#endif
 
-#ifdef MPU_DMP
-#define MAIN_DELAY_TIMER 2000 
-#else
 #define MAIN_DELAY_TIMER 200  
-#endif
-#define CONTROL_CYCLE_TIME 4000 //us
+#define CONTROL_CYCLE_TIME 2000 //us
 #define CHECK_CYCLE_TIME_1 0
 #define CHECK_CYCLE_TIME_2 0
 #define CHECK_CYCLE_TIME_3 0
@@ -215,9 +209,7 @@ bool raspberryPilotInit() {
 	}else{
 		securityMechanismInit();
 		pidInit();
-#ifndef MPU_DMP	
 		ahrsInit();
-#endif	
 	}
 
 	if (!flyControlerInit()) {

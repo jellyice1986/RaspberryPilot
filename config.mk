@@ -1,2 +1,2 @@
 
-DEFAULT_CFLAGS = -DMPU6050_9AXIS -DMAG_AK8963 -Wno-unused-function
+DEFAULT_CFLAGS = -DMPU6050_9AXIS -Wno-unused-function
