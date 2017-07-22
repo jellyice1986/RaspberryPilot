@@ -22,7 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 
-void IMUupdate(float gx, float gy, float gz, float ax, float ay, float az,
+void IMUupdate6(float gx, float gy, float gz, float ax, float ay, float az,
+		float q[]);
+void IMUupdate9(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz,
 		float q[]);
 float invSqrt(float x);
 void ahrsInit();

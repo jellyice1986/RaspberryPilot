@@ -1,3 +1,26 @@
+# /******************************************************************************
+# The Makefile in RaspberryPilot project is placed under the MIT license
+#
+# Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ******************************************************************************/
 
 CC = $(CROSS_COMPILE)gcc
 RM = rm -rf 
@@ -9,17 +32,16 @@ OBJ_DIR = obj
 LIB = -lModule_RaspberryPilot -lwiringPi -lm -lpthread
 PROCESS = RaspberryPilot
 TARGET_PROCESS = $(OUTPUT_DIR)/$(PROCESS)
+RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS) -Wno-unused-function
+
+include $(PWD)/config.mk
 
 INCLUDES = \
 	-I. \
 	-I${PWD}/Module/PCA9685/core/inc \
-	-I${PWD}/Module/MPU6050/core/inc \
-    -I${PWD}/Module/SRF02/core/inc \
-	-I${PWD}/Module/MS5611/core/inc \
-	-I${PWD}/Module/VL53l0x/core/inc \
-	-I${PWD}/Module/VL53l0x/platform/inc
+	-I${PWD}/Module/MPU6050/core/inc
 
-LIB_SRCS =\
+LIB_SRCS = \
 	commonLib.c \
 	i2c.c \
 	securityMechanism.c \
@@ -34,10 +56,23 @@ LIB_SRCS =\
 	flyControler.c \
 	raspberryPilotMain.c
 
+ifeq ($(CONFIG_ALTHOLD_MS5611_SUPPORT),y)
+	INCLUDES += \
+		-I${PWD}/Module/MS5611/core/inc
+else	
+	ifeq ($(CONFIG_ALTHOLD_SRF02_SUPPORT),y)
+		INCLUDES += \
+			-I${PWD}/Module/SRF02/core/inc
+	else	
+		ifeq ($(CONFIG_ALTHOLD_VL53L0X_SUPPORT),y)
+				INCLUDES += \
+					-I${PWD}/Module/VL53l0x/core/inc \
+					-I${PWD}/Module/VL53l0x/platform/inc
+		endif	
+	endif	
+endif	
+	
 LIB_OBJS = $(LIB_SRCS:%.c=$(OBJ_DIR)/%.o)	
-
-include $(PWD)/config.mk
-RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS) -Wall
 
 .PHONY: all
 all: $(TARGET_PROCESS)

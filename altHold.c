@@ -30,17 +30,17 @@ SOFTWARE.
 #include <pthread.h>
 #include "commonLib.h"
 #include "flyControler.h"
-#include "vl53l0x.h"
-#include "srf02.h"
-#include "ms5611.h"
 #include "mpu6050.h"
 #include "pid.h"
 #include "motorControl.h"
+#if defined(ALTHOLD_MODULE_MS5611)
+#include "ms5611.h"
+#elif defined(ALTHOLD_MODULE_SRF02)
+#include "srf02.h"
+#elif defined(ALTHOLD_MODULE_VL53L0X)
+#include "vl53l0x.h"
+#endif
 #include "altHold.h"
-
-#define MODULE_TYPE ALTHOLD_MODULE_MS5611
-//#define MODULE_TYPE ALTHOLD_MODULE_VL53L0X
-//#define MODULE_TYPE ALTHOLD_MODULE_SRF02
 
 #define ALTHOLD_UPDATE_PERIOD 25000
 
@@ -79,47 +79,36 @@ bool initAltHold() {
 
 	setAltHoldIsReady(false);
 
-	switch (MODULE_TYPE) {
+#if defined(ALTHOLD_MODULE_MS5611)
 
-	case ALTHOLD_MODULE_MS5611:
-		
-		if(!ms5611Init()){
-			_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
-			return 	false;
-		}
-		
-		altHoldSpeedDeadband = 5.f;
-		setMaxAlt(200); 	//cm
+	if(!ms5611Init()){
+		_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
+		return	false;
+	}
+	
+	altHoldSpeedDeadband = 5.f;
+	setMaxAlt(200); 	//cm
 
-		break;
+#elif defined(ALTHOLD_MODULE_SRF02)
 
-	case ALTHOLD_MODULE_VL53L0X:
+	if(!srf02Init()){
+		_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
+		return	false;
+	}
+	altHoldSpeedDeadband = 5.f;
+	setMaxAlt(200); 	//cm
 
-		if (!vl53l0xInit()) {
-			_DEBUG(DEBUG_NORMAL, "vl53l0x Init failed\n");
-			return false;
-		}
-
-		altHoldSpeedDeadband = 5.f;
-		setMaxAlt(150);  		//cm
-
-		break;
-
-	case ALTHOLD_MODULE_SRF02:
-
-		if(!srf02Init()){
-			_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
-			return 	false;
-		}
-
-		setMaxAlt(200);		//cm
-		
-		break;
-
-	default:
-
+#elif defined(ALTHOLD_MODULE_VL53L0X)
+	if (!vl53l0xInit()) {
+		_DEBUG(DEBUG_NORMAL, "vl53l0x Init failed\n");
 		return false;
 	}
+
+	altHoldSpeedDeadband = 5.f;
+	setMaxAlt(150);  		//cm	
+#else
+	return false;
+#endif
 
 	if (pthread_mutex_init(&altHoldIsUpdateMutex, NULL) != 0) {
 		_ERROR("(%s-%d) altHoldIsUpdateMutex init failed\n", __func__,
@@ -316,60 +305,48 @@ void *altHoldUpdate(void *arg) {
 	
 		if(0!=tv2.tv_usec){
 
-				switch (MODULE_TYPE) {
+#if defined(ALTHOLD_MODULE_MS5611)
+			result = ms5611GetMeasurementData(&data);
+#elif defined(ALTHOLD_MODULE_SRF02)
+			result = srf02GetMeasurementData(&data);
+#elif defined(ALTHOLD_MODULE_VL53L0X)
+			result = vl53l0xGetMeasurementData(&data);
+#else
+			result = false;
+#endif
 
-			        case ALTHOLD_MODULE_MS5611:
+			if (result) {
 					
-				result = ms5611GetMeasurementData(&data);
-				break;
-
-				case ALTHOLD_MODULE_VL53L0X:
-
-					result = vl53l0xGetMeasurementData(&data);
-					break;
-
-				case ALTHOLD_MODULE_SRF02:
-				
-					result = srf02GetMeasurementData(&data);
-					break;
-				
-				default:
-				
-					result = false;
-				}
-
-				if (result) {
+				interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
 					
-					interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
-					
-					if(interval>=ALTHOLD_UPDATE_PERIOD){			
+				if(interval>=ALTHOLD_UPDATE_PERIOD){			
 							
-							//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);				
-							pthread_mutex_lock(&altHoldIsUpdateMutex);
-							aslRaw=(float)data;
-							altHoldAccSpeed = deadband(getAccWithoutGravity() * 100.f,altHoldAccSpeedDeadband);
-							altHoldSpeed = altHoldSpeed*0.7f + altHoldAccSpeed*0.3f;
-							altholdIsUpdate = true;
-							pthread_mutex_unlock(&altHoldIsUpdateMutex);
-
-							//_DEBUG(DEBUG_NORMAL, "aslRaw=%.3f altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",aslRaw,altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
-							
-							tv2.tv_usec=tv.tv_usec;
-							tv2.tv_sec=tv.tv_sec;	
+						//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);	
+						pthread_mutex_lock(&altHoldIsUpdateMutex);
+						aslRaw=(float)data;
+						altHoldAccSpeed = deadband(getAccWithoutGravity() * 100.f,altHoldAccSpeedDeadband);
+						altHoldSpeed = altHoldSpeed*0.7f + altHoldAccSpeed*0.3f;
+						altholdIsUpdate = true;
+						pthread_mutex_unlock(&altHoldIsUpdateMutex);
 	
-							_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
-									__func__, __LINE__,altHoldAltSpeed);				
-							_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
-									__func__, __LINE__, altHoldAccSpeed);
-							_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
-									__func__, __LINE__, altHoldSpeed);
-							_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
-									__func__, __LINE__, aslRaw);
+						//_DEBUG(DEBUG_NORMAL, "aslRaw=%.3f altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",aslRaw,altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
+							
+						tv2.tv_usec=tv.tv_usec;
+						tv2.tv_sec=tv.tv_sec;	
+	
+						_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
+								__func__, __LINE__,altHoldAltSpeed);				
+						_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
+								__func__, __LINE__, altHoldAccSpeed);
+						_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
+								__func__, __LINE__, altHoldSpeed);
+						_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
+								__func__, __LINE__, aslRaw);
 
-					}			
-				} else {
+				}			
+			} else {
 					usleep(500);
-				}
+			}
 			
 		}else{
 			tv2.tv_usec=tv.tv_usec;

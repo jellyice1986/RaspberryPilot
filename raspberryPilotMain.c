@@ -35,10 +35,9 @@ SOFTWARE.
 #include "radioControl.h"
 #include "flyControler.h"
 #include "mpu6050.h"
-#include "ms5611.h"
 #include "pca9685.h"
 #include "altHold.h"
-#include "securityMechanism.h"
+#include "securityMechanism.h"	
 #include "ahrs.h"
 
 #define MAIN_DELAY_TIMER 200  
@@ -75,7 +74,6 @@ int main() {
 	float xyzAcc[3];
 	float xyzGravity[3];
 	float xyzMagnet[3];
-	int mpuResult = 0;
 
 	if (!raspberryPilotInit()) {
 		return false;
@@ -92,14 +90,7 @@ int main() {
 		tv1_l.tv_sec=tv1_c.tv_sec;
 #endif
 
-		mpuResult = getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc,
-				xyzGravity, xyzMagnet);
-
-		if (0 == mpuResult
-#ifdef MPU_DMP_YAW
-				|| 1 == mpuResult || 2 == mpuResult
-#endif
-				) {
+		if (!getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc,xyzGravity, xyzMagnet)) {
 
 #if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
 			if(!mpuResult) {
@@ -110,9 +101,6 @@ int main() {
 			}
 #endif
 
-#ifdef MPU_DMP_YAW
-		if(0 == mpuResult)
-#endif
 			setYaw(yrpAttitude[0]);
 			setRoll(yrpAttitude[1]);
 			setPitch(yrpAttitude[2]);
@@ -125,7 +113,7 @@ int main() {
 			setXGravity(xyzGravity[0]);
 			setYGravity(xyzGravity[1]);
 			setZGravity(xyzGravity[2]);
-			
+				
 			_DEBUG(DEBUG_ATTITUDE,
 					"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", __func__,
 					__LINE__, getRoll(), getPitch(), getYaw());
@@ -136,7 +124,7 @@ int main() {
 			_DEBUG(DEBUG_ACC, "(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",
 					__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
 
-    		if((unsigned long)((tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec)) >= (unsigned long)(getAdjustPeriod()*CONTROL_CYCLE_TIME)){
+	    	if((unsigned long)((tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec)) >= (unsigned long)(getAdjustPeriod()*CONTROL_CYCLE_TIME)){
 
 #if CHECK_CYCLE_TIME_3
 				_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec));
@@ -153,7 +141,7 @@ int main() {
 							}else{
 								motorControler();
 							}
-							
+								
 						} else {
 							setFlippingFlag(FLIP_NONE);
 							setFlippingStep(0);
@@ -175,7 +163,7 @@ int main() {
 					setThrottlePowerLevel(0);
 					setupAllMotorPoewrLevel(0, 0, 0, 0);
 				}
-				
+					
 				pthread_mutex_unlock(&controlMotorMutex);
 
 				tv_l.tv_usec=tv_c.tv_usec;
@@ -185,7 +173,7 @@ int main() {
 		}
 
 		usleep(MAIN_DELAY_TIMER);
-		
+
 	}
 
 	return 0;
@@ -208,7 +196,7 @@ bool raspberryPilotInit() {
 		return false;
 	}else{
 		securityMechanismInit();
-		pidInit();
+		pidInit();	
 		ahrsInit();
 	}
 
