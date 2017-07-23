@@ -32,6 +32,7 @@ SOFTWARE.
 #include "commonLib.h"
 #include "motorControl.h"
 #include "flyControler.h"
+#include "radioControl.h"
 #include "systemControl.h"
 
 static bool flySystemIsEnableflag;
@@ -129,6 +130,7 @@ void signalEvent(int sig) {
 	disenableFlySystem();
 	setLeaveFlyControlerFlag(true);
 	_DEBUG(DEBUG_NORMAL, "Exit RaspberryPilot\n");
+	closeRadio();
 	usleep(1000000);
 	exit(EXIT_SUCCESS);
 }

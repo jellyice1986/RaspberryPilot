@@ -130,5 +130,6 @@ typedef enum {
 } SETUP_PID__FIWLD;
 
 bool radioControlInit();
+void closeRadio();
 void getPacketDropRate();
 

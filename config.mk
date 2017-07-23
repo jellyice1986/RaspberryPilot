@@ -23,7 +23,8 @@
 # ******************************************************************************/
 
 #Setup IMU is 6DOF(accelerometer+gyro) or 9DOF (accelerometer+gyro+magnetormeter)
-CONFIG_MPU6050_9AXIS_SUPPORT :=y
+#set up this flag to n if you haven't calibrated magnetometer
+CONFIG_MPU6050_9AXIS_SUPPORT :=n
 
 #Choose a AHRS algorithm, only one of the following setting will be applied
 #MAHONY_AHRS is appropriate for low processing MCU

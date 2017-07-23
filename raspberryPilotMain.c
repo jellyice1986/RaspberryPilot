@@ -46,7 +46,6 @@ SOFTWARE.
 #define CHECK_CYCLE_TIME_2 0
 #define CHECK_CYCLE_TIME_3 0
 
-
 bool raspberryPilotInit();
 
 /**

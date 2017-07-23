@@ -101,6 +101,20 @@ bool radioControlInit() {
 }
 
 /**
+ * close radio
+ *
+ * @param 
+ * 		void
+ *
+ * @return
+ *		bool
+ *
+ */
+void closeRadio(){
+	serialClose (serialFd);
+}
+
+/**
  * check whether we should send more log to remote controler or not
  *
  * @param 

@@ -41,7 +41,7 @@ http://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
 #include "ahrs.h"
 
 #if defined(MADGWICK_AHRS)
-#define beta 5.f
+#define beta 0.5f
 #elif defined(MAHONY_AHRS)
 #define twoKpDef	(2.0f * 0.5f)	// 2 * proportional gain
 #define twoKiDef	(2.0f * 0.05f)	// 2 * integral gain
