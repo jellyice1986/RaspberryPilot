@@ -102,16 +102,31 @@ clean:
 
 .PHONY: updateScript
 updateScript:
-	update-rc.d RaspberryPilot remove
-	$(RM) /etc/init.d/RaspberryPilot
-	cp RaspberryPilot.sh /etc/init.d/RaspberryPilot
-	chmod 755 /etc/init.d/RaspberryPilot
-	update-rc.d RaspberryPilot defaults
+	@echo "\033[32mcreating RaspberryPilot.sh...\033[0m"
+	sudo echo "#!/bin/sh"  >  RaspberryPilot.sh
+	sudo echo "### BEGIN INIT INFO" >>  ./RaspberryPilot.sh
+	sudo echo "# Provides: RaspberryPilot" >>  ./RaspberryPilot.sh
+	sudo echo "# Required-Start: \$$all" >>  ./RaspberryPilot.sh
+	sudo echo "# Required-Stop: \$$all" >>  ./RaspberryPilot.sh
+	sudo echo "# Default-Start:  2 3 4 5" >>  ./RaspberryPilot.sh
+	sudo echo "# Default-Stop: 0 1 6" >>  ./RaspberryPilot.sh
+	sudo echo "# Description: Raecho spberryPilot" >>  ./RaspberryPilot.sh
+	sudo echo "### END INIT INFO"  >>  ./RaspberryPilot.sh
+	sudo echo " " >>  ./RaspberryPilot.sh
+	sudo echo "sudo  $(shell pwd)/bin/RaspberryPilot &"  >>  ./RaspberryPilot.sh
+	@echo "\033[32updating RaspberryPilot.sh to init.d...\033[0m"
+	sudo update-rc.d RaspberryPilot remove
+	sudo $(RM) /etc/init.d/RaspberryPilot
+	sudo cp RaspberryPilot.sh /etc/init.d/RaspberryPilot
+	sudo chmod 755 /etc/init.d/RaspberryPilot
+	sudo update-rc.d RaspberryPilot defaults
+	sudo $(RM) ./RaspberryPilot.sh
 
 .PHONY: removeScript
 removeScript:
-	update-rc.d RaspberryPilot remove
-	$(RM) /etc/init.d/RaspberryPilot
+	@echo "\033[32removing RaspberryPilot.sh from init.d...\033[0m"				
+	sudo update-rc.d RaspberryPilot remove
+	sudo $(RM) /etc/init.d/RaspberryPilot
 
 
 

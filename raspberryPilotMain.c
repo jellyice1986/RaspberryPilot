@@ -40,7 +40,7 @@ SOFTWARE.
 #include "securityMechanism.h"	
 #include "ahrs.h"
 
-#define MAIN_DELAY_TIMER 200  
+#define MAIN_DELAY_TIMER 500  
 #define CONTROL_CYCLE_TIME 2000 //us
 #define CHECK_CYCLE_TIME_1 0
 #define CHECK_CYCLE_TIME_2 0

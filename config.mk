@@ -22,19 +22,19 @@
 # SOFTWARE.
 # ******************************************************************************/
 
-#Setup IMU is 6DOF(accelerometer+gyro) or 9DOF (accelerometer+gyro+magnetormeter)
-#set up this flag to n if you haven't calibrated magnetometer
+#Choose IMU is 6DOF(accelerometer+gyro) or 9DOF (accelerometer+gyro+magnetormeter)
+#set up this flag to n if you haven't calibrated your magnetometer
 CONFIG_MPU6050_9AXIS_SUPPORT :=n
 
 #Choose a AHRS algorithm, only one of the following setting will be applied
 #MAHONY_AHRS is appropriate for low processing MCU
 #MADGWICK_AHRS is accurate at the cost of requiring extra processing powe
 CONFIG_AHRS_MADGWICK_SUPPORT :=y
-CONFIG_AHRS_MAHONY_AHRS_SUPPORT :=n
+CONFIG_AHRS_MAHONY_SUPPORT   :=n
 
 #Choose a sensor type for althold, only one of the following setting will be applied
-CONFIG_ALTHOLD_MS5611_SUPPORT :=y
-CONFIG_ALTHOLD_SRF02_SUPPORT :=n
+CONFIG_ALTHOLD_MS5611_SUPPORT  :=y
+CONFIG_ALTHOLD_SRF02_SUPPORT   :=n
 CONFIG_ALTHOLD_VL53L0X_SUPPORT :=n
 
 ######### Don't Modify The Following Code #########
