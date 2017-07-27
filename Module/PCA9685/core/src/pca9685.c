@@ -1,26 +1,26 @@
 /******************************************************************************
- The pca9685.c in RaspberryPilot project is placed under the MIT license
+The pca9685.c in RaspberryPilot project is placed under the MIT license
 
- Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
- ******************************************************************************/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
 
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -85,10 +85,10 @@ void resetPca9685() {
 	if (true == PCA9685_initSuccess) {
 
 		//sleep mode, Low power mode. Oscillator off
-		writeByte(PCA9685_ADDRESS, PCA9685_MODE1, 0x00);
+		writeByte(PCA9685_ADDRESS, PCA9685_MODE1, 0x00); 
 		writeByte(PCA9685_ADDRESS, PCA9685_MODE2, 0x04);
 		usleep(1000);
-
+		
 		//Delay Time is 0, means it always turn into high at the begin
 		writeByte(PCA9685_ADDRESS,
 		PCA9685_LED0_ON_L + PCA9685_LED_SHIFT * 0, 0);
@@ -126,6 +126,7 @@ void pca9685SetPwmFreq(unsigned short freq) {
 	unsigned char preScale = (PCA9685_CLOCK_FREQ / 4096 / freq) - 1;
 	unsigned char oldMode = 0;
 
+	
 	_DEBUG(DEBUG_NORMAL, "(%s-%d) set PWM frequency to %d HZ\n", __func__,
 			__LINE__, freq);
 
@@ -134,8 +135,8 @@ void pca9685SetPwmFreq(unsigned short freq) {
 	//setup sleep mode, Low power mode. Oscillator off (bit4: 1-sleep, 0-normal)
 	writeByte(PCA9685_ADDRESS, PCA9685_MODE1, (oldMode & 0x7F) | 0x10);
 	//set freq
-	writeByte(PCA9685_ADDRESS, PCA9685_PRE_SCALE, preScale);
-	//setup normal mode (bit4: 1-sleep, 0-normal)
+	writeByte(PCA9685_ADDRESS, PCA9685_PRE_SCALE, preScale); 
+	 //setup normal mode (bit4: 1-sleep, 0-normal)
 	writeByte(PCA9685_ADDRESS, PCA9685_MODE1, oldMode);
 	usleep(1000); // >500us
 	//setup restart (bit7: 1- enable, 0-disable)
@@ -150,22 +151,22 @@ void pca9685SetPwmFreq(unsigned short freq) {
  *
  *|<------------- 0 to 4095 ------------->|
  *
- *  	       	    --------------
- *  Low      	    | High               |  Low
+ *  	       	---------------------
+ *  Low      	| High                          |  Low
  *  --------------------------------------
- * ^                   ^                      ^
- * Delay Time     On Time             Off Time
+ * ^                ^                               ^
+ * Delay Time  On Time                     Off Time
  *
  * ========================================
  *
  *   Example:
  *   If on Time=0, off Time=2014 then the PWM signal is as below
  *
- * ------------------
- *| High				|  Low
- * -------------------------------------
- * ^      		             ^
- *  0 (On Time)             2014 (Off Time)
+ * 	--------------------
+ *    | High                         |  Low
+ * 	-------------------------------------
+ * 	^      		             ^
+ *  0 (On Time)                 2014 (Off Time)
  *
  * @param channel
  * 		channel index
@@ -179,24 +180,24 @@ void pca9685SetPwmFreq(unsigned short freq) {
  */
 void pca9685SetPwm(unsigned char channel, unsigned short value) {
 
-	int count = 0;
+	int count=0;
 
 	if (!PCA9685_initSuccess) {
 		_ERROR("(%s-%d)  PCA9685_initSuccess=%d\n", __func__, __LINE__,
 				PCA9685_initSuccess);
 		return;
 	}
-
-	while (count <= 5) {
-
-		if (writeByte(PCA9685_ADDRESS,
-		PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel, value & 0xFF)
-				&& writeByte(PCA9685_ADDRESS,
-				PCA9685_LED0_OFF_H + PCA9685_LED_SHIFT * channel, value >> 8)) {
+	
+	while(count<=5){
+		
+		if(writeByte(PCA9685_ADDRESS,
+ 			PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel, value & 0xFF)
+		&& writeByte(PCA9685_ADDRESS,
+ 			PCA9685_LED0_OFF_H + PCA9685_LED_SHIFT * channel, value >> 8)){
 			break;
-		} else {
+		}else{
 			usleep(500);
-		}
+		}	
 		count++;
 	}
 }

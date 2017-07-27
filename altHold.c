@@ -1,26 +1,26 @@
 /******************************************************************************
- The altHold.c in RaspberryPilot project is placed under the MIT license
+The altHold.c in RaspberryPilot project is placed under the MIT license
 
- Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
- ******************************************************************************/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,19 +81,19 @@ bool initAltHold() {
 
 #if defined(ALTHOLD_MODULE_MS5611)
 
-	if(!ms5611Init()) {
+	if(!ms5611Init()){
 		_DEBUG(DEBUG_NORMAL, "MS5611 Init failed\n");
-		return false;
+		return	false;
 	}
-
+	
 	altHoldSpeedDeadband = 5.f;
 	setMaxAlt(200); 	//cm
 
 #elif defined(ALTHOLD_MODULE_SRF02)
 
-	if(!srf02Init()) {
+	if(!srf02Init()){
 		_DEBUG(DEBUG_NORMAL, "SRF02 Init failed\n");
-		return false;
+		return	false;
 	}
 	altHoldSpeedDeadband = 5.f;
 	setMaxAlt(200); 	//cm
@@ -122,7 +122,7 @@ bool initAltHold() {
 	} else {
 		_DEBUG(DEBUG_NORMAL, "start altHold thread...\n");
 	}
-
+	
 	setAltHoldIsReady(true);
 
 	return true;
@@ -294,16 +294,16 @@ bool updateAltHold() {
 void *altHoldUpdate(void *arg) {
 
 	unsigned short data = 0;
-	unsigned long interval = 0;
+	unsigned long interval=0;
 	bool result = false;
 	struct timeval tv;
 	struct timeval tv2;
 
-	while (!getLeaveFlyControlerFlag() && getAltHoldIsReady()) {
+	while (!getLeaveFlyControlerFlag()&&getAltHoldIsReady()) {
 
-		gettimeofday(&tv, NULL);
-
-		if (TIME_IS_UPDATED(tv2)) {
+		gettimeofday(&tv,NULL);
+	
+		if(TIME_IS_UPDATED(tv2)){
 
 #if defined(ALTHOLD_MODULE_MS5611)
 			result = ms5611GetMeasurementData(&data);
@@ -316,44 +316,39 @@ void *altHoldUpdate(void *arg) {
 #endif
 
 			if (result) {
+					
+				interval = GET_USEC_TIMEDIFF(tv,tv2);
+					
+				if(interval>=ALTHOLD_UPDATE_PERIOD){			
+							
+						//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);	
+						pthread_mutex_lock(&altHoldIsUpdateMutex);
+						aslRaw=(float)data;
+						altHoldAccSpeed = deadband(getAccWithoutGravity() * 100.f,altHoldAccSpeedDeadband);
+						altHoldSpeed = altHoldSpeed*0.7f + altHoldAccSpeed*0.3f;
+						altholdIsUpdate = true;
+						pthread_mutex_unlock(&altHoldIsUpdateMutex);
+	
+						//_DEBUG(DEBUG_NORMAL, "aslRaw=%.3f altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",aslRaw,altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
 
-				interval = GET_USEC_TIMEDIFF(tv, tv2);
+						UPDATE_LAST_TIME(tv,tv2);	
+	
+						_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
+								__func__, __LINE__,altHoldAltSpeed);				
+						_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
+								__func__, __LINE__, altHoldAccSpeed);
+						_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
+								__func__, __LINE__, altHoldSpeed);
+						_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
+								__func__, __LINE__, aslRaw);
 
-				if (interval >= ALTHOLD_UPDATE_PERIOD) {
-
-					//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);
-					pthread_mutex_lock(&altHoldIsUpdateMutex);
-					aslRaw = (float) data;
-					altHoldAccSpeed = deadband(getAccWithoutGravity() * 100.f,
-							altHoldAccSpeedDeadband);
-					altHoldSpeed = altHoldSpeed * 0.7f + altHoldAccSpeed * 0.3f;
-					altholdIsUpdate = true;
-					pthread_mutex_unlock(&altHoldIsUpdateMutex);
-
-					//_DEBUG(DEBUG_NORMAL, "aslRaw=%.3f altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",aslRaw,altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
-
-					UPDATE_LAST_TIME(tv, tv2);
-
-					_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,
-							"(%s-%d) altHoldAltSpeed=%.3f\n", __func__,
-							__LINE__, altHoldAltSpeed);
-					_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED,
-							"(%s-%d) altHoldAccSpeed=%.3f\n", __func__,
-							__LINE__, altHoldAccSpeed);
-					_DEBUG_HOVER(DEBUG_HOVER_SPEED,
-							"(%s-%d) altHoldSpeed=%.3f\n", __func__, __LINE__,
-							altHoldSpeed);
-					_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE,
-							"(%s-%d) aslRaw=%.3f\n", __func__, __LINE__,
-							aslRaw);
-
-				}
+				}			
 			} else {
-				usleep(500);
+					usleep(500);
 			}
-
-		} else {
-			UPDATE_LAST_TIME(tv, tv2);
+			
+		}else{
+			UPDATE_LAST_TIME(tv,tv2);
 		}
 	}
 
@@ -374,7 +369,7 @@ void *altHoldUpdate(void *arg) {
  */
 unsigned short convertTargetAltFromeRemoteControler(unsigned short v) {
 
-	targetAlt = (unsigned short) (getMaxAlt() * 0.01 * (float) v);
+	targetAlt = (unsigned short)(getMaxAlt()*0.01*(float)v);
 	//_DEBUG(DEBUG_NORMAL, "targetAlt=%d\n",targetAlt);
 	return targetAlt;
 }
@@ -392,12 +387,7 @@ unsigned short convertTargetAltFromeRemoteControler(unsigned short v) {
 unsigned short getDefaultPowerLevelWithTargetAlt() {
 
 	unsigned short ret = 0;
-	ret =
-			min(
-					getMinPowerLevel()
-							+ (unsigned short )((1.0
-									- exp((double )-targetAlt * 0.0075))
-									* 1500.0), getMaxPowerLeve());
+	ret= min(getMinPowerLevel()+(unsigned short)((1.0-exp((double)-targetAlt*0.0075))*1500.0),getMaxPowerLeve());
 	//_DEBUG(DEBUG_NORMAL, "throttle=%d\n",ret);
 	return ret;
 }

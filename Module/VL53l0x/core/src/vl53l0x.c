@@ -1,26 +1,26 @@
 /******************************************************************************
- The vl53l0x.c in RaspberryPilot project is placed under the MIT license
+The vl53l0x.c in RaspberryPilot project is placed under the MIT license
 
- Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
- ******************************************************************************/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -62,6 +62,7 @@ bool vl53l0xInit() {
 	VL53L0X_Dev_t *pVl53l0xDevice = &vl53l0xDevice;
 	int32_t status_int;
 
+
 	if (checkI2cDeviceIsExist(VL53L0X_ADDRESS)) {
 		_DEBUG(DEBUG_NORMAL, "(%s-%d) VL53L0X_ exist\n", __func__, __LINE__);
 	} else {
@@ -69,9 +70,8 @@ bool vl53l0xInit() {
 		return false;
 	}
 
-	initkalmanFilterOneDimEntity(&vl53l0KalmanFilterEntry, "VL53L0", 0.f, 10.f,
-			1.f, 5.f, 0.f);
-
+	initkalmanFilterOneDimEntity(&vl53l0KalmanFilterEntry,"VL53L0", 0.f,10.f,1.f,5.f, 0.f);
+	
 	pVl53l0xDevice->I2cDevAddr = VL53L0X_ADDRESS;
 
 	/*
@@ -95,13 +95,14 @@ bool vl53l0xInit() {
 			_DEBUG(DEBUG_NORMAL,
 					"VL53L0X API Version Error: Your firmware has %d.%d.%d (revision %d). This example requires %d.%d.%d.\n",
 					pVersion->major, pVersion->minor, pVersion->build,
-					pVersion->revision, VERSION_REQUIRED_MAJOR,
-					VERSION_REQUIRED_MINOR, VERSION_REQUIRED_BUILD);
+					pVersion->revision,
+					VERSION_REQUIRED_MAJOR, VERSION_REQUIRED_MINOR,
+					VERSION_REQUIRED_BUILD);
 		}
 	}
 
 	if (Status == VL53L0X_ERROR_NONE) {
-		_DEBUG(DEBUG_NORMAL, "Call of VL53L0X_DataInit\n");
+		_DEBUG(DEBUG_NORMAL,"Call of VL53L0X_DataInit\n");
 		Status = VL53L0X_DataInit(&vl53l0xDevice); // Data initialization
 		print_pal_error(Status);
 	}
@@ -109,19 +110,18 @@ bool vl53l0xInit() {
 	if (Status == VL53L0X_ERROR_NONE) {
 		Status = VL53L0X_GetDeviceInfo(&vl53l0xDevice, &DeviceInfo);
 		if (Status == VL53L0X_ERROR_NONE) {
-			_DEBUG(DEBUG_NORMAL, "VL53L0X_GetDeviceInfo:\n");
-			_DEBUG(DEBUG_NORMAL, "Device Name : %s\n", DeviceInfo.Name);
-			_DEBUG(DEBUG_NORMAL, "Device Type : %s\n", DeviceInfo.Type);
-			_DEBUG(DEBUG_NORMAL, "Device ID : %s\n", DeviceInfo.ProductId);
-			_DEBUG(DEBUG_NORMAL, "ProductRevisionMajor : %d\n",
+			_DEBUG(DEBUG_NORMAL,"VL53L0X_GetDeviceInfo:\n");
+			_DEBUG(DEBUG_NORMAL,"Device Name : %s\n", DeviceInfo.Name);
+			_DEBUG(DEBUG_NORMAL,"Device Type : %s\n", DeviceInfo.Type);
+			_DEBUG(DEBUG_NORMAL,"Device ID : %s\n", DeviceInfo.ProductId);
+			_DEBUG(DEBUG_NORMAL,"ProductRevisionMajor : %d\n",
 					DeviceInfo.ProductRevisionMajor);
-			_DEBUG(DEBUG_NORMAL, "ProductRevisionMinor : %d\n",
+			_DEBUG(DEBUG_NORMAL,"ProductRevisionMinor : %d\n",
 					DeviceInfo.ProductRevisionMinor);
 
 			if ((DeviceInfo.ProductRevisionMinor != 1)
 					&& (DeviceInfo.ProductRevisionMinor != 1)) {
-				_DEBUG(DEBUG_NORMAL,
-						"Error expected cut 1.1 but found cut %d.%d\n",
+				_DEBUG(DEBUG_NORMAL,"Error expected cut 1.1 but found cut %d.%d\n",
 						DeviceInfo.ProductRevisionMajor,
 						DeviceInfo.ProductRevisionMinor);
 				Status = VL53L0X_ERROR_NOT_SUPPORTED;
@@ -160,33 +160,33 @@ VL53L0X_Error singleRangingLongRangeInit() {
 	VL53L0X_Dev_t *pDevice = &vl53l0xDevice;
 
 	if (Status == VL53L0X_ERROR_NONE) {
-		_DEBUG(DEBUG_NORMAL, "Call of VL53L0X_StaticInit\n");
+		_DEBUG(DEBUG_NORMAL,"Call of VL53L0X_StaticInit\n");
 		Status = VL53L0X_StaticInit(pDevice); // Device Initialization
 		print_pal_error(Status);
 	}
 
 	if (Status == VL53L0X_ERROR_NONE) {
-		_DEBUG(DEBUG_NORMAL, "Call of VL53L0X_PerformRefCalibration\n");
+		_DEBUG(DEBUG_NORMAL,"Call of VL53L0X_PerformRefCalibration\n");
 		Status = VL53L0X_PerformRefCalibration(pDevice, &VhvSettings,
 				&PhaseCal); // Device Initialization
 		print_pal_error(Status);
 	}
 
 	if (Status == VL53L0X_ERROR_NONE) {
-		_DEBUG(DEBUG_NORMAL, "Call of VL53L0X_PerformRefSpadManagement\n");
+		_DEBUG(DEBUG_NORMAL,"Call of VL53L0X_PerformRefSpadManagement\n");
 		Status = VL53L0X_PerformRefSpadManagement(pDevice, &refSpadCount,
 				&isApertureSpads); // Device Initialization
-		_DEBUG(DEBUG_NORMAL, "refSpadCount = %d, isApertureSpads = %d\n",
-				refSpadCount, isApertureSpads);
+		_DEBUG(DEBUG_NORMAL,"refSpadCount = %d, isApertureSpads = %d\n", refSpadCount,
+				isApertureSpads);
 		print_pal_error(Status);
 	}
 
 	if (Status == VL53L0X_ERROR_NONE) {
 
 		// no need to do this when we use VL53L0X_PerformSingleRangingMeasurement
-		_DEBUG(DEBUG_NORMAL, "Call of VL53L0X_SetDeviceMode\n");
+		_DEBUG(DEBUG_NORMAL,"Call of VL53L0X_SetDeviceMode\n");
 		Status = VL53L0X_SetDeviceMode(pDevice,
-		VL53L0X_DEVICEMODE_SINGLE_RANGING); // Setup in single ranging mode
+				VL53L0X_DEVICEMODE_SINGLE_RANGING); // Setup in single ranging mode
 		print_pal_error(Status);
 	}
 
@@ -201,7 +201,7 @@ VL53L0X_Error singleRangingLongRangeInit() {
 		Status = VL53L0X_SetLimitCheckEnable(pDevice,
 		VL53L0X_CHECKENABLE_SIGMA_FINAL_RANGE, 1);
 	}
-
+	
 	if (Status == VL53L0X_ERROR_NONE) {
 		Status = VL53L0X_SetLimitCheckEnable(pDevice,
 		VL53L0X_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE, 1);
@@ -212,12 +212,12 @@ VL53L0X_Error singleRangingLongRangeInit() {
 		VL53L0X_CHECKENABLE_SIGNAL_RATE_FINAL_RANGE,
 				(FixPoint1616_t) (0.1 * 65536));
 	}
-
+	
 	if (Status == VL53L0X_ERROR_NONE) {
 		Status = VL53L0X_SetLimitCheckValue(pDevice,
 		VL53L0X_CHECKENABLE_SIGMA_FINAL_RANGE, (FixPoint1616_t) (60 * 65536));
 	}
-
+	
 	if (Status == VL53L0X_ERROR_NONE) {
 		Status = VL53L0X_SetMeasurementTimingBudgetMicroSeconds(pDevice, 33000);
 	}
@@ -226,7 +226,7 @@ VL53L0X_Error singleRangingLongRangeInit() {
 		Status = VL53L0X_SetVcselPulsePeriod(pDevice,
 		VL53L0X_VCSEL_PERIOD_PRE_RANGE, 18);
 	}
-
+	
 	if (Status == VL53L0X_ERROR_NONE) {
 		Status = VL53L0X_SetVcselPulsePeriod(pDevice,
 		VL53L0X_VCSEL_PERIOD_FINAL_RANGE, 14);
@@ -249,7 +249,7 @@ void print_pal_error(VL53L0X_Error Status) {
 
 	char buf[VL53L0X_MAX_STRING_LENGTH];
 	VL53L0X_GetPalErrorString(Status, buf);
-	_DEBUG(DEBUG_NORMAL, "API Status: %i : %s\n", Status, buf);
+	_DEBUG(DEBUG_NORMAL,"API Status: %i : %s\n", Status, buf);
 
 }
 
@@ -273,9 +273,7 @@ bool vl53l0xGetMeasurementData(unsigned short *cm) {
 	Status = VL53L0X_PerformSingleRangingMeasurement(pDevice,
 			&RangingMeasurementData);
 
-	*cm = (unsigned short) kalmanFilterOneDimCalc(
-			(float) RangingMeasurementData.RangeMilliMeter * 0.1f,
-			&vl53l0KalmanFilterEntry);
+	*cm =(unsigned short)kalmanFilterOneDimCalc((float)RangingMeasurementData.RangeMilliMeter*0.1f ,&vl53l0KalmanFilterEntry);
 
 	return ((Status == VL53L0X_ERROR_NONE) ? true : false);
 }

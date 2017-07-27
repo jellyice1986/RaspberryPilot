@@ -1,26 +1,26 @@
 /******************************************************************************
- The radioControl.c in RaspberryPilot project is placed under the MIT license
+The radioControl.c in RaspberryPilot project is placed under the MIT license
 
- Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
- ******************************************************************************/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+******************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,8 +44,8 @@ static int serialFd;
 static pthread_t radioThreadId;
 static pthread_t transmitThreadId;
 static bool logIsEnable;
-static unsigned long rev_success = 0;
-static unsigned long rev_drop = 0;
+static unsigned long rev_success=0;
+static unsigned long rev_drop=0;
 
 void *radioReceiveThread(void *arg);
 void *radioTransmitThread(void *arg);
@@ -110,8 +110,8 @@ bool radioControlInit() {
  *		bool
  *
  */
-void closeRadio() {
-	serialClose(serialFd);
+void closeRadio(){
+	serialClose (serialFd);
 }
 
 /**
@@ -124,7 +124,7 @@ void closeRadio() {
  *		bool
  *
  */
-bool checkLogIsEnable() {
+bool checkLogIsEnable(){
 	return logIsEnable;
 }
 
@@ -139,18 +139,19 @@ bool checkLogIsEnable() {
  *
  */
 
-void setLogIsEnable(bool v) {
-	logIsEnable = v;
+void setLogIsEnable(bool v){
+	logIsEnable=v;
 }
 
-void printPayload(unsigned char *payload, unsigned int len) {
+void printPayload(unsigned char *payload,unsigned int len){
 
-	int j = 0;
-	for (j = 0; j < len; j++) {
-		_DEBUG(DEBUG_NORMAL, "%x ", *(payload + j));
+	int j=0;
+	for(j=0;j<len;j++){
+		_DEBUG(DEBUG_NORMAL,"%x ", *(payload+j));
 	}
-	_DEBUG(DEBUG_NORMAL, "\n");
+	_DEBUG(DEBUG_NORMAL,"\n");
 }
+
 
 /**
  *  transmit packets to remot controler
@@ -168,12 +169,12 @@ void *radioTransmitThread(void *arg) {
 	int fd = *(int *) arg;
 
 	while (!getLeaveFlyControlerFlag()) {
-		/*
-		 *	     2 CCW2   CW2 3
-		 *		          X
-		 *	        1 CW1  CCW1 0
-		 *		          F
-		 */
+
+		//    2 CCW2  CW2 3
+		//          X
+		//    1 CW1  CCW1 0
+		//          H
+
 		/** packet format
 		 @
 		 roll attitude: 0
@@ -194,24 +195,22 @@ void *radioTransmitThread(void *arg) {
 		 cw2 throttle: 15
 		 #
 		 */
-		if (checkLogIsEnable()) {
+		if(checkLogIsEnable()){
 			snprintf(message, sizeof(message),
-					"@%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
-					(int) getRoll(), (int) getPitch(), (int) getYaw(),
-					(int) getCurrentAltHoldAltitude(),
-					(int) getPidSp(&rollAttitudePidSettings),
-					(int) getPidSp(&pitchAttitudePidSettings),
-					(int) (getYawCenterPoint()
-							+ getPidSp(&yawAttitudePidSettings)),
-					(int) getPidSp(&altHoldAltSettings), (int) getRollGyro(),
-					(int) getPitchGyro(), (int) getYawGyro(),
-					getThrottlePowerLevel(), getMotorPowerLevelCCW1(),
-					getMotorPowerLevelCW1(), getMotorPowerLevelCCW2(),
-					getMotorPowerLevelCW2());
-		} else {
-			snprintf(message, sizeof(message), "@%d:%d:%d:%d#", (int) getRoll(),
-					(int) getPitch(), (int) getYaw(),
-					(int) getCurrentAltHoldAltitude());
+				"@%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
+				(int)getRoll(), (int)getPitch(), (int)getYaw(), (int)getCurrentAltHoldAltitude(),
+				(int) getPidSp(&rollAttitudePidSettings),
+				(int) getPidSp(&pitchAttitudePidSettings),
+				(int) (getYawCenterPoint() + getPidSp(&yawAttitudePidSettings)),
+				(int) getPidSp(&altHoldAltSettings), (int) getRollGyro(),
+				(int) getPitchGyro(), (int) getYawGyro(),
+				getThrottlePowerLevel(), getMotorPowerLevelCCW1(),
+				getMotorPowerLevelCW1(), getMotorPowerLevelCCW2(),
+				getMotorPowerLevelCW2());
+		}else{
+			snprintf(message, sizeof(message),
+				"@%d:%d:%d:%d#",
+				(int)getRoll(), (int)getPitch(), (int)getYaw(), (int)getCurrentAltHoldAltitude());
 		}
 		if ('#' != message[strlen(message) - 1]) {
 			_DEBUG(DEBUG_NORMAL, "invilid package\n");
@@ -244,31 +243,30 @@ void *radioReceiveThread(void *arg) {
 	char buf[512];
 	char getChar;
 	unsigned char count = 0;
-	short i = 0;
+	short i=0;
 
 	memset(buf, '\0', sizeof(buf));
 
 	while (!getLeaveFlyControlerFlag()) {
 
-		if (serialDataAvail(fd)) {
+		if (serialDataAvail(fd)){ 
 
 			memset(serialBuf, '\0', sizeof(serialBuf));
 
-			if (!read(fd, serialBuf, sizeof(serialBuf)))
-				goto ignore;
-
-			for (i = 0; i < sizeof(serialBuf); i++) {
+			if (!read (fd, serialBuf, sizeof(serialBuf)))
+    			goto ignore;
+			
+			for(i=0;i<sizeof(serialBuf);i++){
 
 				getChar = serialBuf[i];
 
-				if ('\0' == getChar)
+				if( '\0' == getChar)
 					break;
 
 				if (getChar == '@') {
 					resetPacketCounter();
-					if (count != 0) {
-						_DEBUG(DEBUG_RADIO_RX_FAIL,
-								"invilid: '#' is lost, buf=%s \n", buf);
+					if(count!=0){
+						_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: '#' is lost, buf=%s \n",buf);
 						rev_drop++;
 					}
 					memset(buf, '\0', sizeof(buf));
@@ -277,7 +275,7 @@ void *radioReceiveThread(void *arg) {
 				} else if ((getChar == '#') && (buf[0] == '@')
 						&& (count < sizeof(buf))) {
 					buf[count] = getChar;
-					processRadioMessages(fd, buf, count + 1);
+					processRadioMessages(fd, buf, count+1);
 					memset(buf, '\0', sizeof(buf));
 					count = 0;
 				} else {
@@ -285,11 +283,9 @@ void *radioReceiveThread(void *arg) {
 						buf[count] = getChar;
 						count++;
 					} else {
-						if (count != 0) {
+						if(count!=0){
 							rev_drop++;
-							_DEBUG(DEBUG_RADIO_RX_FAIL,
-									"invilid: bufer overflow buf=%s getChar=%c\n",
-									buf, getChar);
+							_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid: bufer overflow buf=%s getChar=%c\n",buf,getChar);
 						}
 						memset(buf, '\0', sizeof(buf));
 						count = 0;
@@ -297,10 +293,11 @@ void *radioReceiveThread(void *arg) {
 				}
 
 			}
-		} else {
+		}else{
 			usleep(RECEIVE_TIMER);
 		}
-		ignore: ;
+ignore:		
+	;
 	}
 
 	pthread_exit((void *) 0);
@@ -336,6 +333,7 @@ bool extractPacketInfo(char *buf, int lenth,
 
 	//_DEBUG(DEBUG_NORMAL,"cmd=%s buf=%s lenth=%d\n",cmd,buf,lenth);
 
+	
 	i = 1;
 	token = strtok(cmd, ":");
 	strcpy(container[0], token);
@@ -366,8 +364,8 @@ bool extractPacketInfo(char *buf, int lenth,
  * @return
  *		float
  */
-void getPacketDropRate() {
-	_DEBUG(DEBUG_NORMAL, "rev_ok/drop = %ld/%ld\n", rev_drop, rev_success);
+void getPacketDropRate(){
+	_DEBUG(DEBUG_NORMAL, "rev_ok/drop = %ld/%ld\n",rev_drop,rev_success);
 }
 
 /**
@@ -382,59 +380,57 @@ void getPacketDropRate() {
  * @return
  *		bool
  */
-bool checkPacketFieldIsValid(char *buf, short lenth) {
+bool checkPacketFieldIsValid(char *buf, short lenth){
 
-	int i, j = 0;
-	int count = 0;
-	int count2 = 0;
+	int i,j=0;
+	int count=0;
+	int count2=0;
 
 	//_DEBUG(DEBUG_NORMAL, "length=%d %s \n",lenth,buf);
 
 	//check header
-	i = atoi(buf + 1);
+	i=atoi(buf+1);
 
-	if (!(i > HEADER_BEGIN && i < HEADER_END)) {
-		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid header: length=%d %s\n", lenth,
-				buf);
-		return false;
+	if(!(i>HEADER_BEGIN&&i<HEADER_END)){
+			_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid header: length=%d %s\n",lenth,buf);
+			return false;
 	}
-
+	
 	//check packet field
-	for (j = 0; j < lenth; j++) {
-		if (*(buf + j) == ':') {
+	for(j=0;j<lenth;j++){
+		if(*(buf+j)==':'){
 			count++;
 		}
 	}
-
-	switch (i) {
-	case HEADER_ENABLE_FLY_SYSTEM:
-		count2 = ENABLE_FLY_SYSTEM_FIWLD_END - 1;
-		break;
-	case HEADER_CONTROL_MOTION:
-		count2 = CONTROL_MOTION_END - 1;
-		break;
-	case HEADER_HALT_PI:
-		count2 = HALT_PI_END - 1;
-		break;
-	case HEADER_SETUP_FACTOR:
-		count2 = SETUP_FACTOR_END - 1;
-		break;
-	case HEADER_SETUP_PID:
-		count2 = SETUP_PID_END - 1;
-		break;
-	default:
-		count2 = -1;
+	
+	switch (i){
+		case HEADER_ENABLE_FLY_SYSTEM:
+			count2=ENABLE_FLY_SYSTEM_FIWLD_END-1;
+			break;
+		case HEADER_CONTROL_MOTION:
+			count2=CONTROL_MOTION_END-1;
+			break;
+		case HEADER_HALT_PI:
+			count2=HALT_PI_END-1;
+			break;
+		case HEADER_SETUP_FACTOR:
+			count2=SETUP_FACTOR_END-1;
+			break;
+		case HEADER_SETUP_PID:
+			count2=SETUP_PID_END-1;
+			break;
+		default:
+			count2=-1;
 	}
 
-	if (count2 != count) {
-		_DEBUG(DEBUG_RADIO_RX_FAIL,
-				"invilid field: length=%d %s count2=%d count=%d\n", lenth, buf,
-				count2, count);
+	if(count2!=count){
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: length=%d %s count2=%d count=%d\n",lenth,buf,count2,count);
 		return false;
 	}
-
+	
 	return true;
 }
+
 
 /**
  * convert a string  to int
@@ -448,20 +444,20 @@ bool checkPacketFieldIsValid(char *buf, short lenth) {
  * @return
  * 		a number
  */
-unsigned int hexStringToInt(char * hexString, unsigned int len) {
+unsigned int hexStringToInt(char * hexString, unsigned int len){
 
-	int i = 0;
-	unsigned int result = 0;
+	int i=0;
+	unsigned int result=0;
 	char hexTable[] = "0123456789ABCDEF";
 	char *charPointer;
 
-	for (i = 0; i < len; i++) {
-		charPointer = strchr(hexTable, hexString[i]);
-		if (NULL == charPointer) {
-			result = 0x0;
+	for(i=0;i<len;i++){
+		charPointer=strchr(hexTable,hexString[i]);
+		if(NULL==charPointer){
+			result=0x0;
 			break;
 		}
-		result = (result << 4) + (charPointer - hexTable);
+		result=(result<<4)+(charPointer-hexTable);
 	}
 
 	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,result);
@@ -481,22 +477,21 @@ unsigned int hexStringToInt(char * hexString, unsigned int len) {
  * @return
  * 		checksum
  */
-unsigned short getChecksum(char *buf, unsigned int len) {
+unsigned short getChecksum(char *buf,unsigned int len){
 
 	int i;
 	unsigned int checksunm = 0;
 
 	for (i = 0; i < len; i = i + 2) {
 
-		checksunm += (((buf[i] & 0xFF) << 8)
-				| ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00));
+		checksunm += (((buf[i] & 0xFF) << 8) | ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00));
 
 		checksunm = (checksunm & 0xFFFF) + (checksunm >> 16);
 	}
 
 	//_DEBUG(DEBUG_NORMAL,"%s %x\n",__func__,checksunm);
-
-	return (unsigned short) (checksunm & 0xFFFF);
+	
+	return (unsigned short)(checksunm & 0xFFFF);
 }
 
 /**
@@ -508,33 +503,33 @@ unsigned short getChecksum(char *buf, unsigned int len) {
  * @return
  * 		index
  */
-unsigned short getChecksumFieldIndex(unsigned int header) {
+unsigned short getChecksumFieldIndex(unsigned int header){
 
-	unsigned short ret = 0;
-
-	switch (header) {
-	case HEADER_ENABLE_FLY_SYSTEM:
-		ret = ENABLE_FLY_SYSTEM_CHECKSUM;
-		break;
-	case HEADER_CONTROL_MOTION:
-		ret = CONTROL_MOTION_CHECKSUM;
-		break;
-	case HEADER_HALT_PI:
-		ret = HALT_PI_CHECKSUM;
-		break;
-	case HEADER_SETUP_FACTOR:
-		ret = SETUP_FACTOR_CHECKSUM;
-		break;
-	case HEADER_SETUP_PID:
-		ret = SETUP_PID_CHECKSUM;
-		break;
-	default:
-		_DEBUG(DEBUG_NORMAL, "%s can't find index, header=%d\n", __func__,
-				header);
-		ret = -1;
+	unsigned short ret=0;
+		
+	switch (header){
+		case HEADER_ENABLE_FLY_SYSTEM:
+			ret=ENABLE_FLY_SYSTEM_CHECKSUM;
+			break;
+		case HEADER_CONTROL_MOTION:
+			ret=CONTROL_MOTION_CHECKSUM;
+			break;
+		case HEADER_HALT_PI:
+			ret=HALT_PI_CHECKSUM;
+			break;
+		case HEADER_SETUP_FACTOR:
+			ret=SETUP_FACTOR_CHECKSUM;
+			break;
+		case HEADER_SETUP_PID:
+			ret=SETUP_PID_CHECKSUM;
+			break;
+		default:
+			_DEBUG(DEBUG_NORMAL,"%s can't find index, header=%d\n",__func__,header);
+			ret=-1;
 	}
 	return ret;
 }
+
 
 /**
  * Decode a received packet
@@ -560,22 +555,15 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	struct timeval tv_last;
 #endif
 
-	if (!(checkPacketFieldIsValid(buf, lenth)
-			&& extractPacketInfo(buf, lenth, packet))) {
-		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n", buf);
+	if (!(checkPacketFieldIsValid(buf, lenth) && extractPacketInfo(buf, lenth, packet))){
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n",buf);
 		rev_drop++;
 		return false;
-	} else if (!(getChecksum(buf, lenth - 5)
-			== (unsigned short) hexStringToInt(
-					packet[getChecksumFieldIndex(atoi(packet[0]))], 4))) {
+	}else if(!(getChecksum(buf,lenth-5)==(unsigned short)hexStringToInt(packet[getChecksumFieldIndex(atoi(packet[0]))],4))){
 		rev_drop++;
-		_DEBUG(DEBUG_RADIO_RX_FAIL,
-				"invilid checksum: %s  getChecksum=0x%x hexStringToInt=0x%x\n",
-				buf, getChecksum(buf, lenth - 5),
-				(unsigned short )hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],
-						4));
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid checksum: %s  getChecksum=0x%x hexStringToInt=0x%x\n",buf,getChecksum(buf,lenth-5),(unsigned short)hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],4));
 		return false;
-	} else {
+	}else{
 		rev_success++;
 	}
 
@@ -585,11 +573,11 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		// Enable or disable fly syatem
 
 		if (1 == atoi(packet[ENABLE_FLY_SYSTEM_FIWLD_ISENABLE])) {
-			_DEBUG(DEBUG_NORMAL, "Enable Flysystem\n");
-			enableFlySystem();
-			motorInit();
+			_DEBUG(DEBUG_NORMAL,"Enable Flysystem\n");
+				enableFlySystem();
+				motorInit();
 		} else {
-			_DEBUG(DEBUG_NORMAL, "Disable Flysystem\n");
+			_DEBUG(DEBUG_NORMAL,"Disable Flysystem\n");
 			disenableFlySystem();
 		}
 		getPacketDropRate();
@@ -640,7 +628,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 			setThrottlePowerLevel(parameter);
 
 			if (getMinPowerLevel() == parameter) {
-
+				
 				resetPidRecord(&rollAttitudePidSettings);
 				resetPidRecord(&pitchAttitudePidSettings);
 				resetPidRecord(&yawAttitudePidSettings);
@@ -662,7 +650,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 					setAltStartPoint(getCurrentAltHoldAltitude());
 					setPidSp(&yawAttitudePidSettings, 0);
 				}
-
+				
 				setPidSp(&rollAttitudePidSettings,
 						LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
 								getAngularLimit()));
@@ -671,24 +659,24 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 								getAngularLimit()));
 				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 4));
 
-				if (getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag())) {
+				if(getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag()) ){
 
-					if (rollSpShift <= -getFlipThreadHold()) {
+					if(rollSpShift <= -getFlipThreadHold()){
 						setFlippingFlag(FLIP_LEFT);
-					} else if (rollSpShift >= getFlipThreadHold()) {
+					}else if(rollSpShift >= getFlipThreadHold()){
 						setFlippingFlag(FLIP_RIGHT);
 					}
 
-					if (pitchSpShift <= -getFlipThreadHold()) {
+					if(pitchSpShift <= -getFlipThreadHold()){
 						setFlippingFlag(FLIP_BACK);
-					} else if (pitchSpShift >= getFlipThreadHold()) {
+					}else if(pitchSpShift >= getFlipThreadHold()){
 						setFlippingFlag(FLIP_FRONT);
 					}
 
-					if (FLIP_NONE != getFlippingFlag()) {
+					if(FLIP_NONE!=getFlippingFlag()){
 						setFlippingStep(1);
 					}
-
+					
 				}
 
 				//_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
@@ -806,14 +794,17 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		_DEBUG(DEBUG_NORMAL, "getAltitudePidOutputLimitation: %5.3f\n",
 				getAltitudePidOutputLimitation());
 		/***/
-		parameter = atoi(packet[SETUP_FACTOR_FLIP_ENABLED]);
+		parameter = atoi(
+				packet[SETUP_FACTOR_FLIP_ENABLED]);
 		setFlippingIsEnable(parameter);
 		_DEBUG(DEBUG_NORMAL, "getFlippingIsEnable: %d\n",
 				getFlippingIsEnable());
 		/***/
-		parameter = atoi(packet[SETUP_FACTOR_LOG_ENABLED]);
-		setLogIsEnable(parameter);
-		_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n", checkLogIsEnable());
+		parameter = atoi(
+						packet[SETUP_FACTOR_LOG_ENABLED]);
+				setLogIsEnable(parameter);
+				_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n",
+						checkLogIsEnable());
 		/***/
 		break;
 
