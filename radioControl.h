@@ -57,7 +57,9 @@ typedef enum {
 } CONTROL_MOTION_FIWLD;
 
 typedef enum {
-	HALT_PI_HEADER, HALT_PI_CHECKSUM, HALT_PI_END
+	HALT_PI_HEADER,
+	HALT_PI_CHECKSUM,
+	HALT_PI_END
 } HALT_PI_FIWLD;
 
 typedef enum {

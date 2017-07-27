@@ -1642,7 +1642,6 @@ void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy,
 	short sgx = 0;
 	short sgy = 0;
 	short sgz = 0;
-	;
 
 	getMotion6RawData(&sax, &say, &saz, &sgx, &sgy, &sgz);
 

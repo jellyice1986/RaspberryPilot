@@ -80,7 +80,8 @@ bool checkI2cDeviceIsExist(unsigned char devAddr) {
 
 	goto Exit;
 
-	Exit: close(fd);
+	Exit:
+	close(fd);
 	return result;
 }
 
@@ -236,7 +237,8 @@ bool writeBytes(unsigned char devAddr, unsigned char regAddr,
 
 	goto Exit;
 
-	Exit: close(fd);
+	Exit:
+	close(fd);
 	return result;
 }
 
@@ -325,7 +327,8 @@ bool writeWords(unsigned char devAddr, unsigned char regAddr,
 
 	goto Exit;
 
-	Exit: close(fd);
+	Exit:
+	close(fd);
 	return result;
 }
 
@@ -402,7 +405,8 @@ char readBytes(unsigned char devAddr, unsigned char regAddr,
 
 	goto Exit;
 
-	Exit: close(fd);
+	Exit:
+	close(fd);
 	return count;
 }
 
