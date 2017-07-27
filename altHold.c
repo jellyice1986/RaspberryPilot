@@ -303,7 +303,7 @@ void *altHoldUpdate(void *arg) {
 
 		gettimeofday(&tv,NULL);
 	
-		if(0!=tv2.tv_usec){
+		if(TIME_IS_UPDATED(tv2)){
 
 #if defined(ALTHOLD_MODULE_MS5611)
 			result = ms5611GetMeasurementData(&data);
@@ -317,7 +317,7 @@ void *altHoldUpdate(void *arg) {
 
 			if (result) {
 					
-				interval=(unsigned long)((tv.tv_sec-tv2.tv_sec)*1000000+(tv.tv_usec-tv2.tv_usec));
+				interval = GET_USEC_TIMEDIFF(tv,tv2);
 					
 				if(interval>=ALTHOLD_UPDATE_PERIOD){			
 							
@@ -330,9 +330,8 @@ void *altHoldUpdate(void *arg) {
 						pthread_mutex_unlock(&altHoldIsUpdateMutex);
 	
 						//_DEBUG(DEBUG_NORMAL, "aslRaw=%.3f altHoldSpeed =%.3f altHoldAltSpeed=%.2f altHoldAccSpeed=%.2f\n",aslRaw,altHoldSpeed,altHoldAltSpeed,altHoldAccSpeed);
-							
-						tv2.tv_usec=tv.tv_usec;
-						tv2.tv_sec=tv.tv_sec;	
+
+						UPDATE_LAST_TIME(tv,tv2);	
 	
 						_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
 								__func__, __LINE__,altHoldAltSpeed);				
@@ -349,8 +348,7 @@ void *altHoldUpdate(void *arg) {
 			}
 			
 		}else{
-			tv2.tv_usec=tv.tv_usec;
-			tv2.tv_sec=tv.tv_sec;
+			UPDATE_LAST_TIME(tv,tv2);
 		}
 	}
 

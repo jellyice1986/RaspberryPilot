@@ -588,9 +588,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 
 #if CHECK_RECEIVER_PERIOD
 		gettimeofday(&tv,NULL);
-		_DEBUG("duration=%ld us\n",(tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec));
-		tv_last.tv_usec=tv.tv_usec;
-		tv_last.tv_sec=tv.tv_sec;
+		_DEBUG("duration=%ld us\n", GET_USEC_TIMEDIFF(tv,tv_last));
+		UPDATE_LAST_TIME(tv,tv_last);
 #endif
 
 		rollSpShift = atof(packet[CONTROL_MOTION_ROLL_SP_SHIFT]);

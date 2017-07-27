@@ -84,9 +84,8 @@ int main() {
 
 #if CHECK_CYCLE_TIME_1 /*debug: check cycle time of this loop*/
 		gettimeofday(&tv1_c,NULL);
-		_DEBUG(DEBUG_NORMAL,"cycle duration=%ld us\n",(tv1_c.tv_sec-tv1_l.tv_sec)*1000000+(tv1_c.tv_usec-tv1_l.tv_usec));
-		tv1_l.tv_usec=tv1_c.tv_usec;
-		tv1_l.tv_sec=tv1_c.tv_sec;
+		_DEBUG(DEBUG_NORMAL,"cycle duration=%ld us\n",GET_USEC_TIMEDIFF(tv1_c,tv1_l));
+		UPDATE_LAST_TIME(tv1_c,tv1_l);
 #endif
 
 		if (!getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc,xyzGravity, xyzMagnet)) {
@@ -94,9 +93,8 @@ int main() {
 #if CHECK_CYCLE_TIME_2 /*check cycle time of dmp*/
 			if(!mpuResult) {
 				gettimeofday(&tv2_c,NULL);
-				_DEBUG(DEBUG_NORMAL,"dmp duration=%ld us\n",(tv2_c.tv_sec-tv2_l.tv_sec)*1000000+(tv2_c.tv_usec-tv2_l.tv_usec));
-				tv2_l.tv_usec=tv2_c.tv_usec;
-				tv2_l.tv_sec=tv2_c.tv_sec;
+				_DEBUG(DEBUG_NORMAL,"dmp duration=%ld us\n",GET_USEC_TIMEDIFF(tv2_c,tv2_l));
+				UPDATE_LAST_TIME(tv2_c,tv2_l);
 			}
 #endif
 
@@ -123,10 +121,11 @@ int main() {
 			_DEBUG(DEBUG_ACC, "(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",
 					__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
 
-	    	if((unsigned long)((tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec)) >= (unsigned long)(getAdjustPeriod()*CONTROL_CYCLE_TIME)){
+	    	if(GET_USEC_TIMEDIFF(tv_c,tv_l) >= (unsigned long)(getAdjustPeriod()*CONTROL_CYCLE_TIME)){
+				
 
 #if CHECK_CYCLE_TIME_3
-				_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",(tv_c.tv_sec-tv_l.tv_sec)*1000000+(tv_c.tv_usec-tv_l.tv_usec));
+				_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",GET_USEC_TIMEDIFF(tv_c,tv_l));
 #endif
 				pthread_mutex_lock(&controlMotorMutex);
 
@@ -165,8 +164,8 @@ int main() {
 					
 				pthread_mutex_unlock(&controlMotorMutex);
 
-				tv_l.tv_usec=tv_c.tv_usec;
-				tv_l.tv_sec=tv_c.tv_sec;
+				UPDATE_LAST_TIME(tv_c,tv_l);
+
 			}
 
 		}

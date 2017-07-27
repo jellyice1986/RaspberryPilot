@@ -32,7 +32,10 @@ SOFTWARE.
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define LIMIT_MIN_MAX_VALUE(value,minVal,maxVal) (min(maxVal, max(minVal,value)))
 #define NON_ZERO(value) (value==0.f?1.f:value)
-
+#define GET_USEC_TIMEDIFF(currentTv,lastTv) ((unsigned long)((currentTv.tv_sec-lastTv.tv_sec)*1000000+(currentTv.tv_usec-lastTv.tv_usec)))
+#define GET_SEC_TIMEDIFF(currentTv,lastTv) ((float) (currentTv.tv_sec - lastTv.tv_sec)+(float) (currentTv.tv_usec - lastTv.tv_usec) * 0.000001f)
+#define UPDATE_LAST_TIME(currentTv,lastTv) do{ lastTv.tv_usec = currentTv.tv_usec; lastTv.tv_sec = currentTv.tv_sec; }while(0)
+#define TIME_IS_UPDATED(tv) (tv.tv_usec>0?true:false)
 
 #define LOG_ENABLE 						true
 #define DEBUG_NONE 						0x0

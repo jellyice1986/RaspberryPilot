@@ -386,10 +386,10 @@ void motorControlerFlipping() {
 	static struct timeval tv_last;
 	static float power=0;
 	struct timeval tv;
- 
-	gettimeofday(&tv, NULL);
 
-	if((unsigned long)((tv.tv_sec-tv_last.tv_sec)*1000000+(tv.tv_usec-tv_last.tv_usec)) < getFlipDelay()*1000000){
+        gettimeofday(&tv, NULL);
+
+	if(GET_USEC_TIMEDIFF(tv,tv_last) < getFlipDelay()*1000000){
 		setFlippingStep(0);
 		setFlippingFlag(FLIP_NONE);
 		motorControler();

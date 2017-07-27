@@ -213,11 +213,11 @@ float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outpu
 
 	gettimeofday(&tv, NULL);
 
-	if (pid->last_tv.tv_sec != 0) {
+	if (TIME_IS_UPDATED(pid->last_tv)) {
 
 		pid->pv = processValue;
-		timeDiff = ((float) (tv.tv_sec - pid->last_tv.tv_sec)
-				+ (float)(tv.tv_usec - pid->last_tv.tv_usec)*0.000001f);
+		
+		timeDiff = GET_SEC_TIMEDIFF(tv,pid->last_tv);
 
 		//P term
 		if(outputP){
@@ -259,8 +259,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outpu
 #endif
 	}
 
-	pid->last_tv.tv_sec = tv.tv_sec;
-	pid->last_tv.tv_usec = tv.tv_usec;
+	UPDATE_LAST_TIME(tv,pid->last_tv);
 
 	return result;
 }
@@ -340,9 +339,8 @@ void updatePidTv(PID_STRUCT *pid) {
 
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	
-	pid->last_tv.tv_usec = tv.tv_usec;
-	pid->last_tv.tv_sec = tv.tv_sec;
+
+	UPDATE_LAST_TIME(tv,pid->last_tv);
 }
 
 /**

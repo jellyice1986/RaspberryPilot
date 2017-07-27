@@ -533,9 +533,9 @@ bool mpu6050Init() {
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00|0x10); // power down mode|Full Scale
 	usleep(10000);	
 	
-	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",10);
-	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",10);
-	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",10);
+	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",5);
+	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",5);
+	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",5);
 #endif
 
 	return true;
@@ -1549,6 +1549,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	float f_z=0.f;
 	struct timeval tv;
 	static struct timeval last_tv;
+	static struct timeval last_2tv;
 	
 	gettimeofday(&tv, NULL);
 #endif
@@ -1556,7 +1557,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
 #ifdef MPU6050_9AXIS
-	if((unsigned long)((tv.tv_sec-last_tv.tv_sec)*1000000+(tv.tv_usec-last_tv.tv_usec))>= 10000){
+	if(GET_USEC_TIMEDIFF(tv,last_tv)>= 10000){
 
 		getMagnet(&s_mx, &s_my, &s_mz);
 		
@@ -1569,15 +1570,21 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 		pushSmaData(&x_magnetSmaFilterEntry,f_mx);
 		pushSmaData(&y_magnetSmaFilterEntry,f_my);
 		pushSmaData(&z_magnetSmaFilterEntry,f_mz);
-		last_tv.tv_usec = tv.tv_usec;
-		last_tv.tv_sec = tv.tv_sec;
+		f_mx = pullSmaData(&x_magnetSmaFilterEntry);
+		f_my = pullSmaData(&y_magnetSmaFilterEntry);
+		f_mz = pullSmaData(&z_magnetSmaFilterEntry);
+
+		UPDATE_LAST_TIME(tv,last_tv);
+
 	}
 
-	f_mx = pullSmaData(&x_magnetSmaFilterEntry);
-	f_my = pullSmaData(&y_magnetSmaFilterEntry);
-	f_mz = pullSmaData(&z_magnetSmaFilterEntry);
-	
-	IMUupdate9(gx, gy, gz, ax, ay, az, f_my, f_mx, f_mz, q);
+	if(GET_USEC_TIMEDIFF(tv,last_2tv)>= 30000){
+		IMUupdate9(gx, gy, gz, ax, ay, az, f_my, f_mx, f_mz, q);
+		UPDATE_LAST_TIME(tv,last_2tv);
+	}else{
+		IMUupdate6(gx, gy, gz, ax, ay, az, q);
+	}
+
 #else
 	IMUupdate6(gx, gy, gz, ax, ay, az, q);
 #endif	

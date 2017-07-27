@@ -135,7 +135,7 @@ void IMUupdate6(float gx, float gy, float gz, float ax, float ay, float az,
 
 	gettimeofday(&tv, NULL);
 
-	if (last_tv.tv_sec != 0) {
+	if (TIME_IS_UPDATED(last_tv)) {
 		
 		// Rate of change of quaternion from gyroscope
 		qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
@@ -145,8 +145,7 @@ void IMUupdate6(float gx, float gy, float gz, float ax, float ay, float az,
 
 		// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 		if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
-			timeDiff = ((float) (tv.tv_sec - last_tv.tv_sec)
-				+ (float) (tv.tv_usec - last_tv.tv_usec) * 0.000001f);
+			timeDiff = GET_SEC_TIMEDIFF(tv,last_tv);
 			
 			// Normalise accelerometer measurement
 			recipNorm = invSqrt(ax * ax + ay * ay + az * az);
@@ -205,8 +204,7 @@ void IMUupdate6(float gx, float gy, float gz, float ax, float ay, float az,
 		q[3] = q3;
 	}
 
-	last_tv.tv_usec = tv.tv_usec;
-	last_tv.tv_sec = tv.tv_sec;
+	UPDATE_LAST_TIME(tv,last_tv);
 
 #elif defined(MAHONY_AHRS)
 
@@ -219,13 +217,12 @@ void IMUupdate6(float gx, float gy, float gz, float ax, float ay, float az,
 
 	gettimeofday(&tv, NULL);
 
-	if (last_tv.tv_sec != 0) {
+	if (TIME_IS_UPDATED(last_tv)) {
 
 	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 		if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
 
-			timeDiff = ((float) (tv.tv_sec - last_tv.tv_sec)
-				+ (float) (tv.tv_usec - last_tv.tv_usec) * 0.000001f);
+			timeDiff = GET_SEC_TIMEDIFF(tv,last_tv);
 			
 			// Normalise accelerometer measurement
 			recipNorm = invSqrt(ax * ax + ay * ay + az * az);
@@ -289,8 +286,8 @@ void IMUupdate6(float gx, float gy, float gz, float ax, float ay, float az,
 
 	}
 
-	last_tv.tv_usec = tv.tv_usec;
-	last_tv.tv_sec = tv.tv_sec;
+	UPDATE_LAST_TIME(tv,last_tv);
+	
 #endif
 }
 
@@ -341,10 +338,9 @@ void IMUupdate9(float gx, float gy, float gz, float ax, float ay, float az, floa
 
 	gettimeofday(&tv, NULL);
 
-	if (last_tv.tv_sec != 0) {
+	if (TIME_IS_UPDATED(last_tv)) {
 		
-		timeDiff = ((float) (tv.tv_sec - last_tv.tv_sec)
-					+ (float) (tv.tv_usec - last_tv.tv_usec) * 0.000001f);
+		timeDiff = GET_SEC_TIMEDIFF(tv,last_tv);
 
 		// Rate of change of quaternion from gyroscope
 		qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
@@ -434,8 +430,7 @@ void IMUupdate9(float gx, float gy, float gz, float ax, float ay, float az, floa
 
 	}
 
-	last_tv.tv_usec = tv.tv_usec;
-	last_tv.tv_sec = tv.tv_sec;
+	UPDATE_LAST_TIME(tv,last_tv);
 
 #elif defined(MAHONY_AHRS)
 
@@ -450,10 +445,9 @@ void IMUupdate9(float gx, float gy, float gz, float ax, float ay, float az, floa
 
 	gettimeofday(&tv, NULL);
 
-	if (last_tv.tv_sec != 0) {
+	if (TIME_IS_UPDATED(last_tv)) {
 		
-		timeDiff = ((float) (tv.tv_sec - last_tv.tv_sec)
-				+ (float) (tv.tv_usec - last_tv.tv_usec) * 0.000001f);
+		timeDiff = GET_SEC_TIMEDIFF(tv,last_tv);
 
 		// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 		if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
@@ -554,8 +548,7 @@ void IMUupdate9(float gx, float gy, float gz, float ax, float ay, float az, floa
 
 	}
 
-	last_tv.tv_usec = tv.tv_usec;
-	last_tv.tv_sec = tv.tv_sec;
+	UPDATE_LAST_TIME(tv,last_tv);
 	
 #endif
 }
