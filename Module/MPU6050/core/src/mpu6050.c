@@ -1579,6 +1579,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	}
 
 	if(GET_USEC_TIMEDIFF(tv,last_2tv)>= 30000){
+		//overuse of magnetometer will reap negative result
 		IMUupdate9(gx, gy, gz, ax, ay, az, f_my, f_mx, f_mz, q);
 		UPDATE_LAST_TIME(tv,last_2tv);
 	}else{
