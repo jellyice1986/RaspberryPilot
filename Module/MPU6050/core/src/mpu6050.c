@@ -386,10 +386,10 @@ static float xGravity;
 static float yGravity;
 static float zGravity;
 #ifdef MPU6050_9AXIS
-// Offsets applied to raw x/y/z values
-float mag_offsets[3] = {0.863F, 2.537F, -7.838F};
-// Soft iron error compensation matrix
-float mag_softiron_matrix[3][3] = { {1.016, -0.022, -0.013}, {-0.002, 1.029, 0.024}, {-0.013, 0.024, 0.958}};
+// Hard iron calibration matrix
+float mag_hard_iron_cal[3] = {0.863F, 2.537F, -7.838F};
+// Soft iron calibration matrix
+float mag_soft_iron_cal[3][3] = { {1.016, -0.022, -0.013}, {-0.002, 1.029, 0.024}, {-0.013, 0.024, 0.958}};
 static SMA_STRUCT x_magnetSmaFilterEntry;
 static SMA_STRUCT y_magnetSmaFilterEntry;
 static SMA_STRUCT z_magnetSmaFilterEntry;
@@ -1563,12 +1563,12 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 
 		getMagnet(&s_mx, &s_my, &s_mz);
 
-		f_x = (float)s_mx - mag_offsets[0];
-		f_y = (float)s_my - mag_offsets[1];
-		f_z = (float)s_mz - mag_offsets[2];
-		f_mx = f_x * mag_softiron_matrix[0][0] + f_y * mag_softiron_matrix[0][1] + f_z * mag_softiron_matrix[0][2];
-		f_my = f_x * mag_softiron_matrix[1][0] + f_y * mag_softiron_matrix[1][1] + f_z * mag_softiron_matrix[1][2];
-		f_mz = f_x * mag_softiron_matrix[2][0] + f_y * mag_softiron_matrix[2][1] + f_z * mag_softiron_matrix[2][2];
+		f_x = (float)s_mx - mag_hard_iron_cal[0];
+		f_y = (float)s_my - mag_hard_iron_cal[1];
+		f_z = (float)s_mz - mag_hard_iron_cal[2];
+		f_mx = f_x * mag_soft_iron_cal[0][0] + f_y * mag_soft_iron_cal[0][1] + f_z * mag_soft_iron_cal[0][2];
+		f_my = f_x * mag_soft_iron_cal[1][0] + f_y * mag_soft_iron_cal[1][1] + f_z * mag_soft_iron_cal[1][2];
+		f_mz = f_x * mag_soft_iron_cal[2][0] + f_y * mag_soft_iron_cal[2][1] + f_z * mag_soft_iron_cal[2][2];
 		pushSmaData(&x_magnetSmaFilterEntry,f_mx);
 		pushSmaData(&y_magnetSmaFilterEntry,f_my);
 		pushSmaData(&z_magnetSmaFilterEntry,f_mz);
