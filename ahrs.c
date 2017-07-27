@@ -549,7 +549,7 @@ void IMUupdate9(float gx, float gy, float gz, float ax, float ay, float az, floa
 	}
 
 	UPDATE_LAST_TIME(tv,last_tv);
-	
+
 #endif
 }
 

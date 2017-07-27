@@ -1,36 +1,36 @@
 /******************************************************************************
-The mpu6050.c in RaspberryPilot project is placed under the MIT license
+ The mpu6050.c in RaspberryPilot project is placed under the MIT license
 
-Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+ Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
 
-=============================================================
+ =============================================================
 
-ATTENTION:
+ ATTENTION:
 
-The code in this file is mostly copied and rewritten from
+ The code in this file is mostly copied and rewritten from
 
-Jeff Rowberg:
-https://github.com/jrowberg/i2cdevlib
+ Jeff Rowberg:
+ https://github.com/jrowberg/i2cdevlib
 
-******************************************************************************/
+ ******************************************************************************/
 
 #include <unistd.h>
 #include <stdio.h>
@@ -370,9 +370,9 @@ static unsigned char devAddr;
 static unsigned char scaleGyroRange;
 static unsigned char scaleAccRange;
 static unsigned char buffer[14];
-static short xGyroOffset; 
-static short yGyroOffset; 
-static short zGyroOffset;  
+static short xGyroOffset;
+static short yGyroOffset;
+static short zGyroOffset;
 static float yaw;
 static float pitch;
 static float roll;
@@ -387,15 +387,16 @@ static float yGravity;
 static float zGravity;
 #ifdef MPU6050_9AXIS
 // Offsets applied to raw x/y/z values
-float mag_offsets[3]			= { 0.863F, 2.537F, -7.838F };
+float mag_offsets[3] = {0.863F, 2.537F, -7.838F};
 // Soft iron error compensation matrix
-float mag_softiron_matrix[3][3] = { { 1.016, -0.022, -0.013 },{-0.002, 1.029, 0.024 },{ -0.013, 0.024, 0.958 } }; 
+float mag_softiron_matrix[3][3] = { {1.016, -0.022, -0.013}, {-0.002, 1.029, 0.024}, {-0.013, 0.024, 0.958}};
 static SMA_STRUCT x_magnetSmaFilterEntry;
 static SMA_STRUCT y_magnetSmaFilterEntry;
 static SMA_STRUCT z_magnetSmaFilterEntry;
 #endif
 
-void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,short* gz);
+void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,
+		short* gz);
 void setClockSource(unsigned char source);
 void setFullScaleGyroRange(unsigned char range);
 void setFullScaleAccelRange(unsigned char range);
@@ -447,10 +448,10 @@ bool mpu6050Init() {
 	if (checkI2cDeviceIsExist(MPU6050_ADDRESS_AD0_LOW)) {
 		devAddr = MPU6050_ADDRESS_AD0_LOW;
 		_DEBUG(DEBUG_NORMAL, "MPU6050 exist\n");
-	}else if(checkI2cDeviceIsExist(MPU6050_ADDRESS_AD0_HIGH)){
+	} else if (checkI2cDeviceIsExist(MPU6050_ADDRESS_AD0_HIGH)) {
 		devAddr = MPU6050_ADDRESS_AD0_HIGH;
 		_DEBUG(DEBUG_NORMAL, "MPU6050 exist\n");
-	}else{
+	} else {
 		_DEBUG(DEBUG_NORMAL, "MPU6050 dowsn't exist\n");
 		return false;
 	}
@@ -461,78 +462,79 @@ bool mpu6050Init() {
 	yGyroOffset = -15;  // row
 	zGyroOffset = 4; //yaw
 
-	_DEBUG(DEBUG_NORMAL,"Resetting MPU6050 ...\n");
+	_DEBUG(DEBUG_NORMAL, "Resetting MPU6050 ...\n");
 	reset();
-	usleep(120000);// wait after reset
+	usleep(120000); // wait after reset
 
-	_DEBUG(DEBUG_NORMAL,"Disabling sleep mode...\n");
+	_DEBUG(DEBUG_NORMAL, "Disabling sleep mode...\n");
 	setSleepEnabled(false);
 	usleep(1000);
 
-	_DEBUG(DEBUG_NORMAL,"Reading gyro offset values...\n");	
-	char xgOffset = getXGyroOffset();	
-	char ygOffset = getYGyroOffset();	
-	char zgOffset = getZGyroOffset();	
-	_DEBUG(DEBUG_NORMAL,"X gyro offset = %d\n", xgOffset);	
-	_DEBUG(DEBUG_NORMAL,"Y gyro offset = %d\n", ygOffset);	
-	_DEBUG(DEBUG_NORMAL,"Z gyro offset = %d\n", ygOffset);
-	
-	_DEBUG(DEBUG_NORMAL,"Setting sample rate to 1k Hz...\n");
+	_DEBUG(DEBUG_NORMAL, "Reading gyro offset values...\n");
+	char xgOffset = getXGyroOffset();
+	char ygOffset = getYGyroOffset();
+	char zgOffset = getZGyroOffset();
+	_DEBUG(DEBUG_NORMAL, "X gyro offset = %d\n", xgOffset);
+	_DEBUG(DEBUG_NORMAL, "Y gyro offset = %d\n", ygOffset);
+	_DEBUG(DEBUG_NORMAL, "Z gyro offset = %d\n", ygOffset);
+
+	_DEBUG(DEBUG_NORMAL, "Setting sample rate to 1k Hz...\n");
 	setRate(0); // 1khz / (1 + 0) = 1k Hz
-	
-	_DEBUG(DEBUG_NORMAL,"Setting clock source to Z Gyro...\n");
+
+	_DEBUG(DEBUG_NORMAL, "Setting clock source to Z Gyro...\n");
 	setClockSource(MPU6050_CLOCK_PLL_ZGYRO);
 	usleep(1000);
 
-	_DEBUG(DEBUG_NORMAL,"Setting DLPF bandwidth to 184Hz...\n");
+	_DEBUG(DEBUG_NORMAL, "Setting DLPF bandwidth to 184Hz...\n");
 	setDLPFMode(MPU6050_DLPF_BW_188);
 	usleep(1000);
 
-	_DEBUG(DEBUG_NORMAL,"Setting gyro sensitivity to +/- 2000 deg/sec...\n");
+	_DEBUG(DEBUG_NORMAL, "Setting gyro sensitivity to +/- 2000 deg/sec...\n");
 	setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
 	usleep(1000);
 
-	_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro offsets to previous values...\n");			
-	setXGyroOffsetTC(xgOffset);		
-	setYGyroOffsetTC(ygOffset);		
+	_DEBUG(DEBUG_NORMAL, "Setting X/Y/Z gyro offsets to previous values...\n");
+	setXGyroOffsetTC(xgOffset);
+	setYGyroOffsetTC(ygOffset);
 	setZGyroOffsetTC(zgOffset);
 
-	_DEBUG(DEBUG_NORMAL,"Setting accel sensitivity to +/- 8 g...\n");
+	_DEBUG(DEBUG_NORMAL, "Setting accel sensitivity to +/- 8 g...\n");
 	setFullScaleAccelRange(MPU6050_ACCEL_FS_8);
 	usleep(1000);
 
-	_DEBUG(DEBUG_NORMAL,"Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",xGyroOffset, yGyroOffset, zGyroOffset);
+	_DEBUG(DEBUG_NORMAL, "Setting X/Y/Z gyro user offsets to %d/%d/%d...\n",
+			xGyroOffset, yGyroOffset, zGyroOffset);
 	setXGyroOffsetUser(xGyroOffset);
 	usleep(1000);
 	setYGyroOffsetUser(yGyroOffset);
 	usleep(1000);
 	setZGyroOffsetUser(zGyroOffset);
 	usleep(1000);
-	
+
 #ifdef MPU6050_9AXIS
 	_DEBUG(DEBUG_NORMAL,"setup AK8963\n");
 	_DEBUG(DEBUG_NORMAL,"Disable MPU6050 master mode\n");
 	setI2CMasterModeEnabled(false);
 	usleep(10000);
-	
+
 	_DEBUG(DEBUG_NORMAL,"Enable MPU6050 bypass mode\n");
 	setI2CBypassEnabled(true);
 	usleep(10000);
-	
+
 	if (checkI2cDeviceIsExist(MPU9150_RA_MAG_ADDRESS)) {
 		_DEBUG(DEBUG_NORMAL, "AK8963 exist\n");
-	}else {
+	} else {
 		_DEBUG(DEBUG_NORMAL, "AK8963 dowsn't exist\n");
 		return false;
 	}
 
 	_DEBUG(DEBUG_NORMAL,"Reset AK8963\n");
-	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0B, 0x01);// Reset Device
+	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0B, 0x01); // Reset Device
 	usleep(10000);
 	_DEBUG(DEBUG_NORMAL,"Setup power down mode and full scale mode (16 bits) \n");
-	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00|0x10); // power down mode|Full Scale
-	usleep(10000);	
-	
+	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00|0x10);// power down mode|Full Scale
+	usleep(10000);
+
 	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",5);
 	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",5);
 	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",5);
@@ -1364,14 +1366,14 @@ void setI2CBypassEnabled(char enabled) {
 }
 
 /** 
-* Reset the I2C Master.
-* This bit resets the I2C Master when set to 1 while I2C_MST_EN equals 0.
-* This bit automatically clears to 0 after the reset has been triggered.
-* 
-* @return
-*		void
-*
-*/
+ * Reset the I2C Master.
+ * This bit resets the I2C Master when set to 1 while I2C_MST_EN equals 0.
+ * This bit automatically clears to 0 after the reset has been triggered.
+ *
+ * @return
+ *		void
+ *
+ */
 void resetI2CMaster() {
 	writeBit(devAddr, MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_RESET_BIT,
 	true);
@@ -1550,17 +1552,17 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	struct timeval tv;
 	static struct timeval last_tv;
 	static struct timeval last_2tv;
-	
+
 	gettimeofday(&tv, NULL);
 #endif
 
 	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
 #ifdef MPU6050_9AXIS
-	if(GET_USEC_TIMEDIFF(tv,last_tv)>= 10000){
+	if(GET_USEC_TIMEDIFF(tv,last_tv)>= 10000) {
 
 		getMagnet(&s_mx, &s_my, &s_mz);
-		
+
 		f_x = (float)s_mx - mag_offsets[0];
 		f_y = (float)s_my - mag_offsets[1];
 		f_z = (float)s_mz - mag_offsets[2];
@@ -1578,18 +1580,18 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 
 	}
 
-	if(GET_USEC_TIMEDIFF(tv,last_2tv)>= 30000){
+	if(GET_USEC_TIMEDIFF(tv,last_2tv)>= 30000) {
 		//overuse of magnetometer will reap negative result
 		IMUupdate9(gx, gy, gz, ax, ay, az, f_my, f_mx, f_mz, q);
 		UPDATE_LAST_TIME(tv,last_2tv);
-	}else{
+	} else {
 		IMUupdate6(gx, gy, gz, ax, ay, az, q);
 	}
 
 #else
 	IMUupdate6(gx, gy, gz, ax, ay, az, q);
 #endif	
-	
+
 	GetGravity(gravity, q);
 	GetYawPitchRoll(yprAttitude, q, gravity);
 
@@ -1605,7 +1607,7 @@ unsigned char getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	xyzAcc[0] = ax;
 	xyzAcc[1] = ay;
 	xyzAcc[2] = az;
-	
+
 	return 0;
 
 }
@@ -1632,22 +1634,24 @@ unsigned char GetGravity(float *gravity, float *q) {
 	return 0;
 }
 
-void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy, float* gz) {
-	short sax=0;
-	short say=0;
-	short saz=0;
-	short sgx=0;
-	short sgy=0;
-	short sgz=0;;
+void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy,
+		float* gz) {
+	short sax = 0;
+	short say = 0;
+	short saz = 0;
+	short sgx = 0;
+	short sgy = 0;
+	short sgz = 0;
+	;
 
 	getMotion6RawData(&sax, &say, &saz, &sgx, &sgy, &sgz);
 
-	*ax=(float)sax*getAccSensitivityInv();
-	*ay=(float)say*getAccSensitivityInv();
-	*az=(float)saz*getAccSensitivityInv();
-	*gx=(float)sgx*getGyroSensitivityInv()* DE_TO_RA; // rad/sec
-	*gy=(float)sgy*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
-	*gz=(float)sgz*getGyroSensitivityInv()* DE_TO_RA;// rad/sec
+	*ax = (float) sax * getAccSensitivityInv();
+	*ay = (float) say * getAccSensitivityInv();
+	*az = (float) saz * getAccSensitivityInv();
+	*gx = (float) sgx * getGyroSensitivityInv() * DE_TO_RA; // rad/sec
+	*gy = (float) sgy * getGyroSensitivityInv() * DE_TO_RA; // rad/sec
+	*gz = (float) sgz * getGyroSensitivityInv() * DE_TO_RA; // rad/sec
 }
 
 #ifdef MPU6050_9AXIS
@@ -1657,11 +1661,11 @@ void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy, float* gz
  * @param mz magnet of z
  */
 void getMagnet(short* mx, short* my, short* mz) {
-    writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x01);
-    readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_XOUT_L, 8, buffer);
+	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x01);
+	readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_XOUT_L, 8, buffer);
 	*mx = ((((short)buffer[1]) << 8) | buffer[0]);
-    *my = ((((short)buffer[3]) << 8) | buffer[2]);
-    *mz = ((((short)buffer[5]) << 8) | buffer[4]);
+	*my = ((((short)buffer[3]) << 8) | buffer[2]);
+	*mz = ((((short)buffer[5]) << 8) | buffer[4]);
 	//_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
 	//_DEBUG(DEBUG_NORMAL,"RAW mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
 }
