@@ -1,26 +1,26 @@
 /******************************************************************************
-The ms5611.c in RaspberryPilot project is placed under the MIT license
+ The ms5611.c in RaspberryPilot project is placed under the MIT license
 
-Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+ Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-******************************************************************************/
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ ******************************************************************************/
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -95,11 +95,11 @@ bool ms5611Init() {
 		return false;
 	}
 
-	initSmaFilterEntity(&ms5611SmaFilterEntry,"MS5611",70);
+	initSmaFilterEntity(&ms5611SmaFilterEntry, "MS5611", 70);
 #if MS5611_KALMAN
 	initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
 #endif
-	
+
 	osr = 4096;
 	deltaTemp = 0;
 	temperature = 0;
@@ -124,7 +124,7 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 
 	float tmp = 0;
 	float press = 0;
-	float rawAltitude=0.f;
+	float rawAltitude = 0.f;
 
 	//send cmd D2 and read tmp
 	sendTempCmdD2();
@@ -135,18 +135,19 @@ bool ms5611GetMeasurementData(unsigned short *cm) {
 	sendPressCmdD1();
 	getDelay();
 	press = readPress();
-	
+
 	//altitude = ( ( (Sea-level pressure/Atmospheric pressure)^ (1/5.257)-1 ) * (temperature+273.15))/0.0065
-	rawAltitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)* (tmp + 273.15f)) * CONST_PF2 * 100.f;
+	rawAltitude = ((powf((CONST_SEA_PRESSURE / press), CONST_PF) - 1.0f)
+			* (tmp + 273.15f)) * CONST_PF2 * 100.f;
 #if MS5611_KALMAN	
 	pushSmaData(&ms5611SmaFilterEntry,kalmanFilterOneDimCalc(rawAltitude,&ms5611KalmanFilterEntry));
 #else
-	pushSmaData(&ms5611SmaFilterEntry,rawAltitude);
+	pushSmaData(&ms5611SmaFilterEntry, rawAltitude);
 #endif
-	*cm= (unsigned short) pullSmaData(&ms5611SmaFilterEntry);
+	*cm = (unsigned short) pullSmaData(&ms5611SmaFilterEntry);
 
 	//_DEBUG(DEBUG_NORMAL, "rawAltitude=%.2f, *cm=%d, mbar=%.2f, temp=%.2f\n", rawAltitude,*cm,press, tmp);
-	
+
 	return true;
 }
 
@@ -183,22 +184,22 @@ void resetMs5611() {
 void readCalibrationDataFromProm() {
 
 	unsigned char data[2];
-	
+
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR, 2, data);
 	calibration[0] = ((unsigned short) data[0] << 8) | data[1];
-	
+
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR + 2, 2, data);
 	calibration[1] = ((unsigned short) data[0] << 8) | data[1];
-	
+
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR + 4, 2, data);
 	calibration[2] = ((unsigned short) data[0] << 8) | data[1];
-	
+
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR + 6, 2, data);
 	calibration[3] = ((unsigned short) data[0] << 8) | data[1];
-	
+
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR + 8, 2, data);
 	calibration[4] = ((unsigned short) data[0] << 8) | data[1];
-	
+
 	readBytes(MS5611_ADDR_CSB_LOW, MS5611_CALIB_ADDR + 10, 2, data);
 	calibration[5] = ((unsigned short) data[0] << 8) | data[1];
 

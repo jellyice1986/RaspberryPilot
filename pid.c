@@ -1,26 +1,26 @@
 /******************************************************************************
-The pid.c in RaspberryPilot project is placed under the MIT license
+ The pid.c in RaspberryPilot project is placed under the MIT license
 
-Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
+ Copyright (c) 2016 jellyice1986 (Tung-Cheng Wu)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-******************************************************************************/
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ ******************************************************************************/
 
 #include <stdio.h>
 #include <math.h>
@@ -135,15 +135,15 @@ void pidInit() {
 	pidTune(&rollAttitudePidSettings, DEFAULT_ROLL_ATTITUDE_P_GAIN,
 	DEFAULT_ROLL_ATTITUDE_I_GAIN, DEFAULT_ROLL_ATTITUDE_D_GAIN,
 	DEFAULT_ROLL_ATTITUDE_SP, DEFAULT_ROLL_ATTITUDE_SHIFT,
-	DEFAULT_ROLL_ATTITUDE_I_LIMIT,DEFAULT_ROLL_ATTITUDE_DEADBAND);
+	DEFAULT_ROLL_ATTITUDE_I_LIMIT, DEFAULT_ROLL_ATTITUDE_DEADBAND);
 	pidTune(&pitchAttitudePidSettings, DEFAULT_PITCH_ATTITUDE_P_GAIN,
 	DEFAULT_PITCH_ATTITUDE_I_GAIN, DEFAULT_PITCH_ATTITUDE_D_GAIN,
 	DEFAULT_PITCH_ATTITUDE_SP, DEFAULT_PITCH_ATTITUDE_SHIFT,
-	DEFAULT_PITCH_ATTITUDE_I_LIMIT,DEFAULT_PITCH_ATTITUDE_DEADBAND);
+	DEFAULT_PITCH_ATTITUDE_I_LIMIT, DEFAULT_PITCH_ATTITUDE_DEADBAND);
 	pidTune(&yawAttitudePidSettings, DEFAULT_YAW_ATTITUDE_P_GAIN,
 	DEFAULT_YAW_ATTITUDE_I_GAIN, DEFAULT_YAW_ATTITUDE_D_GAIN,
 	DEFAULT_YAW_ATTITUDE_SP, DEFAULT_YAW_ATTITUDE_SHIFT,
-	DEFAULT_YAW_ATTITUDE_I_LIMIT,DEFAULT_YAW_ATTITUDE_DEADBAND);
+	DEFAULT_YAW_ATTITUDE_I_LIMIT, DEFAULT_YAW_ATTITUDE_DEADBAND);
 	setName(&rollAttitudePidSettings, "ROLL_A");
 	setName(&pitchAttitudePidSettings, "PITCH_A");
 	setName(&yawAttitudePidSettings, "YAW_A");
@@ -156,15 +156,15 @@ void pidInit() {
 	pidTune(&rollRatePidSettings, DEFAULT_ROLL_RATE_P_GAIN,
 	DEFAULT_ROLL_RATE_I_GAIN, DEFAULT_ROLL_RATE_D_GAIN,
 	DEFAULT_ROLL_RATE_SP, DEFAULT_ROLL_RATE_SHIFT,
-	DEFAULT_ROLL_RATE_I_LIMIT,DEFAULT_ROLL_RATE_DEADBAND);
+	DEFAULT_ROLL_RATE_I_LIMIT, DEFAULT_ROLL_RATE_DEADBAND);
 	pidTune(&pitchRatePidSettings, DEFAULT_PITCH_RATE_P_GAIN,
 	DEFAULT_PITCH_RATE_I_GAIN, DEFAULT_PITCH_RATE_D_GAIN,
 	DEFAULT_PITCH_RATE_SP, DEFAULT_PITCH_RATE_SHIFT,
-	DEFAULT_PITCH_RATE_I_LIMIT,DEFAULT_PITCH_RATE_DEADBAND);
+	DEFAULT_PITCH_RATE_I_LIMIT, DEFAULT_PITCH_RATE_DEADBAND);
 	pidTune(&yawRatePidSettings, DEFAULT_YAW_RATE_P_GAIN,
 	DEFAULT_YAW_RATE_I_GAIN, DEFAULT_YAW_RATE_D_GAIN,
 	DEFAULT_YAW_RATE_SP, DEFAULT_YAW_RATE_SHIFT,
-	DEFAULT_YAW_RATE_I_LIMIT,DEFAULT_YAW_RATE_DEADBAND);
+	DEFAULT_YAW_RATE_I_LIMIT, DEFAULT_YAW_RATE_DEADBAND);
 	setName(&rollRatePidSettings, "ROLL_R");
 	setName(&pitchRatePidSettings, "PITCH_R");
 	setName(&yawRatePidSettings, "YAW_R");
@@ -176,7 +176,7 @@ void pidInit() {
 	pidTune(&altHoldAltSettings, DEFAULT_ALTHOLD_ALT_P_GAIN,
 	DEFAULT_ALTHOLD_ALT_I_GAIN, DEFAULT_ALTHOLD_ALT_D_GAIN,
 	DEFAULT_ALTHOLD_ALT_SP, DEFAULT_ALTHOLD_ALT_SHIFT,
-	DEFAULT_ALTHOLD_ALT_I_LIMIT,DEFAULT_ALTHOLD_ALT_DEADBAND);
+	DEFAULT_ALTHOLD_ALT_I_LIMIT, DEFAULT_ALTHOLD_ALT_DEADBAND);
 	setName(&altHoldAltSettings, "VH");
 	resetPidRecord(&altHoldAltSettings);
 
@@ -184,7 +184,7 @@ void pidInit() {
 	pidTune(&altHoldlSpeedSettings, DEFAULT_ALTHOLD_SPEED_P_GAIN,
 	DEFAULT_ALTHOLD_SPEED_I_GAIN, DEFAULT_ALTHOLD_SPEED_D_GAIN,
 	DEFAULT_ALTHOLD_SPEED_SP, DEFAULT_ALTHOLD_SPEED_SHIFT,
-	DEFAULT_ALTHOLD_SPEED_I_LIMIT,DEFAULT_ALTHOLD_SPEED_DEADBAND);
+	DEFAULT_ALTHOLD_SPEED_I_LIMIT, DEFAULT_ALTHOLD_SPEED_DEADBAND);
 	setName(&altHoldlSpeedSettings, "VS");
 	resetPidRecord(&altHoldlSpeedSettings);
 }
@@ -202,7 +202,8 @@ void pidInit() {
  *		output of PID controler
  *
  */
-float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outputI,bool outputD) {
+float pidCalculation(PID_STRUCT *pid, float processValue, bool outputP,
+		bool outputI, bool outputD) {
 
 	float pterm = 0.f;
 	float dterm = 0.f;
@@ -216,34 +217,36 @@ float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outpu
 	if (TIME_IS_UPDATED(pid->last_tv)) {
 
 		pid->pv = processValue;
-		
-		timeDiff = GET_SEC_TIMEDIFF(tv,pid->last_tv);
+
+		timeDiff = GET_SEC_TIMEDIFF(tv, pid->last_tv);
 
 		//P term
-		if(outputP){
-		pid->err = deadband((pid->sp + pid->spShift) - (pid->pv), pid->deadBand) ;
+		if (outputP) {
+			pid->err = deadband((pid->sp + pid->spShift) - (pid->pv),
+					pid->deadBand);
 			pterm = pid->pgain * pid->err;
 		}
 
 		//I term
-		if(outputI){
-		pid->integral += (pid->err * timeDiff);
-		pid->integral=LIMIT_MIN_MAX_VALUE(pid->integral,-pid->iLimit, pid->iLimit);
+		if (outputI) {
+			pid->integral += (pid->err * timeDiff);
+			pid->integral = LIMIT_MIN_MAX_VALUE(pid->integral, -pid->iLimit,
+					pid->iLimit);
 			iterm = pid->igain * pid->integral;
 		}
 
 		//D term
-		if(outputD){
-		dterm = (pid->err - pid->last_error) / NON_ZERO(timeDiff);
-		dterm = pid->dgain * dterm;
+		if (outputD) {
+			dterm = (pid->err - pid->last_error) / NON_ZERO(timeDiff);
+			dterm = pid->dgain * dterm;
 			pid->last_error = pid->err;
 		}
 
 		result = (pterm + iterm + dterm);
 
 #if 0 //Debug
-		if(0==strncmp(pid->name,"ROLL_R",strlen("ROLL_R"))){
-			_DEBUG(DEBUG_NORMAL,"name       =%s\n"	,getName(pid));
+		if(0==strncmp(pid->name,"ROLL_R",strlen("ROLL_R"))) {
+			_DEBUG(DEBUG_NORMAL,"name       =%s\n" ,getName(pid));
 			_DEBUG(DEBUG_NORMAL,"timeDiff   =%.3f\n",timeDiff);
 			_DEBUG(DEBUG_NORMAL,"result     =%.3f\n",result);
 			_DEBUG(DEBUG_NORMAL,"pterm      =%.3f\n",pterm);
@@ -259,7 +262,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outpu
 #endif
 	}
 
-	UPDATE_LAST_TIME(tv,pid->last_tv);
+	UPDATE_LAST_TIME(tv, pid->last_tv);
 
 	return result;
 }
@@ -296,7 +299,7 @@ float pidCalculation(PID_STRUCT *pid, float processValue,bool outputP,bool outpu
  *
  */
 void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
-		float set_point, float shift, float iLimit,float deadBand) {
+		float set_point, float shift, float iLimit, float deadBand) {
 
 	pid->pgain = p_gain;
 	pid->igain = i_gain;
@@ -304,7 +307,7 @@ void pidTune(PID_STRUCT *pid, float p_gain, float i_gain, float d_gain,
 	pid->dgain = d_gain;
 	pid->sp = set_point;
 	pid->spShift = shift;
-	pid->deadBand=deadBand;
+	pid->deadBand = deadBand;
 }
 
 /**
@@ -340,7 +343,7 @@ void updatePidTv(PID_STRUCT *pid) {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 
-	UPDATE_LAST_TIME(tv,pid->last_tv);
+	UPDATE_LAST_TIME(tv, pid->last_tv);
 }
 
 /**
@@ -357,7 +360,7 @@ void updatePidTv(PID_STRUCT *pid) {
  *
  */
 void setPidDeadBand(PID_STRUCT *pi, float value) {
-	pi->deadBand= value;
+	pi->deadBand = value;
 }
 
 /**
