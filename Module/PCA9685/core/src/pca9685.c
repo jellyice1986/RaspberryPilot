@@ -106,6 +106,7 @@ void resetPca9685() {
 		PCA9685_LED0_ON_L + PCA9685_LED_SHIFT * 3, 0);
 		writeByte(PCA9685_ADDRESS,
 		PCA9685_LED0_ON_H + PCA9685_LED_SHIFT * 3, 0);
+		usleep(1000);
 
 	} else {
 		_ERROR("(%s-%d) pca9685 doesn't init\n", __func__, __LINE__);

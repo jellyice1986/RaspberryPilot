@@ -41,6 +41,8 @@ static float motor_0_gain;
 static float motor_1_gain;
 static float motor_2_gain;
 static float motor_3_gain;
+static unsigned short escMaxThrottle;
+static unsigned short escMinThrottle;
 
 /**
  * init motors status
@@ -54,13 +56,16 @@ static float motor_3_gain;
  */
 void motorInit() {
 
-	resetPca9685();
-	pca9685SetPwmFreq(PWM_DUTY_CYCLE);
 	pthread_mutex_lock(&controlMotorMutex);
-	setThrottlePowerLevel(MIN_POWER_LEVEL);
-	setupAllMotorPoewrLevel(MIN_POWER_LEVEL, MIN_POWER_LEVEL, MIN_POWER_LEVEL,
-	MIN_POWER_LEVEL);
+	resetPca9685();
+	pca9685SetPwmFreq((unsigned short)ESC_UPDATE_RATE);
+	escMaxThrottle = (unsigned short)(4096.f *((float)ESC_UPDATE_RATE/ESC_MAX_THROTTLE_HZ));
+	escMinThrottle = (unsigned short)(4096.f *((float)ESC_UPDATE_RATE/ESC_MIN_THROTTLE_HZ));
+	setThrottlePowerLevel(getMinPowerLevel() );
+	setupAllMotorPoewrLevel(getMinPowerLevel() , getMinPowerLevel() , getMinPowerLevel() ,
+	getMinPowerLevel() );
 	pthread_mutex_unlock(&controlMotorMutex);
+
 }
 
 /**
@@ -246,7 +251,7 @@ void setThrottlePowerLevel(unsigned short level) {
  */
 unsigned short getMinPowerLevel() {
 
-	return MIN_POWER_LEVEL;
+	return escMinThrottle;
 }
 
 /*
@@ -260,7 +265,7 @@ unsigned short getMinPowerLevel() {
  */
 unsigned short getMaxPowerLeve() {
 
-	return MAX_POWER_LEVEL;
+	return escMaxThrottle;
 }
 
 /*

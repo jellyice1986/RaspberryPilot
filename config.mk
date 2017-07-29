@@ -32,6 +32,16 @@ CONFIG_MPU6050_9AXIS_SUPPORT :=n
 CONFIG_AHRS_MADGWICK_SUPPORT :=y
 CONFIG_AHRS_MAHONY_SUPPORT   :=n
 
+#Set up ESC protocol and update rate
+#RaspberryPilot supports the following two protocols:
+#Standard PWM: 50-490 Hz update rate, 1-2 ms pulse width
+#OneShot125: 500-2000 HZ update rate, 125-250 us pulse width 
+#set up ESC update rate
+CONFIG_ESC_UPDATE_RATE_SUPPORT  :=490
+#Only one of the following setting will be applied
+CONFIG_ESC_STANDARD_PWM_SUPPORT :=y
+CONFIG_ESC_ONESHOT125_SUPPORT   :=n
+
 #Choose a sensor type for althold, only one of the following setting will be applied
 CONFIG_ALTHOLD_MS5611_SUPPORT  :=y
 CONFIG_ALTHOLD_SRF02_SUPPORT   :=n
@@ -51,6 +61,14 @@ ifeq ($(CONFIG_AHRS_MADGWICK_SUPPORT),y)
 	DEFAULT_CFLAGS += -DMADGWICK_AHRS
 else
 	DEFAULT_CFLAGS += -DMAHONY_AHRS
+endif
+
+ifeq ($(CONFIG_ESC_ONESHOT125_SUPPORT),y)
+	DEFAULT_CFLAGS += -DESC_ONESHOT125
+	DEFAULT_CFLAGS += -DESC_UPDATE_RATE=$(CONFIG_ESC_UPDATE_RATE_SUPPORT)
+else
+	DEFAULT_CFLAGS += -DESC_STANDARD_PWM
+	DEFAULT_CFLAGS += -DESC_UPDATE_RATE=$(CONFIG_ESC_UPDATE_RATE_SUPPORT)
 endif
 
 ifeq ($(CONFIG_ALTHOLD_MS5611_SUPPORT),y)

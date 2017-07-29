@@ -35,11 +35,13 @@ typedef enum {
 
 #define DEFAULT_ADJUST_POWER_RANGE 500  
 #define DEFAULT_PID_OUTPUT_LIMITATION 500
-#define PWM_DUTY_CYCLE  490				//HZ
-#define PWM_MAX_DC 500 					//HZ   2ms
-#define PWM_MIN_DC 1000 				//HZ  1ms
-#define MAX_POWER_LEVEL 4014    		//4096*(PWM_DUTY_CYCLE/PWM_MAX_DC)
-#define MIN_POWER_LEVEL 2014 			//(4096*(PWM_DUTY_CYCLE/PWM_MIN_DC))+7
+#if defined(ESC_ONESHOT125)
+#define ESC_MAX_THROTTLE_HZ 		4000.f //1/(250us)
+#define ESC_MIN_THROTTLE_HZ 		8000.f //1/(125us)
+#else
+#define ESC_MAX_THROTTLE_HZ 		500.f  //1/(2ms)
+#define ESC_MIN_THROTTLE_HZ 		1000.f //1/(1ms)
+#endif
 
 void motorInit();
 void setupAllMotorPoewrLevel(unsigned short CW1, unsigned short CW2,
