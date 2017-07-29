@@ -38,9 +38,12 @@ typedef enum {
 #if defined(ESC_ONESHOT125)
 #define ESC_MAX_THROTTLE_HZ 		4000.f //1/(250us)
 #define ESC_MIN_THROTTLE_HZ 		8000.f //1/(125us)
+#elif defined(ESC_PWM_SYNC)
+#define ESC_MAX_THROTTLE_HZ 		526.3f  //1/(1900us)
+#define ESC_MIN_THROTTLE_HZ 		1000.f //1/(1000us)
 #else
-#define ESC_MAX_THROTTLE_HZ 		500.f  //1/(2ms)
-#define ESC_MIN_THROTTLE_HZ 		1000.f //1/(1ms)
+#define ESC_MAX_THROTTLE_HZ 		500.f  //1/(2000us)
+#define ESC_MIN_THROTTLE_HZ 		1000.f //1/(1000us)
 #endif
 
 void motorInit();
