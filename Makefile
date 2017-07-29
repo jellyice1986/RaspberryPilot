@@ -103,7 +103,7 @@ clean:
 .PHONY: updateScript
 updateScript:
 	@echo "\033[32mcreating RaspberryPilot.sh...\033[0m"
-	sudo echo "#!/bin/sh"  >  RaspberryPilot.sh
+	sudo echo "#!/bin/bash"  >  RaspberryPilot.sh
 	sudo echo "### BEGIN INIT INFO" >>  ./RaspberryPilot.sh
 	sudo echo "# Provides: RaspberryPilot" >>  ./RaspberryPilot.sh
 	sudo echo "# Required-Start: \$$all" >>  ./RaspberryPilot.sh
@@ -113,7 +113,16 @@ updateScript:
 	sudo echo "# Description: Raecho spberryPilot" >>  ./RaspberryPilot.sh
 	sudo echo "### END INIT INFO"  >>  ./RaspberryPilot.sh
 	sudo echo " " >>  ./RaspberryPilot.sh
-	sudo echo "sudo  $(shell pwd)/bin/RaspberryPilot &"  >>  ./RaspberryPilot.sh
+	sudo echo "for ((i=0;i<20;i++))do"  >>  ./RaspberryPilot.sh
+	sudo echo "       result=\`lsmod  | grep 'i2c_bcm' | grep -v 'grep' | wc -l\`"  >>  ./RaspberryPilot.sh
+	sudo echo "       if [ \$$result -eq 1 ];then"  >>  ./RaspberryPilot.sh
+	sudo echo "                $(shell pwd)/bin/RaspberryPilot &"  >>  ./RaspberryPilot.sh
+	sudo echo "                break"  >>  ./RaspberryPilot.sh
+	sudo echo "        else"  >>  ./RaspberryPilot.sh
+	sudo echo "                sleep 1;"  >>  ./RaspberryPilot.sh
+	sudo echo "                echo \"retry $i\""  >>  ./RaspberryPilot.sh
+	sudo echo "        fi"  >>  ./RaspberryPilot.sh
+	sudo echo "done"  >>  ./RaspberryPilot.sh
 	@echo "\033[32updating RaspberryPilot.sh to init.d...\033[0m"
 	sudo update-rc.d RaspberryPilot remove
 	sudo $(RM) /etc/init.d/RaspberryPilot

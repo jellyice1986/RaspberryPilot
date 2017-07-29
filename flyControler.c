@@ -346,7 +346,13 @@ void motorControler() {
 	setupCcw2MotorPoewrLevel((unsigned short) outCcw2);
 	setupCw1MotorPoewrLevel((unsigned short) outCw1);
 	setupCw2MotorPoewrLevel((unsigned short) outCw2);
-
+#if 0
+	_DEBUG(DEBUG_NORMAL,"outCcw1=%d,outCcw2=%d,outCw1=%d,outCw2=%d\n" ,
+		(unsigned short)outCcw1,
+		(unsigned short)outCcw2,
+		(unsigned short)outCw1,
+		(unsigned short)outCw2);
+#endif
 }
 
 /**
