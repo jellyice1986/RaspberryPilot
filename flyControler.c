@@ -33,7 +33,7 @@
 #include "commonLib.h"
 #include "motorControl.h"
 #include "systemControl.h"
-#include "mpu6050.h"
+#include "attitudeUpdate.h"
 #include "pid.h"
 #include "altHold.h"
 #include "flyControler.h"

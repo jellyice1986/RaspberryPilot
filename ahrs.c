@@ -37,7 +37,6 @@ http://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
 #include <sys/time.h>
 #include <math.h>
 #include "commonLib.h"
-#include "mpu6050.h"
 #include "ahrs.h"
 
 #if defined(MADGWICK_AHRS)

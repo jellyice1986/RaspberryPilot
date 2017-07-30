@@ -22,7 +22,7 @@
  SOFTWARE.
  ******************************************************************************/
 
-// (int)((x*1000000)/(TRANSMIT_TIMER)), x=sec 
+// MAX_COUNTER=(int)((x*1000000)/(TRANSMIT_TIMER)), x=sec 
 #define MAX_COUNTER 50  //2sec
 #define MIN_COUNTER 0
 

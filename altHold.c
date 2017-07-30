@@ -30,9 +30,9 @@ SOFTWARE.
 #include <pthread.h>
 #include "commonLib.h"
 #include "flyControler.h"
-#include "mpu6050.h"
 #include "pid.h"
 #include "motorControl.h"
+#include "attitudeUpdate.h"
 #if defined(ALTHOLD_MODULE_MS5611)
 #include "ms5611.h"
 #elif defined(ALTHOLD_MODULE_SRF02)

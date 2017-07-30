@@ -35,7 +35,7 @@
 #include "pid.h"
 #include "motorControl.h"
 #include "systemControl.h"
-#include "mpu6050.h"
+#include "attitudeUpdate.h"
 #include "radioControl.h"
 #include "altHold.h"
 #include "securityMechanism.h"
