@@ -44,6 +44,7 @@ extern PID_STRUCT yawAttitudePidSettings;
 extern PID_STRUCT rollRatePidSettings;
 extern PID_STRUCT pitchRatePidSettings;
 extern PID_STRUCT yawRatePidSettings;
+extern PID_STRUCT verticalAccelPidSettings;
 extern PID_STRUCT altHoldAltSettings;
 extern PID_STRUCT altHoldlSpeedSettings;
 

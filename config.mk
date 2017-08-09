@@ -38,7 +38,7 @@ CONFIG_AHRS_MAHONY_SUPPORT   :=n
 #PWMSync: 500 Hz update rate, 1000-1900 us pulse width
 #OneShot125: 500-2000 HZ update rate, 125-250 us pulse width 
 #set up ESC update rate
-CONFIG_ESC_UPDATE_RATE_SUPPORT  :=500
+CONFIG_ESC_UPDATE_RATE_SUPPORT  :=490
 #Only one of the following setting will be applied
 CONFIG_ESC_STANDARD_PWM_SUPPORT :=y
 CONFIG_ESC_PWM_SYNC_SUPPORT 	:=n

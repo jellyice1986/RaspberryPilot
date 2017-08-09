@@ -647,6 +647,7 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&rollRatePidSettings);
 				resetPidRecord(&pitchRatePidSettings);
 				resetPidRecord(&yawRatePidSettings);
+				resetPidRecord(&verticalAccelPidSettings);
 				resetPidRecord(&altHoldAltSettings);
 				resetPidRecord(&altHoldlSpeedSettings);
 				setYawCenterPoint(0.f);
@@ -1021,16 +1022,42 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		setILimit(&altHoldlSpeedSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Vertical Speed I Output Limit=%4.6f\n",
 				getILimit(&altHoldlSpeedSettings));
-		//Vertical Height D gain
+		//Vertical Speed D gain
 		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
 		setDGain(&altHoldlSpeedSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Vertical Speed D Gain=%4.6f\n",
 				getDGain(&altHoldlSpeedSettings));
-		//Vertical Height DB
+		//Vertical Speed DB
 		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_DB]);
 		setPidDeadBand(&altHoldlSpeedSettings, parameterF);
 		_DEBUG(DEBUG_NORMAL, "Vertical Speed DB=%4.6f\n",
 				getPidDeadBand(&altHoldlSpeedSettings));
+
+		//Vertical Acceleration P gain	
+		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_P]);
+		setPGain(&verticalAccelPidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration P Gain=%4.6f\n",
+				getPGain(&verticalAccelPidSettings));
+		//Vertical Acceleration I gain
+		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_I]);
+		setIGain(&verticalAccelPidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration I Gain=%4.6f\n",
+				getIGain(&verticalAccelPidSettings));
+		//Vertical Acceleration I outputLimit
+		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_I_LIMIT]);
+		setILimit(&verticalAccelPidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration I Output Limit=%4.6f\n",
+				getILimit(&verticalAccelPidSettings));
+		//Vertical Acceleration D gain
+		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_D]);
+		setDGain(&verticalAccelPidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration D Gain=%4.6f\n",
+				getDGain(&verticalAccelPidSettings));
+		//Vertical Acceleration DB
+		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_DB]);
+		setPidDeadBand(&verticalAccelPidSettings, parameterF);
+		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration DB=%4.6f\n",
+				getPidDeadBand(&verticalAccelPidSettings));
 
 		break;
 

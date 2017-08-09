@@ -50,6 +50,7 @@ static void getAttitudePidOutput();
 void getAltHoldAltPidOutput();
 void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput);
 float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
+float getThrottleOffsetByAcceleration(void);
 void setFlippingIsEnable(bool val);
 void setFlipThreadHold(unsigned char v);
 void setFlipDelay(unsigned char v);
@@ -250,16 +251,14 @@ void motorControler() {
 
 	float maxLimit = 0.f;
 	float minLimit = 0.f;
-	float altThrottleOffset = 0.f;
-	float slopThrottleOffset = 1.f;
+	float throttleOffset = 0.f;
 	float centerThrottle = 0.f;
 
-	altThrottleOffset =
-			(getAltHoldIsReady() && getEnableAltHold()) ?
-					getThrottleOffsetByAltHold(updateAltHold()) : 0.f;
-	//slopThrottleOffset = getSlopeThrottleOffset();
-	centerThrottle = ((float) getThrottlePowerLevel() + altThrottleOffset)
-			* slopThrottleOffset;
+	throttleOffset =
+			(getEnableAltHold() && getAltHoldIsReady()) ?
+					getThrottleOffsetByAltHold(updateAltHold()) : getThrottleOffsetByAcceleration();
+
+	centerThrottle = (float) getThrottlePowerLevel() + throttleOffset;
 
 	maxLimit = (float) min(centerThrottle + getAdjustPowerLeveRange(),
 			getMaxPowerLeve());
@@ -848,6 +847,30 @@ float getThrottleOffsetByAltHold(bool updateAltHoldOffset) {
 	//_DEBUG(DEBUG_NORMAL,"output =%f\n",output);
 	return output;
 }
+
+/**
+ * get throttle offset by acceleration
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		void
+ */
+float getThrottleOffsetByAcceleration(void) {
+
+	float output = 0.f;
+
+	setPidSp(&verticalAccelPidSettings, 0.f);
+	
+	output = LIMIT_MIN_MAX_VALUE(pidCalculation(&verticalAccelPidSettings,
+			getVerticalAcceleration(),true,true,true), -maxThrottleOffset,
+		maxThrottleOffset);
+	
+	//_DEBUG(DEBUG_NORMAL,"%s output =%f\n",__func__,output);
+	return output;
+}
+
 
 /**
  *  get flip flag

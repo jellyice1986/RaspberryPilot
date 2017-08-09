@@ -61,6 +61,9 @@ void motorInit() {
 	pca9685SetPwmFreq((unsigned short)ESC_UPDATE_RATE);
 	escMaxThrottle = (unsigned short)(4096.f *((float)ESC_UPDATE_RATE/ESC_MAX_THROTTLE_HZ));
 	escMinThrottle = (unsigned short)(4096.f *((float)ESC_UPDATE_RATE/ESC_MIN_THROTTLE_HZ));
+
+	_DEBUG(DEBUG_NORMAL,"Throttle: Max=%d Min=%d\n",escMaxThrottle,escMinThrottle);
+	
 	setThrottlePowerLevel(getMinPowerLevel() );
 	setupAllMotorPoewrLevel(getMinPowerLevel() , getMinPowerLevel() , getMinPowerLevel() ,
 	getMinPowerLevel() );

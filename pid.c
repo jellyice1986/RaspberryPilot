@@ -94,6 +94,19 @@ PID_STRUCT pitchRatePidSettings;
 PID_STRUCT yawRatePidSettings;
 
 /**
+ * Default PID parameter for vertival acceleration
+ */
+#define DEFAULT_VERTICAL_ACCEL_P_GAIN 0.0
+#define DEFAULT_VERTICAL_ACCEL_I_GAIN 0.0
+#define DEFAULT_VERTICAL_ACCEL_D_GAIN 0.0
+#define DEFAULT_VERTICAL_ACCEL_I_LIMIT 0.0
+#define DEFAULT_VERTICAL_ACCEL_SP 0.0
+#define DEFAULT_VERTICAL_ACCEL_SHIFT 0.0
+#define DEFAULT_VERTICAL_ACCEL_DEADBAND 1.0
+
+PID_STRUCT verticalAccelPidSettings;
+
+/**
  * Default PID parameter for AltHold altitude
  */
 #define DEFAULT_ALTHOLD_ALT_P_GAIN 0.0
@@ -171,6 +184,14 @@ void pidInit() {
 	resetPidRecord(&rollRatePidSettings);
 	resetPidRecord(&pitchRatePidSettings);
 	resetPidRecord(&yawRatePidSettings);
+
+	//init PID controler for vertical acceleration
+	pidTune(&verticalAccelPidSettings, DEFAULT_VERTICAL_ACCEL_P_GAIN,
+	DEFAULT_VERTICAL_ACCEL_I_GAIN, DEFAULT_VERTICAL_ACCEL_D_GAIN,
+	DEFAULT_VERTICAL_ACCEL_SP, DEFAULT_VERTICAL_ACCEL_SHIFT,
+	DEFAULT_VERTICAL_ACCEL_I_LIMIT,DEFAULT_VERTICAL_ACCEL_DEADBAND);
+	setName(&verticalAccelPidSettings, "VA");
+	resetPidRecord(&verticalAccelPidSettings);
 
 	//init PID controler for vertical height
 	pidTune(&altHoldAltSettings, DEFAULT_ALTHOLD_ALT_P_GAIN,
