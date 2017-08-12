@@ -95,7 +95,7 @@ bool ms5611Init() {
 		return false;
 	}
 
-	initSmaFilterEntity(&ms5611SmaFilterEntry, "MS5611", 70);
+	initSmaFilterEntity(&ms5611SmaFilterEntry, "MS5611", 100);
 #if MS5611_KALMAN
 	initkalmanFilterOneDimEntity(&ms5611KalmanFilterEntry,"MS5611", 0.f,10.f,50.f,350.f, 0.f);
 #endif
@@ -415,7 +415,7 @@ void getDelay() {
 		usleep(5000);
 		break;
 	case 4096:
-		usleep(10000);
+		usleep(9000);
 		break;
 	default:
 		break;

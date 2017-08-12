@@ -609,24 +609,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		yawShiftValue = atof(packet[CONTROL_MOTION_YAW_SHIFT_VALUE]);
 		throttlePercentage = atof(packet[CONTROL_MOTION_THROTTLE]);
 
-		if (getAltHoldIsReady() && getEnableAltHold()) {
-
-			//ALTHOLD:
-			//1. get target altitude and assign it to pid controler
-			//2. convert throttlePercentage to power level by target altitude
-
-			setPidSp(&altHoldAltSettings,
-					convertTargetAltFromeRemoteControler(
-							(unsigned short) throttlePercentage));
-			parameter = getDefaultPowerLevelWithTargetAlt();
-
-		} else {
-
-			throttlePercentage = throttlePercentage * 0.01f;
-			parameter = getMinPowerLevel()
-					+ (int) (throttlePercentage
-							* (float) (getMaxPowerLeve() - getMinPowerLevel()));
-		}
+		throttlePercentage = throttlePercentage * 0.01f;
+		parameter = getMinPowerLevel()
+				+ (int) (throttlePercentage
+						* (float) (getMaxPowerLeve() - getMinPowerLevel()));
 
 		if (parameter > getMaxPowerLeve() || parameter < getMinPowerLevel()) {
 			_DEBUG(DEBUG_NORMAL, "invilid throttle level\n");
@@ -660,7 +646,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				if (getPidSp(&yawAttitudePidSettings) == 321.0) {
 					_DEBUG(DEBUG_NORMAL, "START Flying\n");
 					setYawCenterPoint(getYaw());
-					setAltStartPoint(getCurrentAltHoldAltitude());
 					setPidSp(&yawAttitudePidSettings, 0);
 				}
 

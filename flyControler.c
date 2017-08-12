@@ -47,8 +47,6 @@
 
 float getSlopeThrottleOffset();
 static void getAttitudePidOutput();
-void getAltHoldAltPidOutput();
-void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput);
 float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
 float getThrottleOffsetByAcceleration(void);
 void setFlippingIsEnable(bool val);
@@ -251,12 +249,14 @@ void motorControler() {
 
 	float maxLimit = 0.f;
 	float minLimit = 0.f;
+	float accelThrottleOffset = 0.f;
+	float altholdThrottleOffset = 0.f;
 	float throttleOffset = 0.f;
 	float centerThrottle = 0.f;
 
-	throttleOffset =
-			(getEnableAltHold() && getAltHoldIsReady()) ?
-					getThrottleOffsetByAltHold(updateAltHold()) : getThrottleOffsetByAcceleration();
+	altholdThrottleOffset = (getEnableAltHold() && getAltHoldIsReady()) ? getThrottleOffsetByAltHold(updateAltHold()) : 0.f;
+	accelThrottleOffset = getThrottleOffsetByAcceleration();
+	throttleOffset = altholdThrottleOffset + accelThrottleOffset;
 
 	centerThrottle = (float) getThrottlePowerLevel() + throttleOffset;
 
@@ -267,6 +267,7 @@ void motorControler() {
 
 	getAttitudePidOutput();
 	getRatePidOutput(&rollRateOutput, &pitchRateOutput, &yawRateOutput);
+
 	/*
 	 *	 rollCa>0
 	 *	    -  CCW2   CW2   +
@@ -785,46 +786,6 @@ float getAltitudePidOutputLimitation(void) {
 }
 
 /**
- * get output from altitude pid controler
- *
- * @param
- *		void
- *
- * @return
- *		void
- */
-void getAltHoldAltPidOutput() {
-
-	altHoltAltOutput =
-			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&altHoldAltSettings, max(getCurrentAltHoldAltitude()-getAltStartPoint(),0.f),true,true,true),
-					-getAltitudePidOutputLimitation(),
-					getAltitudePidOutputLimitation());
-
-	//_DEBUG(DEBUG_NORMAL,"getPidSp(&altHoldAltSettings)=%f\n",getPidSp(&altHoldAltSettings));
-	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f,getAltStartPoint=%f\n",getCurrentAltHoldAltitude(),getAltStartPoint());
-	//_DEBUG(DEBUG_NORMAL,"altHoltAltOutput=%f\n",altHoltAltOutput);
-}
-
-/**
- * get output from speed pid controler
- *
- * @param
- *		output
- *
- * @return
- *		void
- */
-void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
-
-	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
-	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings,
-			getCurrentAltHoldSpeed(), true, true, true);
-	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldSpeed=%f\n",getCurrentAltHoldSpeed());
-	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
-}
-
-/**
  * get throttle offset by altHold mechanism
  *
  * @param
@@ -835,16 +796,19 @@ void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
  */
 float getThrottleOffsetByAltHold(bool updateAltHoldOffset) {
 
-	static float output = 0.f;
+	float output = 0.f;
 
 	if (updateAltHoldOffset) {
 
-		getAltHoldAltPidOutput();
-		getAltHoldSpeedPidOutput(&output);
-		output = LIMIT_MIN_MAX_VALUE(output, -maxThrottleOffset,
-				maxThrottleOffset);
+		setPidSp(&altHoldlSpeedSettings, 0.f);
+	
+		output = LIMIT_MIN_MAX_VALUE(pidCalculation(&altHoldlSpeedSettings,
+				getCurrentAltHoldSpeed(),true,true,true), -getAltitudePidOutputLimitation(),
+				getAltitudePidOutputLimitation());
 	}
+	
 	//_DEBUG(DEBUG_NORMAL,"output =%f\n",output);
+
 	return output;
 }
 

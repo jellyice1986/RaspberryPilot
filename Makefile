@@ -32,7 +32,7 @@ OBJ_DIR = obj
 LIB = -lModule_RaspberryPilot -lwiringPi -lm -lpthread
 PROCESS = RaspberryPilot
 TARGET_PROCESS = $(OUTPUT_DIR)/$(PROCESS)
-RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS) -Wno-unused-function
+RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS)
 
 include $(PWD)/config.mk
 

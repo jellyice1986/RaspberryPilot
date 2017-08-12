@@ -69,7 +69,7 @@ static void GetXComponent(float *x, float *q);
 static void GetYComponent(float *y, float *q);
 static void GetZComponent(float *z, float *q);
 static unsigned char GetYawPitchRoll(float *data, float *q, float *gravity);
-void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
+static void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 		float *xyzAcc, float *xComponent, float *yComponent, float *zComponent, float *xyzMagnet);
 
 /**
@@ -150,6 +150,10 @@ void *attitudeUpdateThread() {
 		setZGravity(zComponent[2]);
 		setVerticalAcceleration(deadband((getXAcc() * zComponent[0] + getYAcc() * zComponent[1]
 			+ getZAcc() * zComponent[2] - 1.f) * 100.f,3.f) );
+		setXAcceleration(deadband((getXAcc() * xComponent[0] + getYAcc() * xComponent[1]
+			+ getZAcc() * xComponent[2]) * 100.f,3.f) );
+		setYAcceleration(deadband((getXAcc() * yComponent[0] + getYAcc() * yComponent[1]
+			+ getZAcc() * yComponent[2]) * 100.f,3.f) );
 
 		_DEBUG(DEBUG_ATTITUDE,
 				"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", __func__,
