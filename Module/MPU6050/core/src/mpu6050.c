@@ -489,25 +489,24 @@ bool mpu6050Init() {
 	_DEBUG(DEBUG_NORMAL,"Disable MPU6050 master mode\n");
 	setI2CMasterModeEnabled(false);
 	usleep(10000);
-
+		
 	_DEBUG(DEBUG_NORMAL,"Enable MPU6050 bypass mode\n");
 	setI2CBypassEnabled(true);
 	usleep(10000);
-
+	
 	if (checkI2cDeviceIsExist(MPU9150_RA_MAG_ADDRESS)) {
 		_DEBUG(DEBUG_NORMAL, "AK8963 exist\n");
 	} else {
 		_DEBUG(DEBUG_NORMAL, "AK8963 dowsn't exist\n");
 		return false;
 	}
-
+		
 	_DEBUG(DEBUG_NORMAL,"Reset AK8963\n");
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0B, 0x01); // Reset Device
 	usleep(10000);
 	_DEBUG(DEBUG_NORMAL,"Setup power down mode and full scale mode (16 bits) \n");
 	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x00|0x10);// power down mode|Full Scale
 	usleep(10000);
-
 #endif
 
 	return true;

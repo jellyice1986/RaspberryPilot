@@ -45,15 +45,15 @@
 #define FLIP_DELAY 		5 //sec
 #define FLIP_POWER 		300.f
 
-float getSlopeThrottleOffset();
 static void getAttitudePidOutput();
-float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
-float getThrottleOffsetByAcceleration(void);
-void setFlippingIsEnable(bool val);
-void setFlipThreadHold(unsigned char v);
-void setFlipDelay(unsigned char v);
-unsigned char getFlipDelay();
-void setFlipPower(unsigned short v);
+static float getThrottleOffsetByAltHold(bool updateAltHoldOffset);
+static float getThrottleOffsetByAcceleration(void);
+static void setFlipThreadHold(unsigned char v);
+static void setFlipDelay(unsigned char v);
+static unsigned char getFlipDelay();
+static void setFlipPower(unsigned short v);
+static void getAltHoldAltPidOutput();
+static void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput);
 
 pthread_mutex_t controlMotorMutex;
 
@@ -68,8 +68,6 @@ static float gyroLimit;
 static float yawCenterPoint;
 static float maxThrottleOffset;
 static float altitudePidOutputLimitation;
-static float SlopeThrottleOffsetGain = 1.f;
-static float altStartPoint;
 
 //flip parameter
 static unsigned char flippingFlag;
@@ -560,33 +558,6 @@ void motorControlerFlipping() {
 }
 
 /**
- *  get throttle offset for slope
- *
- * @param
- * 		void
- *
- * @return
- *		offset
- *
- */
-float getSlopeThrottleOffset() {
-
-	float offset = 1.f;
-
-	if (getZGravity() <= 0.0) {
-		//attitude is inverted or vertical
-		offset = 1.f;
-	} else {
-		offset = (2.f - getZGravity()) * SlopeThrottleOffsetGain;
-	}
-
-	//_DEBUG(DEBUG_NORMAL,"getZGravity=%f\n",getZGravity());
-	//_DEBUG(DEBUG_NORMAL,"getSlopeThrottleOffset=%f\n",offset);
-
-	return offset;
-}
-
-/**
  * quadcopter will record the yaw attitude before flying, this value will become a center point for yaw PID attitude controler
  *
  * @param point
@@ -640,32 +611,6 @@ float yawTransform(float originPoint) {
 		output = output + 360.0;
 	}
 	return output;
-}
-
-/**
- * record start altitude
- *
- * @param v
- *               start altitude
- *
- * @return
- *		void
- */
-void setAltStartPoint(float v) {
-	altStartPoint = v;
-}
-
-/**
- * get start altitude
- *
- * @param 
- *               void
- *
- * @return
- *		start altitude
- */
-float getAltStartPoint() {
-	return altStartPoint;
 }
 
 /**
@@ -786,6 +731,46 @@ float getAltitudePidOutputLimitation(void) {
 }
 
 /**
+ * get output from altitude pid controler
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		void
+ */
+void getAltHoldAltPidOutput() {
+
+	altHoltAltOutput =
+			LIMIT_MIN_MAX_VALUE(
+					pidCalculation(&altHoldAltSettings, max(getCurrentAltHoldAltitude()-getTargetAlt(),0.f),true,true,true),
+					-getAltitudePidOutputLimitation(),
+					getAltitudePidOutputLimitation());
+	
+	//_DEBUG(DEBUG_NORMAL,"getPidSp(&altHoldAltSettings)=%f\n",getPidSp(&altHoldAltSettings));
+	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f,getTargetAlt=%f\n",getCurrentAltHoldAltitude(),getTargetAlt());
+	//_DEBUG(DEBUG_NORMAL,"altHoltAltOutput=%f\n",altHoltAltOutput);
+}
+
+/**
+ * get output from speed pid controler
+ *
+ * @param
+ *		output
+ *
+ * @return
+ *		void
+ */
+void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
+
+	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
+	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings,
+			getCurrentAltHoldSpeed(),true,true,true);
+	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldSpeed=%f\n",getCurrentAltHoldSpeed());
+	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
+}
+
+/**
  * get throttle offset by altHold mechanism
  *
  * @param
@@ -800,11 +785,11 @@ float getThrottleOffsetByAltHold(bool updateAltHoldOffset) {
 
 	if (updateAltHoldOffset) {
 
-		setPidSp(&altHoldlSpeedSettings, 0.f);
-	
-		output = LIMIT_MIN_MAX_VALUE(pidCalculation(&altHoldlSpeedSettings,
-				getCurrentAltHoldSpeed(),true,true,true), -getAltitudePidOutputLimitation(),
-				getAltitudePidOutputLimitation());
+		getAltHoldAltPidOutput();
+		getAltHoldSpeedPidOutput(&output);
+		output = LIMIT_MIN_MAX_VALUE(output, -maxThrottleOffset,
+				maxThrottleOffset);
+
 	}
 	
 	//_DEBUG(DEBUG_NORMAL,"output =%f\n",output);

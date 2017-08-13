@@ -625,6 +625,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 
 			setThrottlePowerLevel(parameter);
 
+			if(getEnableAltHold() && getAltHoldIsReady()){
+				updateTargetAltitude(throttlePercentage);
+			}
+
 			if (getMinPowerLevel() == parameter) {
 
 				resetPidRecord(&rollAttitudePidSettings);
@@ -637,7 +641,6 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 				resetPidRecord(&altHoldAltSettings);
 				resetPidRecord(&altHoldlSpeedSettings);
 				setYawCenterPoint(0.f);
-				setAltStartPoint(0.f);
 				setPidSp(&yawAttitudePidSettings, 321.0);
 				setFlippingFlag(FLIP_NONE);
 

@@ -48,6 +48,7 @@ static float aslRaw = 0.f;
 static float altHoldSpeed = 0.f;
 static float altHoldAccSpeed = 0.f;
 static float altHoldAltSpeed = 0.f;
+static float targetAlt = 0;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;
 static bool altholdIsUpdate = false;
@@ -258,6 +259,53 @@ bool updateAltHold() {
 	pthread_mutex_unlock(&altHoldIsUpdateMutex);
 
 	return ret;
+}
+
+/**
+ * get target altitude
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		target altitude
+ *
+ */
+float getTargetAlt(){
+	return targetAlt;
+}
+
+/**
+ * update target altitude
+ *
+ * @param
+ * 		current throttle
+ *
+ * @return
+ *		void
+ *
+ */
+void updateTargetAltitude(float throttle){
+
+	static float lastThrottle=0.f;
+	static struct timeval last_tv;
+	struct timeval tv;
+
+	gettimeofday(&tv,NULL);
+	
+	if((throttle != 0.f) && ((throttle <= lastThrottle + 0.03f) && (throttle >= lastThrottle - 0.03f))){
+		if(GET_SEC_TIMEDIFF(tv,last_tv)>=3.f){
+			//_DEBUG(DEBUG_NORMAL, "Target Altitude is %f lastThrottle=%f\n",targetAlt,lastThrottle);
+			return;
+		}
+
+	}else{
+		lastThrottle = throttle;
+		UPDATE_LAST_TIME(tv,last_tv);
+	}
+
+	targetAlt = getCurrentAltHoldAltitude();
+
 }
 
 /**
