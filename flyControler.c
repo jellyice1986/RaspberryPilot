@@ -768,9 +768,9 @@ void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
 
 	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
 	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings,
-			getTargetAltSpeed(),true,true,true);
-	//_DEBUG(DEBUG_NORMAL,"getTargetAltSpeed=%f\n",getTargetAltSpeed());
-	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
+			getAltholdSpeed(),true,true,true);
+	//_DEBUG(DEBUG_NORMAL,"getAltholdSpeed=%f\n",getAltholdSpeed());
+	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f, altHoltAltOutput=%f\n",*altHoldSpeedOutput, altHoltAltOutput);
 }
 
 /**

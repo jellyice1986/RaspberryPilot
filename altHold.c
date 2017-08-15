@@ -42,11 +42,11 @@ SOFTWARE.
 #endif
 #include "altHold.h"
 
-#define ALTHOLD_UPDATE_PERIOD 500000
+#define ALTHOLD_UPDATE_PERIOD 100000
 
 static float aslRaw = 0.f;
 static float targetAlt = 0;
-static float targetAltSpeed = 0;
+static float altholdSpeed = 0;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;
 static bool altholdIsUpdate = false;
@@ -260,17 +260,17 @@ float getTargetAlt(){
 }
 
 /**
- * get target altitude speed
+ * get altitude speed
  *
  * @param
  * 		void
  *
  * @return
- *		target altitude speed
+ *		altitude speed
  *
  */
-float getTargetAltSpeed(){
-	return targetAltSpeed;
+float getAltholdSpeed(){
+	return altholdSpeed;
 }
 
 
@@ -295,8 +295,7 @@ void updateTargetAltitude(float throttle){
 	if((throttle != 0.f) && ((throttle <= lastThrottle + 0.03f) && (throttle >= lastThrottle - 0.03f))){
 		if(GET_SEC_TIMEDIFF(tv,last_tv)>=3.f){
 			
-			targetAltSpeed = (getCurrentAltHoldAltitude() - targetAlt)/GET_SEC_TIMEDIFF(tv,last_tv);
-			//_DEBUG(DEBUG_NORMAL, "Target Altitude is %f targetAltSpeed is %f lastThrottle=%f\n",targetAlt,targetAltSpeed,lastThrottle);
+			//_DEBUG(DEBUG_NORMAL, "Target Altitude is %f lastThrottle=%f\n",targetAlt,lastThrottle);
 			return;
 		}
 
@@ -306,7 +305,6 @@ void updateTargetAltitude(float throttle){
 	}
 	
 	targetAlt = getCurrentAltHoldAltitude();
-	targetAltSpeed=0.f;
 
 }
 
@@ -350,18 +348,22 @@ void *altHoldUpdate(void *arg) {
 							
 				//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);	
 						
+				altholdSpeed = getVerticalAcceleration();
 				aslRaw=(float)data;
 				
 				if(interval>=ALTHOLD_UPDATE_PERIOD){
+					
 					pthread_mutex_lock(&altHoldIsUpdateMutex);
 					altholdIsUpdate = true;
 					pthread_mutex_unlock(&altHoldIsUpdateMutex);
+					UPDATE_LAST_TIME(tv,tv2);
+					
 				}
 
-				UPDATE_LAST_TIME(tv,tv2);	
-	
 				_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
 						__func__, __LINE__, aslRaw);
+				_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altholdSpeed=%.3f\n",
+						__func__, __LINE__, altholdSpeed);
 			
 			} else {
 					usleep(5000);
