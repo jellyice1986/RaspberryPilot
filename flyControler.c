@@ -283,6 +283,7 @@ void motorControler() {
 	rollCcw2 = -rollRateOutput;
 	rollCw1 = -rollRateOutput;
 	rollCw2 = rollRateOutput;
+	
 	/*
 	 *	 pitchCa>0
 	 *	    +  CCW2   CW2    +
@@ -300,6 +301,7 @@ void motorControler() {
 	pitchCcw2 = pitchRateOutput;
 	pitchCw1 = -pitchRateOutput;
 	pitchCw2 = pitchRateOutput;
+	
 	/*
 	 *	 yawCa>0
 	 *	    +   CCW2   CW2    -
@@ -480,6 +482,7 @@ void motorControlerFlipping() {
 					-getGyroLimit(), getGyroLimit()));
 	yawRateOutput = pidCalculation(&yawRatePidSettings, getYawGyro(), true,
 	true, true);
+	
 	/*
 	 *	 rollCa>0
 	 *	    -  CCW2   CW2   +
@@ -743,7 +746,7 @@ void getAltHoldAltPidOutput() {
 
 	altHoltAltOutput =
 			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&altHoldAltSettings, max(getCurrentAltHoldAltitude()-getTargetAlt(),0.f),true,true,true),
+					pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude()-getTargetAlt(),true,true,true),
 					-getAltitudePidOutputLimitation(),
 					getAltitudePidOutputLimitation());
 	
@@ -765,8 +768,8 @@ void getAltHoldSpeedPidOutput(float *altHoldSpeedOutput) {
 
 	setPidSp(&altHoldlSpeedSettings, altHoltAltOutput);
 	*altHoldSpeedOutput = pidCalculation(&altHoldlSpeedSettings,
-			getCurrentAltHoldSpeed(),true,true,true);
-	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldSpeed=%f\n",getCurrentAltHoldSpeed());
+			getTargetAltSpeed(),true,true,true);
+	//_DEBUG(DEBUG_NORMAL,"getTargetAltSpeed=%f\n",getTargetAltSpeed());
 	//_DEBUG(DEBUG_NORMAL,"altHoldSpeedOutput=%f\n",*altHoldSpeedOutput);
 }
 
@@ -789,7 +792,7 @@ float getThrottleOffsetByAltHold(bool updateAltHoldOffset) {
 		getAltHoldSpeedPidOutput(&output);
 		output = LIMIT_MIN_MAX_VALUE(output, -maxThrottleOffset,
 				maxThrottleOffset);
-
+		
 	}
 	
 	//_DEBUG(DEBUG_NORMAL,"output =%f\n",output);

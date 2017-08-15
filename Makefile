@@ -101,8 +101,8 @@ clean:
 	-find -name "$(OUTPUT_DIR)" -type d | xargs $(RM)
 	-find -name "$(PROCESS)" -type f | xargs $(RM)
 
-.PHONY: updateScript
-updateScript:
+.PHONY: install
+install: all
 	@echo "\033[32mcreating RaspberryPilot.sh...\033[0m"
 	sudo echo "#!/bin/bash"  >  RaspberryPilot.sh
 	sudo echo "### BEGIN INIT INFO" >>  ./RaspberryPilot.sh
@@ -132,8 +132,8 @@ updateScript:
 	sudo update-rc.d RaspberryPilot defaults
 	sudo $(RM) ./RaspberryPilot.sh
 
-.PHONY: removeScript
-removeScript:
+.PHONY: uninstall
+uninstall: clean
 	@echo "\033[32removing RaspberryPilot.sh from init.d...\033[0m"				
 	sudo update-rc.d RaspberryPilot remove
 	sudo $(RM) /etc/init.d/RaspberryPilot

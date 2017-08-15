@@ -26,8 +26,8 @@ bool getAltHoldIsReady();
 bool updateAltHold();
 bool getEnableAltHold();
 float getCurrentAltHoldAltitude();
-float getCurrentAltHoldSpeed();
 void setEnableAltHold(bool v);
 float getTargetAlt();
+float getTargetAltSpeed();
 void updateTargetAltitude(float throttle);
 

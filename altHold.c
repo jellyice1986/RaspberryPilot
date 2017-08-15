@@ -45,10 +45,8 @@ SOFTWARE.
 #define ALTHOLD_UPDATE_PERIOD 500000
 
 static float aslRaw = 0.f;
-static float altHoldSpeed = 0.f;
-static float altHoldAccSpeed = 0.f;
-static float altHoldAltSpeed = 0.f;
 static float targetAlt = 0;
+static float targetAltSpeed = 0;
 static bool altHoldIsReady = false;
 static bool enableAltHold = false;
 static bool altholdIsUpdate = false;
@@ -222,20 +220,6 @@ float getCurrentAltHoldAltitude() {
 }
 
 /**
- * get current speed
- *
- * @param
- * 		void
- *
- * @return
- *		speed (cm/sec)
- *
- */
-float getCurrentAltHoldSpeed() {
-	return altHoldSpeed;
-}
-
-/**
  *  check whether update AltHold info or not
  *
  * @param
@@ -276,6 +260,21 @@ float getTargetAlt(){
 }
 
 /**
+ * get target altitude speed
+ *
+ * @param
+ * 		void
+ *
+ * @return
+ *		target altitude speed
+ *
+ */
+float getTargetAltSpeed(){
+	return targetAltSpeed;
+}
+
+
+/**
  * update target altitude
  *
  * @param
@@ -295,7 +294,9 @@ void updateTargetAltitude(float throttle){
 	
 	if((throttle != 0.f) && ((throttle <= lastThrottle + 0.03f) && (throttle >= lastThrottle - 0.03f))){
 		if(GET_SEC_TIMEDIFF(tv,last_tv)>=3.f){
-			//_DEBUG(DEBUG_NORMAL, "Target Altitude is %f lastThrottle=%f\n",targetAlt,lastThrottle);
+			
+			targetAltSpeed = (getCurrentAltHoldAltitude() - targetAlt)/GET_SEC_TIMEDIFF(tv,last_tv);
+			//_DEBUG(DEBUG_NORMAL, "Target Altitude is %f targetAltSpeed is %f lastThrottle=%f\n",targetAlt,targetAltSpeed,lastThrottle);
 			return;
 		}
 
@@ -303,8 +304,9 @@ void updateTargetAltitude(float throttle){
 		lastThrottle = throttle;
 		UPDATE_LAST_TIME(tv,last_tv);
 	}
-
+	
 	targetAlt = getCurrentAltHoldAltitude();
+	targetAltSpeed=0.f;
 
 }
 
@@ -348,23 +350,16 @@ void *altHoldUpdate(void *arg) {
 							
 				//_DEBUG(DEBUG_NORMAL,"duration=%ld us\n",interval);	
 						
-				altHoldSpeed=(((float)data-aslRaw)/(float)interval)*1000000.f;
-						aslRaw=(float)data;
+				aslRaw=(float)data;
 				
 				if(interval>=ALTHOLD_UPDATE_PERIOD){
 					pthread_mutex_lock(&altHoldIsUpdateMutex);
-						altholdIsUpdate = true;
-						pthread_mutex_unlock(&altHoldIsUpdateMutex);
+					altholdIsUpdate = true;
+					pthread_mutex_unlock(&altHoldIsUpdateMutex);
 				}
 
 				UPDATE_LAST_TIME(tv,tv2);	
 	
-				_DEBUG_HOVER(DEBUG_HOVER_ALT_SPEED,"(%s-%d) altHoldAltSpeed=%.3f\n", 
-						__func__, __LINE__,altHoldAltSpeed);				
-				_DEBUG_HOVER(DEBUG_HOVER_ACC_SPEED, "(%s-%d) altHoldAccSpeed=%.3f\n",
-						__func__, __LINE__, altHoldAccSpeed);
-				_DEBUG_HOVER(DEBUG_HOVER_SPEED, "(%s-%d) altHoldSpeed=%.3f\n",
-						__func__, __LINE__, altHoldSpeed);
 				_DEBUG_HOVER(DEBUG_HOVER_RAW_ALTITUDE, "(%s-%d) aslRaw=%.3f\n",
 						__func__, __LINE__, aslRaw);
 			
