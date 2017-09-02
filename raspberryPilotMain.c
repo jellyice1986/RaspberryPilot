@@ -41,7 +41,7 @@ SOFTWARE.
 #include "ahrs.h"
 #include "attitudeUpdate.h"
 
-#define CONTROL_CYCLE_TIME 1000
+#define CONTROL_CYCLE_TIME 5000
 #define CHECK_RASPBERRYPILOT_LOOP_TIME 0
 
 bool raspberryPilotInit();
@@ -58,21 +58,25 @@ bool raspberryPilotInit();
  */
 int main() {
 
-#if CHECK_RASPBERRYPILOT_LOOP_TIME
 	struct timeval tv_c;
 	struct timeval tv_l;
-#endif
+	unsigned long timeDiff=0;
 
 	if (!raspberryPilotInit()) {
 		return false;
 	}
 
+	gettimeofday(&tv_l,NULL);
+
 	while (!getLeaveFlyControlerFlag()) {
 
-#if CHECK_RASPBERRYPILOT_LOOP_TIME
 		gettimeofday(&tv_c,NULL);
-		_DEBUG(DEBUG_NORMAL,"RaspberryPilot main duration=%ld us\n",GET_USEC_TIMEDIFF(tv_c,tv_l));
-		UPDATE_LAST_TIME(tv_c,tv_l);
+		timeDiff=GET_USEC_TIMEDIFF(tv_c,tv_l);
+
+		if(timeDiff >=((unsigned long) (getAdjustPeriod() * CONTROL_CYCLE_TIME))){
+
+#if CHECK_RASPBERRYPILOT_LOOP_TIME
+			_DEBUG(DEBUG_NORMAL,"RaspberryPilot main duration=%ld us\n",timeDiff);
 #endif
 		pthread_mutex_lock(&controlMotorMutex);
 
@@ -110,10 +114,12 @@ int main() {
 		}
 					
 		pthread_mutex_unlock(&controlMotorMutex);
-		usleep((unsigned long) (getAdjustPeriod() * CONTROL_CYCLE_TIME));
+			UPDATE_LAST_TIME(tv_c,tv_l);
 
 	}
 
+		usleep(500);
+	}
 	return 0;
 }
 

@@ -34,7 +34,7 @@ SOFTWARE.
 #include "mpu6050.h"
 #include "attitudeUpdate.h"
 
-#define ATTITUDE_UPDATE_TIME 1000 //us
+#define ATTITUDE_UPDATE_TIME 2000 //us
 #define CHECK_ATTITUDE_UPDATE_LOOP_TIME 0
 
 static pthread_t attitudeUpdateThreadId;
@@ -114,10 +114,9 @@ bool altitudeUpdateInit() {
  */
 void *attitudeUpdateThread() {
 
-#if CHECK_ATTITUDE_UPDATE_LOOP_TIME
 	struct timeval tv_c;
 	struct timeval tv_l;
-#endif	
+	unsigned long timeDiff=0;
 	float yrpAttitude[3];
 	float pryRate[3];
 	float xyzAcc[3];
@@ -126,12 +125,17 @@ void *attitudeUpdateThread() {
 	float zComponent[3];
 	float xyzMagnet[3];
 	
+	gettimeofday(&tv_l,NULL);
+	
 	while (!getLeaveFlyControlerFlag()) {
 
-#if CHECK_ATTITUDE_UPDATE_LOOP_TIME
 		gettimeofday(&tv_c,NULL);
-		_DEBUG(DEBUG_NORMAL,"attitude update duration=%ld us\n",GET_USEC_TIMEDIFF(tv_c,tv_l));
-		UPDATE_LAST_TIME(tv_c,tv_l);
+		timeDiff=GET_USEC_TIMEDIFF(tv_c,tv_l);
+		
+		if(timeDiff >= ATTITUDE_UPDATE_TIME){
+
+#if CHECK_ATTITUDE_UPDATE_LOOP_TIME
+			_DEBUG(DEBUG_NORMAL,"attitude update duration=%ld us\n",timeDiff);
 #endif
 
 		pthread_mutex_lock(&controlMotorMutex);
@@ -166,9 +170,10 @@ void *attitudeUpdateThread() {
 				__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
 		
 		pthread_mutex_unlock(&controlMotorMutex);
+			UPDATE_LAST_TIME(tv_c,tv_l);
+		}
 
-		usleep(ATTITUDE_UPDATE_TIME);
-		
+		usleep(500);
 	}
 
 	pthread_exit((void *) 0);
