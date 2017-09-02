@@ -572,8 +572,8 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		_DEBUG(DEBUG_RADIO_RX_FAIL,
 				"invilid checksum: %s  getChecksum=0x%x hexStringToInt=0x%x\n",
 				buf, getChecksum(buf, lenth - 5),
-				(unsigned short )hexStringToInt(packet[CONTROL_MOTION_CHECKSUM],
-						4));
+				(unsigned short) hexStringToInt(
+					packet[getChecksumFieldIndex(atoi(packet[0]))], 4));
 		return false;
 	} else {
 		rev_success++;

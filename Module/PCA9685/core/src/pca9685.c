@@ -180,25 +180,16 @@ void pca9685SetPwmFreq(unsigned short freq) {
  */
 void pca9685SetPwm(unsigned char channel, unsigned short value) {
 
-	int count = 0;
-
 	if (!PCA9685_initSuccess) {
 		_ERROR("(%s-%d)  PCA9685_initSuccess=%d\n", __func__, __LINE__,
 				PCA9685_initSuccess);
 		return;
 	}
 
-	while (count <= 5) {
-
-		if (writeByte(PCA9685_ADDRESS,
-		PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel, value & 0xFF)
-				&& writeByte(PCA9685_ADDRESS,
-				PCA9685_LED0_OFF_H + PCA9685_LED_SHIFT * channel, value >> 8)) {
-			break;
-		} else {
-			usleep(500);
-		}
-		count++;
-	}
+	writeByte(PCA9685_ADDRESS,
+			PCA9685_LED0_OFF_L + PCA9685_LED_SHIFT * channel, value & 0xFF);
+					
+	writeByte(PCA9685_ADDRESS,
+					PCA9685_LED0_OFF_H + PCA9685_LED_SHIFT * channel, value >> 8);
 }
 
