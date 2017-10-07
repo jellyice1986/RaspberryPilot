@@ -49,7 +49,7 @@ static unsigned long rev_drop = 0;
 
 void *radioReceiveThread(void *arg);
 void *radioTransmitThread(void *arg);
-short processRadioMessages(int fd, char *buf, short lenth);
+bool processRadioMessages(int fd, char *buf, short lenth);
 bool extractPacketInfo(char *buf, int lenth,
 		char container[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 bool checkLogIsEnable();
@@ -57,6 +57,12 @@ void setLogIsEnable(bool v);
 bool checkPacketFieldIsValid(char *buf, short lenth);
 unsigned int hexStringToInt(char * hexString, unsigned int len);
 unsigned short getChecksum(char *buf, unsigned int len);
+bool validPacket(char *buf, short lenth,char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioEnableFlySystem(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioControlMotion(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioHaltPi(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -240,29 +246,26 @@ void *radioTransmitThread(void *arg) {
 void *radioReceiveThread(void *arg) {
 
 	int fd = *(int *) arg;
+	int readBytes=0;
 	char serialBuf[1024];
 	char buf[512];
 	char getChar;
 	unsigned char count = 0;
 	short i = 0;
-
+	
 	memset(buf, '\0', sizeof(buf));
+	memset(serialBuf, '\0', sizeof(serialBuf));
 
 	while (!getLeaveFlyControlerFlag()) {
 
 		if (serialDataAvail(fd)) {
-
-			memset(serialBuf, '\0', sizeof(serialBuf));
-
-			if (!read(fd, serialBuf, sizeof(serialBuf)))
+			
+			if (!(readBytes=read(fd, serialBuf, sizeof(serialBuf))))
 				goto ignore;
+			
+			for (i = 0; i < readBytes ; i++) {
 
-			for (i = 0; i < sizeof(serialBuf); i++) {
-
-				getChar = serialBuf[i];
-
-				if ('\0' == getChar)
-					break;
+				getChar = *(serialBuf + i);
 
 				if (getChar == '@') {
 					resetPacketCounter();
@@ -271,18 +274,16 @@ void *radioReceiveThread(void *arg) {
 								"invilid: '#' is lost, buf=%s \n", buf);
 						rev_drop++;
 					}
-					memset(buf, '\0', sizeof(buf));
-					buf[0] = getChar;
+					*buf = getChar;
 					count = 1;
-				} else if ((getChar == '#') && (buf[0] == '@')
+				} else if ((getChar == '#') && (*buf == '@')
 						&& (count < sizeof(buf))) {
-					buf[count] = getChar;
+					*(buf + count) = getChar;
 					processRadioMessages(fd, buf, count + 1);
-					memset(buf, '\0', sizeof(buf));
 					count = 0;
 				} else {
-					if (buf[0] == '@' && (count < sizeof(buf))) {
-						buf[count] = getChar;
+					if (*buf == '@' && (count < sizeof(buf))) {
+						*(buf + count) = getChar;
 						count++;
 					} else {
 						if (count != 0) {
@@ -291,7 +292,6 @@ void *radioReceiveThread(void *arg) {
 									"invilid: bufer overflow buf=%s getChar=%c\n",
 									buf, getChar);
 						}
-						memset(buf, '\0', sizeof(buf));
 						count = 0;
 					}
 				}
@@ -367,7 +367,7 @@ bool extractPacketInfo(char *buf, int lenth,
  *		float
  */
 void getPacketDropRate() {
-	_DEBUG(DEBUG_NORMAL, "rev_ok/drop = %ld/%ld\n", rev_drop, rev_success);
+	_DEBUG(DEBUG_NORMAL, "rev_ok/drop = %ld/%ld\n", rev_success, rev_drop);
 }
 
 /**
@@ -488,8 +488,8 @@ unsigned short getChecksum(char *buf, unsigned int len) {
 
 	for (i = 0; i < len; i = i + 2) {
 
-		checksunm += (((buf[i] & 0xFF) << 8)
-				| ((i + 1 < len) ? (buf[i + 1] & 0xFF) : 0x00));
+		checksunm += ((*(buf + i) & 0xFF) << 8)
+				| ((i + 1 < len) ? (*(buf + i + 1) & 0xFF) : 0x00);
 
 		checksunm = (checksunm & 0xFFFF) + (checksunm >> 16);
 	}
@@ -545,265 +545,51 @@ unsigned short getChecksumFieldIndex(unsigned int header) {
  * @param lenth
  * 		packet size
  */
-short processRadioMessages(int fd, char *buf, short lenth) {
+bool processRadioMessages(int fd, char *buf, short lenth) {
 
 	char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH];
-	short parameter = 0;
-	float parameterF = 0.0;
-	float rollSpShift = 0;
-	float pitchSpShift = 0;
-	float yawShiftValue = 0;
-	float throttlePercentage = 0.f;
 
-#if CHECK_RECEIVER_PERIOD	
-	struct timeval tv;
-	struct timeval tv_last;
-#endif
-
-	if (!(checkPacketFieldIsValid(buf, lenth)
-			&& extractPacketInfo(buf, lenth, packet))) {
-		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n", buf);
-		rev_drop++;
+	if(!validPacket(buf, lenth, packet)){
 		return false;
-	} else if (!(getChecksum(buf, lenth - 5)
-			== (unsigned short) hexStringToInt(
-					packet[getChecksumFieldIndex(atoi(packet[0]))], 4))) {
-		rev_drop++;
-		_DEBUG(DEBUG_RADIO_RX_FAIL,
-				"invilid checksum: %s  getChecksum=0x%x hexStringToInt=0x%x\n",
-				buf, getChecksum(buf, lenth - 5),
-				(unsigned short) hexStringToInt(
-					packet[getChecksumFieldIndex(atoi(packet[0]))], 4));
-		return false;
-	} else {
-		rev_success++;
 	}
+
+#if CHECK_RECEIVER_PERIOD
+	struct timeval tv;
+	static struct timeval tv_last;
+	
+	gettimeofday(&tv,NULL);
+	_DEBUG("duration=%ld us\n", GET_USEC_TIMEDIFF(tv,tv_last));
+	UPDATE_LAST_TIME(tv,tv_last);
+#endif
 
 	switch (atoi(packet[0])) {
 
 	case HEADER_ENABLE_FLY_SYSTEM:
+		
 		// Enable or disable fly syatem
+		radioEnableFlySystem(packet);
 
-		if (1 == atoi(packet[ENABLE_FLY_SYSTEM_FIWLD_ISENABLE])) {
-			_DEBUG(DEBUG_NORMAL, "Enable Flysystem\n");
-			enableFlySystem();
-			motorInit();
-		} else {
-			_DEBUG(DEBUG_NORMAL, "Disable Flysystem\n");
-			disenableFlySystem();
-		}
-		getPacketDropRate();
 		break;
 
 	case HEADER_CONTROL_MOTION:
+		
 		//control packet
-
-#if CHECK_RECEIVER_PERIOD
-		gettimeofday(&tv,NULL);
-		_DEBUG("duration=%ld us\n", GET_USEC_TIMEDIFF(tv,tv_last));
-		UPDATE_LAST_TIME(tv,tv_last);
-#endif
-
-		rollSpShift = atof(packet[CONTROL_MOTION_ROLL_SP_SHIFT]);
-		pitchSpShift = atof(packet[CONTROL_MOTION_PITCH_SP_SHIFT]);
-		yawShiftValue = atof(packet[CONTROL_MOTION_YAW_SHIFT_VALUE]);
-		throttlePercentage = atof(packet[CONTROL_MOTION_THROTTLE]);
-
-		throttlePercentage = throttlePercentage * 0.01f;
-		parameter = getMinPowerLevel()
-				+ (int) (throttlePercentage
-						* (float) (getMaxPowerLeve() - getMinPowerLevel()));
-
-		if (parameter > getMaxPowerLeve() || parameter < getMinPowerLevel()) {
-			_DEBUG(DEBUG_NORMAL, "invilid throttle level\n");
-			break;
-		}
-
-		if (true == flySystemIsEnable()) {
-
-			pthread_mutex_lock(&controlMotorMutex);
-
-			setThrottlePowerLevel(parameter);
-
-			if(getEnableAltHold() && getAltHoldIsReady()){
-				updateTargetAltitude(throttlePercentage);
-			}
-
-			if (getMinPowerLevel() == parameter) {
-
-				resetPidRecord(&rollAttitudePidSettings);
-				resetPidRecord(&pitchAttitudePidSettings);
-				resetPidRecord(&yawAttitudePidSettings);
-				resetPidRecord(&rollRatePidSettings);
-				resetPidRecord(&pitchRatePidSettings);
-				resetPidRecord(&yawRatePidSettings);
-				resetPidRecord(&verticalAccelPidSettings);
-				resetPidRecord(&altHoldAltSettings);
-				resetPidRecord(&altHoldlSpeedSettings);
-				setYawCenterPoint(0.f);
-				setPidSp(&yawAttitudePidSettings, 321.0);
-				setFlippingFlag(FLIP_NONE);
-
-			} else {
-
-				if (getPidSp(&yawAttitudePidSettings) == 321.0) {
-					_DEBUG(DEBUG_NORMAL, "START Flying\n");
-					setYawCenterPoint(getYaw());
-					setPidSp(&yawAttitudePidSettings, 0);
-				}
-
-				setPidSp(&rollAttitudePidSettings,
-						LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
-								getAngularLimit()));
-				setPidSp(&pitchAttitudePidSettings,
-						LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
-								getAngularLimit()));
-				setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 4));
-
-				if (getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag())) {
-
-					if (rollSpShift <= -getFlipThreadHold()) {
-						setFlippingFlag(FLIP_LEFT);
-					} else if (rollSpShift >= getFlipThreadHold()) {
-						setFlippingFlag(FLIP_RIGHT);
-					}
-
-					if (pitchSpShift <= -getFlipThreadHold()) {
-						setFlippingFlag(FLIP_BACK);
-					} else if (pitchSpShift >= getFlipThreadHold()) {
-						setFlippingFlag(FLIP_FRONT);
-					}
-
-					if (FLIP_NONE != getFlippingFlag()) {
-						setFlippingStep(1);
-					}
-
-				}
-
-				//_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
-			}
-			pthread_mutex_unlock(&controlMotorMutex);
-
-		}
+		radioControlMotion(packet);
+		
 		break;
 
 	case HEADER_HALT_PI:
-		//halt raspberry pi
 
-		pthread_mutex_lock(&controlMotorMutex);
-		setThrottlePowerLevel(0);
-		setupAllMotorPoewrLevel(0, 0, 0, 0);
-		disenableFlySystem();
-		setLeaveFlyControlerFlag(true);
-		pthread_mutex_unlock(&controlMotorMutex);
-		system("sudo halt");
+		//halt raspberry pi
+		radioHaltPi(packet);
+		
 		break;
 
 	case HEADER_SETUP_FACTOR:
+		
 		//setup factor
-
-		//_DEBUG(DEBUG_NORMAL, "%s %d: %s\n", __func__, __LINE__, buf);
-		/***/
-		parameter = atoi(packet[SETUP_FACTOR_PERIOD]);
-		if (parameter == 0) {
-			parameter = 1;
-		}
-		setAdjustPeriod(parameter);
-		_DEBUG(DEBUG_NORMAL, "Adjustment Period: %d\n", getAdjustPeriod());
-		/***/
-		parameter = atoi(packet[SETUP_FACTOR_POWER_LEVEL_RANGE]);
-		if (parameter == 0) {
-			parameter = 1;
-		}
-		setAdjustPowerLeveRange(parameter);
-		_DEBUG(DEBUG_NORMAL, "Adjustment Range: %d\n",
-				getAdjustPowerLeveRange());
-		/***/
-		parameter = atoi(packet[SETUP_FACTOR_POWER_LIMIT]);
-		if (parameter == 0) {
-			parameter = 1;
-		}
-		setPidOutputLimitation(parameter);
-		_DEBUG(DEBUG_NORMAL, "PID Output Limitation: %d\n",
-				getPidOutputLimitation());
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_GYRO_LIMIT]);
-		if (parameterF == 0.) {
-			parameterF = 1.;
-		}
-		setGyroLimit(parameterF);
-		_DEBUG(DEBUG_NORMAL, "Angular Velocity Limit: %5.3f\n", getGyroLimit());
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_ANGULAR_LIMIT]);
-		if (parameterF == 0.) {
-			parameterF = 1.;
-		}
-		setAngularLimit(parameterF);
-		_DEBUG(DEBUG_NORMAL, "Roll/Pitch Angular Limit: %5.3f\n",
-				getAngularLimit());
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_ROLL_CAL]);
-		setPidSpShift(&rollAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Roll Angular Calibration: %5.3f\n",
-				getPidSpShift(&rollAttitudePidSettings));
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_PITCH_CAL]);
-		setPidSpShift(&pitchAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Pitch Angular Calibration: %5.3f\n",
-				getPidSpShift(&pitchAttitudePidSettings));
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_0]);
-		if (parameterF == 0.) {
-			parameterF = 1.;
-		}
-		setMotorGain(SOFT_PWM_CCW1, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Motor 0 Gain: %5.3f\n",
-				getMotorGain(SOFT_PWM_CCW1));
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_1]);
-		if (parameterF == 0.) {
-			parameterF = 1.;
-		}
-		setMotorGain(SOFT_PWM_CW1, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Motor 1 Gain: %5.3f\n",
-				getMotorGain(SOFT_PWM_CW1));
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_2]);
-		if (parameterF == 0.) {
-			parameterF = 1.;
-		}
-		setMotorGain(SOFT_PWM_CCW2, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Motor 2 Gain: %5.3f\n",
-				getMotorGain(SOFT_PWM_CCW2));
-		/***/
-		parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_3]);
-		if (parameterF == 0.) {
-			parameterF = 1.;
-		}
-		setMotorGain(SOFT_PWM_CW2, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Motor 3 Gain: %5.3f\n",
-				getMotorGain(SOFT_PWM_CW2));
-		/***/
-		parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
-		setEnableAltHold((bool) parameter);
-		_DEBUG(DEBUG_NORMAL, "Enable aAltHold: %s\n",
-				getEnableAltHold()==true?"true":"false");
-		/***/
-		parameterF = atof(
-				packet[SETUP_FACTOR_ALTHOLD_ALT_PID_OUTPUT_LIMITATION]);
-		setAltitudePidOutputLimitation(parameterF);
-		_DEBUG(DEBUG_NORMAL, "getAltitudePidOutputLimitation: %5.3f\n",
-				getAltitudePidOutputLimitation());
-		/***/
-		parameter = atoi(packet[SETUP_FACTOR_FLIP_ENABLED]);
-		setFlippingIsEnable(parameter);
-		_DEBUG(DEBUG_NORMAL, "getFlippingIsEnable: %d\n",
-				getFlippingIsEnable());
-		/***/
-		parameter = atoi(packet[SETUP_FACTOR_LOG_ENABLED]);
-		setLogIsEnable(parameter);
-		_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n", checkLogIsEnable());
-		/***/
+		radioSetupFactor(packet);
+		
 		break;
 
 	case HEADER_OlED_DISPLAY:
@@ -811,242 +597,10 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 		break;
 
 	case HEADER_SETUP_PID:
+		
 		//setup pid parameters
-
-		//attitude Roll P gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_P]);
-		setPGain(&rollAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Roll P Gain=%4.6f\n",
-				getPGain(&rollAttitudePidSettings));
-		//attitude Roll I gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I]);
-		setIGain(&rollAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Roll I Gain=%4.6f\n",
-				getIGain(&rollAttitudePidSettings));
-		//attitude Roll I outputLimit
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I_LIMIT]);
-		setILimit(&rollAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Roll I Output Limit=%4.6f\n",
-				getILimit(&rollAttitudePidSettings));
-		//attitude Roll D gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_D]);
-		setDGain(&rollAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Roll D Gain=%4.6f\n",
-				getDGain(&rollAttitudePidSettings));
-		//attitude Roll DB
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_DB]);
-		setPidDeadBand(&rollAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Roll DB=%4.6f\n",
-				getPidDeadBand(&rollAttitudePidSettings));
-
-		//attitude Pitch P gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_P]);
-		setPGain(&pitchAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Pitch P Gain=%4.6f\n",
-				getPGain(&pitchAttitudePidSettings));
-		//attitude Pitch I gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I]);
-		setIGain(&pitchAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Pitch I Gain=%4.6f\n",
-				getIGain(&pitchAttitudePidSettings));
-		//attitude Pitch I outputLimit
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I_LIMIT]);
-		setILimit(&pitchAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Pitch I Output Limit=%4.6f\n",
-				getILimit(&pitchAttitudePidSettings));
-		//attitude Pitch D gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_D]);
-		setDGain(&pitchAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Pitch D Gain=%4.6f\n",
-				getDGain(&pitchAttitudePidSettings));
-		//attitude Pitch DB
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_DB]);
-		setPidDeadBand(&pitchAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Pitch DB=%4.6f\n",
-				getPidDeadBand(&pitchAttitudePidSettings));
-
-		//attitude Yaw P gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_P]);
-		setPGain(&yawAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Yaw P Gain=%4.6f\n",
-				getPGain(&yawAttitudePidSettings));
-		//attitude Yaw I gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I]);
-		setIGain(&yawAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Yaw I Gain=%4.6f\n",
-				getIGain(&yawAttitudePidSettings));
-		//attitude Yaw I outputLimit
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I_LIMIT]);
-		setILimit(&yawAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Yaw I Output Limit=%4.6f\n",
-				getILimit(&yawAttitudePidSettings));
-		//attitude Yaw D gain
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_D]);
-		setDGain(&yawAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Yaw D Gain=%4.6f\n",
-				getDGain(&yawAttitudePidSettings));
-		//attitude Yaw DB
-		parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_DB]);
-		setPidDeadBand(&yawAttitudePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Attitude Yaw DB=%4.6f\n",
-				getPidDeadBand(&yawAttitudePidSettings));
-
-		//Rate Roll P gain
-		parameterF = atof(packet[SETUP_PID_RATE_ROLL_P]);
-		setPGain(&rollRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Roll P Gain=%4.6f\n",
-				getPGain(&rollRatePidSettings));
-		//Rate Roll I gain
-		parameterF = atof(packet[SETUP_PID_RATE_ROLL_I]);
-		setIGain(&rollRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Roll I Gain=%4.6f\n",
-				getIGain(&rollRatePidSettings));
-		//Rate Roll I outputLimit
-		parameterF = atof(packet[SETUP_PID_RATE_ROLL_I_LIMIT]);
-		setILimit(&rollRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Roll I Output Limit=%4.6f\n",
-				getILimit(&rollRatePidSettings));
-		//Rate Roll D gain
-		parameterF = atof(packet[SETUP_PID_RATE_ROLL_D]);
-		setDGain(&rollRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Roll D Gain=%4.6f\n",
-				getDGain(&rollRatePidSettings));
-		//Rate Roll DB
-		parameterF = atof(packet[SETUP_PID_RATE_ROLL_DB]);
-		setPidDeadBand(&rollRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Roll DB=%4.6f\n",
-				getPidDeadBand(&rollRatePidSettings));
-
-		//Rate Pitch P gain
-		parameterF = atof(packet[SETUP_PID_RATE_PITCH_P]);
-		setPGain(&pitchRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Pitch P Gain=%4.6f\n",
-				getPGain(&pitchRatePidSettings));
-		//Rate Pitch I gain
-		parameterF = atof(packet[SETUP_PID_RATE_PITCH_I]);
-		setIGain(&pitchRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Pitch I Gain=%4.6f\n",
-				getIGain(&pitchRatePidSettings));
-		//Rate Pitch I outputLimit
-		parameterF = atof(packet[SETUP_PID_RATE_PITCH_I_LIMIT]);
-		setILimit(&pitchRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Pitch I Output Limit=%4.6f\n",
-				getILimit(&pitchRatePidSettings));
-		//Rate Pitch D gain
-		parameterF = atof(packet[SETUP_PID_RATE_PITCH_D]);
-		setDGain(&pitchRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Pitch D Gain=%4.6f\n",
-				getDGain(&pitchRatePidSettings));
-		//Rate Pitch DB
-		parameterF = atof(packet[SETUP_PID_RATE_PITCH_DB]);
-		setPidDeadBand(&pitchRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Pitch DB=%4.6f\n",
-				getPidDeadBand(&pitchRatePidSettings));
-
-		//Rate Yaw P gain
-		parameterF = atof(packet[SETUP_PID_RATE_YAW_P]);
-		setPGain(&yawRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Yaw P Gain=%4.6f\n",
-				getPGain(&yawRatePidSettings));
-		//Rate Yaw I gain
-		parameterF = atof(packet[SETUP_PID_RATE_YAW_I]);
-		setIGain(&yawRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Yaw I Gain=%4.6f\n",
-				getIGain(&yawRatePidSettings));
-		//Rate Yaw I outputLimit
-		parameterF = atof(packet[SETUP_PID_RATE_YAW_I_LIMIT]);
-		setILimit(&yawRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Yaw I Output Limit=%4.6f\n",
-				getILimit(&yawRatePidSettings));
-		//Rate Yaw D gain
-		parameterF = atof(packet[SETUP_PID_RATE_YAW_D]);
-		setDGain(&yawRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Yaw D Gain=%4.6f\n",
-				getDGain(&yawRatePidSettings));
-		//Rate Yaw DB
-		parameterF = atof(packet[SETUP_PID_RATE_YAW_DB]);
-		setPidDeadBand(&yawRatePidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Rate Yaw DB=%4.6f\n",
-				getPidDeadBand(&yawRatePidSettings));
-
-		//Vertical Height P gain	
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
-		setPGain(&altHoldAltSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Height P Gain=%4.6f\n",
-				getPGain(&altHoldAltSettings));
-		//Vertical Height I gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I]);
-		setIGain(&altHoldAltSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Height I Gain=%4.6f\n",
-				getIGain(&altHoldAltSettings));
-		//Vertical Height I outputLimit
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I_LIMIT]);
-		setILimit(&altHoldAltSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Height I Output Limit=%4.6f\n",
-				getILimit(&altHoldAltSettings));
-		//Vertical Height D gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_D]);
-		setDGain(&altHoldAltSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Height D Gain=%4.6f\n",
-				getDGain(&altHoldAltSettings));
-		//Vertical Height DB
-		parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_DB]);
-		setPidDeadBand(&altHoldAltSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Height DB=%4.6f\n",
-				getPidDeadBand(&altHoldAltSettings));
-
-		//Vertical Speed P gain	
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_P]);
-		setPGain(&altHoldlSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Speed P Gain=%4.6f\n",
-				getPGain(&altHoldlSpeedSettings));
-		//Vertical Speed I gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I]);
-		setIGain(&altHoldlSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Speed I Gain=%4.6f\n",
-				getIGain(&altHoldlSpeedSettings));
-		//Vertical Speed I outputLimit
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I_LIMIT]);
-		setILimit(&altHoldlSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Speed I Output Limit=%4.6f\n",
-				getILimit(&altHoldlSpeedSettings));
-		//Vertical Speed D gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
-		setDGain(&altHoldlSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Speed D Gain=%4.6f\n",
-				getDGain(&altHoldlSpeedSettings));
-		//Vertical Speed DB
-		parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_DB]);
-		setPidDeadBand(&altHoldlSpeedSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Speed DB=%4.6f\n",
-				getPidDeadBand(&altHoldlSpeedSettings));
-
-		//Vertical Acceleration P gain	
-		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_P]);
-		setPGain(&verticalAccelPidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration P Gain=%4.6f\n",
-				getPGain(&verticalAccelPidSettings));
-		//Vertical Acceleration I gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_I]);
-		setIGain(&verticalAccelPidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration I Gain=%4.6f\n",
-				getIGain(&verticalAccelPidSettings));
-		//Vertical Acceleration I outputLimit
-		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_I_LIMIT]);
-		setILimit(&verticalAccelPidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration I Output Limit=%4.6f\n",
-				getILimit(&verticalAccelPidSettings));
-		//Vertical Acceleration D gain
-		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_D]);
-		setDGain(&verticalAccelPidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration D Gain=%4.6f\n",
-				getDGain(&verticalAccelPidSettings));
-		//Vertical Acceleration DB
-		parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_DB]);
-		setPidDeadBand(&verticalAccelPidSettings, parameterF);
-		_DEBUG(DEBUG_NORMAL, "Vertical Acceleration DB=%4.6f\n",
-				getPidDeadBand(&verticalAccelPidSettings));
-
+		radioSetupPid(packet);
+		
 		break;
 
 	default:
@@ -1056,6 +610,549 @@ short processRadioMessages(int fd, char *buf, short lenth) {
 	}
 
 	return true;
+
+}
+
+ /**
+  * check whether packet is valid
+  *
+  * @param packet
+  * 	 received packet
+  *
+  * @return
+  * 		bool
+  */
+ bool validPacket(char *buf, short lenth,char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+
+ 	if (!(checkPacketFieldIsValid(buf, lenth)
+			&& extractPacketInfo(buf, lenth, packet))) {
+		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n", buf);
+		rev_drop++;
+		return false;
+	} else if (!(getChecksum(buf, lenth - 5)
+			== (unsigned short) hexStringToInt(
+					*(packet + getChecksumFieldIndex(atoi(*packet))), 4))) {
+		rev_drop++;
+		_DEBUG(DEBUG_RADIO_RX_FAIL,
+				"invilid checksum: %s  getChecksum=0x%x hexStringToInt=0x%x\n",
+				buf, getChecksum(buf, lenth - 5),
+				(unsigned short) hexStringToInt(
+					*(packet + getChecksumFieldIndex(atoi(*packet))), 4));
+		return false;
+	}
+
+	rev_success++;
+	return true;
+ }
+ 
+ /**
+  * setup system
+  *
+  * @param packet
+  * 	 received packet
+  *
+  * @return
+  * 		void
+  */
+ void radioEnableFlySystem(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+ 	
+ 		if (1 == atoi(packet[ENABLE_FLY_SYSTEM_FIWLD_ISENABLE])) {
+			_DEBUG(DEBUG_NORMAL, "Enable Flysystem\n");
+			enableFlySystem();
+			motorInit();
+		} else {
+			_DEBUG(DEBUG_NORMAL, "Disable Flysystem\n");
+			disenableFlySystem();
+		}
+		
+		getPacketDropRate();
+ }
+
+ /**
+  * control motion
+  *
+  * @param packet
+  * 	 received packet
+  *
+  * @return
+  * 		void
+  */
+ void radioControlMotion(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+
+	short parameter = 0;
+	float rollSpShift = 0;
+	float pitchSpShift = 0;
+	float yawShiftValue = 0;
+	float throttlePercentage = 0.f;
+
+	 rollSpShift = atof(packet[CONTROL_MOTION_ROLL_SP_SHIFT]);
+	 pitchSpShift = atof(packet[CONTROL_MOTION_PITCH_SP_SHIFT]);
+	 yawShiftValue = atof(packet[CONTROL_MOTION_YAW_SHIFT_VALUE]);
+	 throttlePercentage = atof(packet[CONTROL_MOTION_THROTTLE]);
+
+	 throttlePercentage = throttlePercentage * 0.01f;
+	 parameter = getMinPowerLevel()
+			 + (int) (throttlePercentage
+					 * (float) (getMaxPowerLeve() - getMinPowerLevel()));
+
+	 if (parameter > getMaxPowerLeve() || parameter < getMinPowerLevel()) {
+		 _DEBUG(DEBUG_NORMAL, "invilid throttle level\n");
+		 return;
+	 }
+
+	 if (true == flySystemIsEnable()) {
+
+		 pthread_mutex_lock(&controlMotorMutex);
+
+		 setThrottlePowerLevel(parameter);
+
+		 if(getEnableAltHold() && getAltHoldIsReady()){
+			 updateTargetAltitude(throttlePercentage);
+		 }
+
+		 if (getMinPowerLevel() == parameter) {
+
+			 resetPidRecord(&rollAttitudePidSettings);
+			 resetPidRecord(&pitchAttitudePidSettings);
+			 resetPidRecord(&yawAttitudePidSettings);
+			 resetPidRecord(&rollRatePidSettings);
+			 resetPidRecord(&pitchRatePidSettings);
+			 resetPidRecord(&yawRatePidSettings);
+			 resetPidRecord(&verticalAccelPidSettings);
+			 resetPidRecord(&altHoldAltSettings);
+			 resetPidRecord(&altHoldlSpeedSettings);
+			 setYawCenterPoint(0.f);
+			 setPidSp(&yawAttitudePidSettings, 321.0);
+			 setFlippingFlag(FLIP_NONE);
+
+		 } else {
+
+			 if (getPidSp(&yawAttitudePidSettings) == 321.0) {
+				 _DEBUG(DEBUG_NORMAL, "START Flying\n");
+				 setYawCenterPoint(getYaw());
+				 setPidSp(&yawAttitudePidSettings, 0);
+			 }
+
+			 setPidSp(&rollAttitudePidSettings,
+					 LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
+							 getAngularLimit()));
+			 setPidSp(&pitchAttitudePidSettings,
+					 LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
+							 getAngularLimit()));
+			 setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 4));
+
+			 if (getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag())) {
+
+				 if (rollSpShift <= -getFlipThreadHold()) {
+					 setFlippingFlag(FLIP_LEFT);
+				 } else if (rollSpShift >= getFlipThreadHold()) {
+					 setFlippingFlag(FLIP_RIGHT);
+				 }
+
+				 if (pitchSpShift <= -getFlipThreadHold()) {
+					 setFlippingFlag(FLIP_BACK);
+				 } else if (pitchSpShift >= getFlipThreadHold()) {
+					 setFlippingFlag(FLIP_FRONT);
+				 }
+
+				 if (FLIP_NONE != getFlippingFlag()) {
+					 setFlippingStep(1);
+				 }
+
+			 }
+
+			 //_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
+		 }
+		 pthread_mutex_unlock(&controlMotorMutex);
+
+	 }
+
+ }
+
+ /**
+  * Halt Pi
+  *
+  * @param packet
+  * 	 received packet
+  *
+  * @return
+  * 		void
+  */
+ void radioHaltPi(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+	pthread_mutex_lock(&controlMotorMutex);
+	setThrottlePowerLevel(0);
+	setupAllMotorPoewrLevel(0, 0, 0, 0);
+	disenableFlySystem();
+	setLeaveFlyControlerFlag(true);
+	pthread_mutex_unlock(&controlMotorMutex);
+	system("sudo halt");
+ }
+
+ /**
+  * Setup factor
+  *
+  * @param packet
+  * 	 received packet
+  *
+  * @return
+  * 		void
+  */
+void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+
+	short parameter = 0;
+	float parameterF = 0.0;
+
+	//_DEBUG(DEBUG_NORMAL, "%s %d: %s\n", __func__, __LINE__, buf);
+	/***/
+	parameter = atoi(packet[SETUP_FACTOR_PERIOD]);
+	if (parameter == 0) {
+		parameter = 1;
+	}
+
+	setAdjustPeriod(parameter);
+	_DEBUG(DEBUG_NORMAL, "Adjustment Period: %d\n", getAdjustPeriod());
+	/***/
+	parameter = atoi(packet[SETUP_FACTOR_POWER_LEVEL_RANGE]);
+	if (parameter == 0) {
+		parameter = 1;
+	}
+	setAdjustPowerLeveRange(parameter);
+	_DEBUG(DEBUG_NORMAL, "Adjustment Range: %d\n",
+			getAdjustPowerLeveRange());
+	/***/
+	parameter = atoi(packet[SETUP_FACTOR_POWER_LIMIT]);
+	if (parameter == 0) {
+		parameter = 1;
+	}
+	setPidOutputLimitation(parameter);
+	_DEBUG(DEBUG_NORMAL, "PID Output Limitation: %d\n",
+			getPidOutputLimitation());
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_GYRO_LIMIT]);
+	if (parameterF == 0.) {
+		parameterF = 1.;
+	}
+	setGyroLimit(parameterF);
+	_DEBUG(DEBUG_NORMAL, "Angular Velocity Limit: %5.3f\n", getGyroLimit());
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_ANGULAR_LIMIT]);
+	if (parameterF == 0.) {
+		parameterF = 1.;
+	}
+	setAngularLimit(parameterF);
+	_DEBUG(DEBUG_NORMAL, "Roll/Pitch Angular Limit: %5.3f\n",
+			getAngularLimit());
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_ROLL_CAL]);
+	setPidSpShift(&rollAttitudePidSettings, parameterF);
+	_DEBUG(DEBUG_NORMAL, "Roll Angular Calibration: %5.3f\n",
+			getPidSpShift(&rollAttitudePidSettings));
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_PITCH_CAL]);
+	setPidSpShift(&pitchAttitudePidSettings, parameterF);
+	_DEBUG(DEBUG_NORMAL, "Pitch Angular Calibration: %5.3f\n",
+			getPidSpShift(&pitchAttitudePidSettings));
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_0]);
+	if (parameterF == 0.) {
+		parameterF = 1.;
+	}
+	setMotorGain(SOFT_PWM_CCW1, parameterF);
+	_DEBUG(DEBUG_NORMAL, "Motor 0 Gain: %5.3f\n",
+			getMotorGain(SOFT_PWM_CCW1));
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_1]);
+	if (parameterF == 0.) {
+		parameterF = 1.;
+	}
+	setMotorGain(SOFT_PWM_CW1, parameterF);
+	_DEBUG(DEBUG_NORMAL, "Motor 1 Gain: %5.3f\n",
+			getMotorGain(SOFT_PWM_CW1));
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_2]);
+	if (parameterF == 0.) {
+		parameterF = 1.;
+	}
+	setMotorGain(SOFT_PWM_CCW2, parameterF);
+	_DEBUG(DEBUG_NORMAL, "Motor 2 Gain: %5.3f\n",
+			getMotorGain(SOFT_PWM_CCW2));
+	/***/
+	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_3]);
+	if (parameterF == 0.) {
+		parameterF = 1.;
+	}
+	setMotorGain(SOFT_PWM_CW2, parameterF);
+	_DEBUG(DEBUG_NORMAL, "Motor 3 Gain: %5.3f\n",
+			getMotorGain(SOFT_PWM_CW2));
+	/***/
+	parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
+	setEnableAltHold((bool) parameter);
+	_DEBUG(DEBUG_NORMAL, "Enable aAltHold: %s\n",
+			getEnableAltHold()==true?"true":"false");
+	/***/
+	parameterF = atof(
+			packet[SETUP_FACTOR_ALTHOLD_ALT_PID_OUTPUT_LIMITATION]);
+	setAltitudePidOutputLimitation(parameterF);
+	_DEBUG(DEBUG_NORMAL, "getAltitudePidOutputLimitation: %5.3f\n",
+			getAltitudePidOutputLimitation());
+	/***/
+	parameter = atoi(packet[SETUP_FACTOR_FLIP_ENABLED]);
+	setFlippingIsEnable(parameter);
+	_DEBUG(DEBUG_NORMAL, "getFlippingIsEnable: %d\n",
+			getFlippingIsEnable());
+	/***/
+	parameter = atoi(packet[SETUP_FACTOR_LOG_ENABLED]);
+	setLogIsEnable(parameter);
+	_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n", checkLogIsEnable());
+	/***/
+}
+
+ /**
+  * Setup factor
+  *
+  * @param packet
+  * 	 received packet
+  *
+  * @return
+  * 		void
+  */
+void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+
+	short parameterF = 0;
+
+	//attitude Roll P gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_P]);
+	 setPGain(&rollAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Roll P Gain=%4.6f\n",
+			 getPGain(&rollAttitudePidSettings));
+	 //attitude Roll I gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I]);
+	 setIGain(&rollAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Roll I Gain=%4.6f\n",
+			 getIGain(&rollAttitudePidSettings));
+	 //attitude Roll I outputLimit
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_I_LIMIT]);
+	 setILimit(&rollAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Roll I Output Limit=%4.6f\n",
+			 getILimit(&rollAttitudePidSettings));
+	 //attitude Roll D gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_D]);
+	 setDGain(&rollAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Roll D Gain=%4.6f\n",
+			 getDGain(&rollAttitudePidSettings));
+	 //attitude Roll DB
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_DB]);
+	 setPidDeadBand(&rollAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Roll DB=%4.6f\n",
+			 getPidDeadBand(&rollAttitudePidSettings));
+
+	 //attitude Pitch P gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_P]);
+	 setPGain(&pitchAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Pitch P Gain=%4.6f\n",
+			 getPGain(&pitchAttitudePidSettings));
+	 //attitude Pitch I gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I]);
+	 setIGain(&pitchAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Pitch I Gain=%4.6f\n",
+			 getIGain(&pitchAttitudePidSettings));
+	 //attitude Pitch I outputLimit
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_I_LIMIT]);
+	 setILimit(&pitchAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Pitch I Output Limit=%4.6f\n",
+			 getILimit(&pitchAttitudePidSettings));
+	 //attitude Pitch D gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_D]);
+	 setDGain(&pitchAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Pitch D Gain=%4.6f\n",
+			 getDGain(&pitchAttitudePidSettings));
+	 //attitude Pitch DB
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_PITCH_DB]);
+	 setPidDeadBand(&pitchAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Pitch DB=%4.6f\n",
+			 getPidDeadBand(&pitchAttitudePidSettings));
+
+	 //attitude Yaw P gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_P]);
+	 setPGain(&yawAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Yaw P Gain=%4.6f\n",
+			 getPGain(&yawAttitudePidSettings));
+	 //attitude Yaw I gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I]);
+	 setIGain(&yawAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Yaw I Gain=%4.6f\n",
+			 getIGain(&yawAttitudePidSettings));
+	 //attitude Yaw I outputLimit
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_I_LIMIT]);
+	 setILimit(&yawAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Yaw I Output Limit=%4.6f\n",
+			 getILimit(&yawAttitudePidSettings));
+	 //attitude Yaw D gain
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_D]);
+	 setDGain(&yawAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Yaw D Gain=%4.6f\n",
+			 getDGain(&yawAttitudePidSettings));
+	 //attitude Yaw DB
+	 parameterF = atof(packet[SETUP_PID_ATTITUDE_YAW_DB]);
+	 setPidDeadBand(&yawAttitudePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Attitude Yaw DB=%4.6f\n",
+			 getPidDeadBand(&yawAttitudePidSettings));
+
+	 //Rate Roll P gain
+	 parameterF = atof(packet[SETUP_PID_RATE_ROLL_P]);
+	 setPGain(&rollRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Roll P Gain=%4.6f\n",
+			 getPGain(&rollRatePidSettings));
+	 //Rate Roll I gain
+	 parameterF = atof(packet[SETUP_PID_RATE_ROLL_I]);
+	 setIGain(&rollRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Roll I Gain=%4.6f\n",
+			 getIGain(&rollRatePidSettings));
+	 //Rate Roll I outputLimit
+	 parameterF = atof(packet[SETUP_PID_RATE_ROLL_I_LIMIT]);
+	 setILimit(&rollRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Roll I Output Limit=%4.6f\n",
+			 getILimit(&rollRatePidSettings));
+	 //Rate Roll D gain
+	 parameterF = atof(packet[SETUP_PID_RATE_ROLL_D]);
+	 setDGain(&rollRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Roll D Gain=%4.6f\n",
+			 getDGain(&rollRatePidSettings));
+	 //Rate Roll DB
+	 parameterF = atof(packet[SETUP_PID_RATE_ROLL_DB]);
+	 setPidDeadBand(&rollRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Roll DB=%4.6f\n",
+			 getPidDeadBand(&rollRatePidSettings));
+
+	 //Rate Pitch P gain
+	 parameterF = atof(packet[SETUP_PID_RATE_PITCH_P]);
+	 setPGain(&pitchRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Pitch P Gain=%4.6f\n",
+			 getPGain(&pitchRatePidSettings));
+	 //Rate Pitch I gain
+	 parameterF = atof(packet[SETUP_PID_RATE_PITCH_I]);
+	 setIGain(&pitchRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Pitch I Gain=%4.6f\n",
+			 getIGain(&pitchRatePidSettings));
+	 //Rate Pitch I outputLimit
+	 parameterF = atof(packet[SETUP_PID_RATE_PITCH_I_LIMIT]);
+	 setILimit(&pitchRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Pitch I Output Limit=%4.6f\n",
+			 getILimit(&pitchRatePidSettings));
+	 //Rate Pitch D gain
+	 parameterF = atof(packet[SETUP_PID_RATE_PITCH_D]);
+	 setDGain(&pitchRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Pitch D Gain=%4.6f\n",
+			 getDGain(&pitchRatePidSettings));
+	 //Rate Pitch DB
+	 parameterF = atof(packet[SETUP_PID_RATE_PITCH_DB]);
+	 setPidDeadBand(&pitchRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Pitch DB=%4.6f\n",
+			 getPidDeadBand(&pitchRatePidSettings));
+
+	 //Rate Yaw P gain
+	 parameterF = atof(packet[SETUP_PID_RATE_YAW_P]);
+	 setPGain(&yawRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Yaw P Gain=%4.6f\n",
+			 getPGain(&yawRatePidSettings));
+	 //Rate Yaw I gain
+	 parameterF = atof(packet[SETUP_PID_RATE_YAW_I]);
+	 setIGain(&yawRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Yaw I Gain=%4.6f\n",
+			 getIGain(&yawRatePidSettings));
+	 //Rate Yaw I outputLimit
+	 parameterF = atof(packet[SETUP_PID_RATE_YAW_I_LIMIT]);
+	 setILimit(&yawRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Yaw I Output Limit=%4.6f\n",
+			 getILimit(&yawRatePidSettings));
+	 //Rate Yaw D gain
+	 parameterF = atof(packet[SETUP_PID_RATE_YAW_D]);
+	 setDGain(&yawRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Yaw D Gain=%4.6f\n",
+			 getDGain(&yawRatePidSettings));
+	 //Rate Yaw DB
+	 parameterF = atof(packet[SETUP_PID_RATE_YAW_DB]);
+	 setPidDeadBand(&yawRatePidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Rate Yaw DB=%4.6f\n",
+			 getPidDeadBand(&yawRatePidSettings));
+
+	 //Vertical Height P gain	 
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_P]);
+	 setPGain(&altHoldAltSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Height P Gain=%4.6f\n",
+			 getPGain(&altHoldAltSettings));
+	 //Vertical Height I gain
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I]);
+	 setIGain(&altHoldAltSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Height I Gain=%4.6f\n",
+			 getIGain(&altHoldAltSettings));
+	 //Vertical Height I outputLimit
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_I_LIMIT]);
+	 setILimit(&altHoldAltSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Height I Output Limit=%4.6f\n",
+			 getILimit(&altHoldAltSettings));
+	 //Vertical Height D gain
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_D]);
+	 setDGain(&altHoldAltSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Height D Gain=%4.6f\n",
+			 getDGain(&altHoldAltSettings));
+	 //Vertical Height DB
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_HEIGHT_DB]);
+	 setPidDeadBand(&altHoldAltSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Height DB=%4.6f\n",
+			 getPidDeadBand(&altHoldAltSettings));
+
+	 //Vertical Speed P gain 
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_P]);
+	 setPGain(&altHoldlSpeedSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Speed P Gain=%4.6f\n",
+			 getPGain(&altHoldlSpeedSettings));
+	 //Vertical Speed I gain
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I]);
+	 setIGain(&altHoldlSpeedSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Speed I Gain=%4.6f\n",
+			 getIGain(&altHoldlSpeedSettings));
+	 //Vertical Speed I outputLimit
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_I_LIMIT]);
+	 setILimit(&altHoldlSpeedSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Speed I Output Limit=%4.6f\n",
+			 getILimit(&altHoldlSpeedSettings));
+	 //Vertical Speed D gain
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_D]);
+	 setDGain(&altHoldlSpeedSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Speed D Gain=%4.6f\n",
+			 getDGain(&altHoldlSpeedSettings));
+	 //Vertical Speed DB
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_SPEED_DB]);
+	 setPidDeadBand(&altHoldlSpeedSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Speed DB=%4.6f\n",
+			 getPidDeadBand(&altHoldlSpeedSettings));
+
+	 //Vertical Acceleration P gain  
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_P]);
+	 setPGain(&verticalAccelPidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Acceleration P Gain=%4.6f\n",
+			 getPGain(&verticalAccelPidSettings));
+	 //Vertical Acceleration I gain
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_I]);
+	 setIGain(&verticalAccelPidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Acceleration I Gain=%4.6f\n",
+			 getIGain(&verticalAccelPidSettings));
+	 //Vertical Acceleration I outputLimit
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_I_LIMIT]);
+	 setILimit(&verticalAccelPidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Acceleration I Output Limit=%4.6f\n",
+			 getILimit(&verticalAccelPidSettings));
+	 //Vertical Acceleration D gain
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_D]);
+	 setDGain(&verticalAccelPidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Acceleration D Gain=%4.6f\n",
+			 getDGain(&verticalAccelPidSettings));
+	 //Vertical Acceleration DB
+	 parameterF = atof(packet[SETUP_PID_VERTICAL_ACCEL_DB]);
+	 setPidDeadBand(&verticalAccelPidSettings, parameterF);
+	 _DEBUG(DEBUG_NORMAL, "Vertical Acceleration DB=%4.6f\n",
+			 getPidDeadBand(&verticalAccelPidSettings));
 
 }
 

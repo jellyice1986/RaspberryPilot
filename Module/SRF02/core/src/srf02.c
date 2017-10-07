@@ -81,7 +81,7 @@ bool srf02GetMeasurementData(unsigned short *cm){
 	result=writeByte(SRF02_ADD,SRF02_REG_CMD,SRF02_CMD_CM);
 	if(!result) return false;
 
-	usleep(500);
+	usleep(70000);
 
 	result=(readBytes(SRF02_ADD,SRF02_REG_RANGE_H,2,data)<0) ? false:true;
 	if(!result) return false;

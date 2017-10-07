@@ -89,7 +89,7 @@ bool initAltHold() {
 		return	false;
 	}
 
-	setMaxAlt(450); 	//cm
+	setMaxAlt(200); 	//cm
 
 #elif defined(ALTHOLD_MODULE_VL53L0X)
 	if (!vl53l0xInit()) {
