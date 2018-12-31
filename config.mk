@@ -24,7 +24,18 @@
 
 #Choose IMU is 6DOF(accelerometer+gyro) or 9DOF (accelerometer+gyro+magnetormeter)
 #set up this flag to n if you haven't calibrated your magnetometer
-CONFIG_MPU6050_9AXIS_SUPPORT :=n
+CONFIG_MPU6050_9AXIS_SUPPORT :=y
+
+#Define the PCA9685 channel which is used to generate PWM signal to the ESCs at CCW1,CCW2,CW1 and CW2
+#
+# 	  (motor#2) CCW2    CW2  (motor#3)
+# 			 X
+# 	  (motor#1)  CW1    CCW1 (motor#0)
+#	    		Front
+CONFIG_ESC_PCA9685_CHANNEL_CCW1 :=0
+CONFIG_ESC_PCA9685_CHANNEL_CW1  :=1
+CONFIG_ESC_PCA9685_CHANNEL_CCW2 :=2
+CONFIG_ESC_PCA9685_CHANNEL_CW2  :=3
 
 #Choose a AHRS algorithm, only one of the following setting will be applied
 #MAHONY_AHRS is appropriate for low processing MCU
@@ -34,7 +45,7 @@ CONFIG_AHRS_MAHONY_SUPPORT   :=n
 
 #Set up ESC protocol and update rate
 #RaspberryPilot supports the following protocols:
-#Standard PWM: 50-490 Hz update rate, 1000-2000 mu pulse width
+#Standard PWM: 50-490 Hz update rate, 1000-2000 us pulse width
 #PWMSync: 500 Hz update rate, 1000-1900 us pulse width
 #OneShot125: 500-2000 HZ update rate, 125-250 us pulse width 
 #set up ESC update rate
@@ -58,6 +69,11 @@ ifeq ($(CONFIG_MPU6050_9AXIS_SUPPORT),y)
 else
 	DEFAULT_CFLAGS += -DMPU6050_6AXIS
 endif
+
+DEFAULT_CFLAGS += -DSOFT_PWM_CCW1=$(CONFIG_ESC_PCA9685_CHANNEL_CCW1)
+DEFAULT_CFLAGS += -DSOFT_PWM_CW1=$(CONFIG_ESC_PCA9685_CHANNEL_CW1)
+DEFAULT_CFLAGS += -DSOFT_PWM_CCW2=$(CONFIG_ESC_PCA9685_CHANNEL_CCW2)
+DEFAULT_CFLAGS += -DSOFT_PWM_CW2=$(CONFIG_ESC_PCA9685_CHANNEL_CW2)
 
 ifeq ($(CONFIG_AHRS_MADGWICK_SUPPORT),y)
 	DEFAULT_CFLAGS += -DMADGWICK_AHRS
