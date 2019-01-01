@@ -44,6 +44,7 @@ SOFTWARE.
 
 #define CONTROL_CYCLE_TIME 5000
 #define CHECK_RASPBERRYPILOT_LOOP_TIME 0
+#define MAGNET_CALIBRATION_MODE 0
 
 bool raspberryPilotInit();
 
@@ -71,6 +72,11 @@ int main() {
 	}
 
 	gettimeofday(&tv_l,NULL);
+
+#if MAGNET_CALIBRATION_MODE
+	enableMagnetCalibration();
+	raw_data_reset();
+#endif
 
 	while (!getLeaveFlyControlerFlag()) {
 
@@ -133,7 +139,7 @@ int main() {
 				magnetCalIsDone=1;
 			}
 			
-			_DEBUG(DEBUG_MAGNET_CALIBRATION,"Gaps %f Variance %f Wobble %f Fit Error %f\n",gaps,variance,wobble,fiterror);
+			_DEBUG(DEBUG_MAGNET_CALIBRATION,"Gaps %.3f Variance %.3f Wobble %.3f Fit Error %.3f\n",gaps,variance,wobble,fiterror);
 			if(magnetCalIsDone){
 				_DEBUG(DEBUG_MAGNET_CALIBRATION,"magnetic mapping:\n");
 				_DEBUG(DEBUG_MAGNET_CALIBRATION,"%+.3f %+.3f %+.3f\n",magcal.invW[0][0],magcal.invW[0][1],magcal.invW[0][2]);
@@ -146,7 +152,8 @@ int main() {
 		}
 					
 		pthread_mutex_unlock(&controlMotorMutex);
-			UPDATE_LAST_TIME(tv_c,tv_l);
+			
+		UPDATE_LAST_TIME(tv_c,tv_l);
 
 	}
 
