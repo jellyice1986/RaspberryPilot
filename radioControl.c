@@ -731,7 +731,6 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 			 resetPidRecord(&altHoldlSpeedSettings);
 			 setYawCenterPoint(0.f);
 			 setPidSp(&yawAttitudePidSettings, 321.0);
-			 setFlippingFlag(FLIP_NONE);
 
 		 } else {
 
@@ -748,26 +747,6 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 					 LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
 							 getAngularLimit()));
 			 setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 4));
-
-			 if (getFlippingIsEnable() && (FLIP_NONE == getFlippingFlag())) {
-
-				 if (rollSpShift <= -getFlipThreadHold()) {
-					 setFlippingFlag(FLIP_LEFT);
-				 } else if (rollSpShift >= getFlipThreadHold()) {
-					 setFlippingFlag(FLIP_RIGHT);
-				 }
-
-				 if (pitchSpShift <= -getFlipThreadHold()) {
-					 setFlippingFlag(FLIP_BACK);
-				 } else if (pitchSpShift >= getFlipThreadHold()) {
-					 setFlippingFlag(FLIP_FRONT);
-				 }
-
-				 if (FLIP_NONE != getFlippingFlag()) {
-					 setFlippingStep(1);
-				 }
-
-			 }
 
 			 //_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
 		 }
@@ -903,11 +882,7 @@ void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 	setAltitudePidOutputLimitation(parameterF);
 	_DEBUG(DEBUG_NORMAL, "getAltitudePidOutputLimitation: %5.3f\n",
 			getAltitudePidOutputLimitation());
-	/***/
-	parameter = atoi(packet[SETUP_FACTOR_FLIP_ENABLED]);
-	setFlippingIsEnable(parameter);
-	_DEBUG(DEBUG_NORMAL, "getFlippingIsEnable: %d\n",
-			getFlippingIsEnable());
+
 	/***/
 	parameter = atoi(packet[SETUP_FACTOR_LOG_ENABLED]);
 	setLogIsEnable(parameter);

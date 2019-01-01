@@ -89,32 +89,26 @@ int main() {
 			disenableMagnetCalibration();
 			
 			if (getPacketCounter() < MAX_COUNTER) {
+				
 				if (getPidSp(&yawAttitudePidSettings) != 321.0) {
 						
-					if(getFlippingFlag()!= FLIP_NONE){
-						motorControlerFlipping();
-					}else{
 						motorControler();
-					}
 								
 				} else {
-					setFlippingFlag(FLIP_NONE);
-					setFlippingStep(0);
+
 					setThrottlePowerLevel(getMinPowerLevel());
 					setupAllMotorPoewrLevel(getMinPowerLevel(),
 							getMinPowerLevel(), getMinPowerLevel(),
 							getMinPowerLevel());
 				}
 			} else {
-				setFlippingFlag(FLIP_NONE);
-				setFlippingStep(0);
+
 				//security mechanism is triggered while connection is broken
 				triggerSecurityMechanism();
 			}
 
 		} else {
-			setFlippingFlag(FLIP_NONE);
-			setFlippingStep(0);
+
 			setThrottlePowerLevel(0);
 			setupAllMotorPoewrLevel(0, 0, 0, 0);
 		}
