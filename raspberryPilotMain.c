@@ -40,6 +40,7 @@ SOFTWARE.
 #include "securityMechanism.h"	
 #include "ahrs.h"
 #include "attitudeUpdate.h"
+#include "imuread.h"
 
 #define CONTROL_CYCLE_TIME 5000
 #define CHECK_RASPBERRYPILOT_LOOP_TIME 0
@@ -61,6 +62,9 @@ int main() {
 	struct timeval tv_c;
 	struct timeval tv_l;
 	unsigned long timeDiff=0;
+	float gaps, variance, wobble, fiterror;
+	short m_raw_data[9];
+	bool magnetCalIsDone=0;
 
 	if (!raspberryPilotInit()) {
 		return false;
@@ -80,8 +84,10 @@ int main() {
 #endif
 		pthread_mutex_lock(&controlMotorMutex);
 
-		if (flySystemIsEnable()) {
+		if (flySystemIsEnable()){
 
+			disenableMagnetCalibration();
+			
 			if (getPacketCounter() < MAX_COUNTER) {
 				if (getPidSp(&yawAttitudePidSettings) != 321.0) {
 						
@@ -111,6 +117,38 @@ int main() {
 			setFlippingStep(0);
 			setThrottlePowerLevel(0);
 			setupAllMotorPoewrLevel(0, 0, 0, 0);
+		}
+
+		if (magnetCalibrationIsEnable()){
+
+			getMotion6RawData(&m_raw_data[0], &m_raw_data[1], &m_raw_data[2], &m_raw_data[3], &m_raw_data[4], &m_raw_data[5]);
+			getMagnet(&m_raw_data[6], &m_raw_data[7], &m_raw_data[8]);
+			m_raw_data[6]=m_raw_data[6]*10;
+			m_raw_data[7]=m_raw_data[7]*10;
+			m_raw_data[8]=m_raw_data[8]*10;
+			
+			raw_data(m_raw_data);
+			display_callback();
+		
+			gaps = quality_surface_gap_error();
+			variance = quality_magnitude_variance_error();
+			wobble = quality_wobble_error();
+			fiterror = quality_spherical_fit_error();
+			
+			if (gaps < 15.0f && variance < 4.5f && wobble < 4.0f && fiterror < 5.0f) {
+				magnetCalIsDone=1;
+			}
+			
+			_DEBUG(DEBUG_MAGNET_CALIBRATION,"Gaps %f Variance %f Wobble %f Fit Error %f\n",gaps,variance,wobble,fiterror);
+			if(magnetCalIsDone){
+				_DEBUG(DEBUG_MAGNET_CALIBRATION,"magnetic mapping:\n");
+				_DEBUG(DEBUG_MAGNET_CALIBRATION,"%+.3f %+.3f %+.3f\n",magcal.invW[0][0],magcal.invW[0][1],magcal.invW[0][2]);
+				_DEBUG(DEBUG_MAGNET_CALIBRATION,"%+.3f %+.3f %+.3f\n",magcal.invW[1][0],magcal.invW[1][1],magcal.invW[1][2]);
+				_DEBUG(DEBUG_MAGNET_CALIBRATION,"%+.3f %+.3f %+.3f\n",magcal.invW[2][0],magcal.invW[2][1],magcal.invW[2][2]);
+				_DEBUG(DEBUG_MAGNET_CALIBRATION,"magnetic offset:\n");
+				_DEBUG(DEBUG_MAGNET_CALIBRATION,"[%+.3f %+.3f %+.3f]\n\n",magcal.V[0]*0.1,magcal.V[1]*0.1,magcal.V[2]*0.1);
+			}		
+			
 		}
 					
 		pthread_mutex_unlock(&controlMotorMutex);

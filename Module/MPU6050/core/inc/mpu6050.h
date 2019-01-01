@@ -29,6 +29,8 @@ float getGyroSensitivityInv();
 float getAccSensitivityInv();
 void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy,
 		float* gz);
+void getMotion6RawData(short* ax, short* ay, short* az, short* gx, short* gy,
+		short* gz);		
 void getMagnet(short* mx, short* my, short* mz);
 
 

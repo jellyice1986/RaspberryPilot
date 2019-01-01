@@ -36,6 +36,7 @@
 #include "systemControl.h"
 
 static bool flySystemIsEnableflag;
+static bool magnetCalibrationIsEnableflag;
 
 void signalEvent(int sig);
 
@@ -110,6 +111,49 @@ void disenableFlySystem() {
  */
 bool flySystemIsEnable() {
 	return flySystemIsEnableflag;
+}
+
+/**
+ *
+ *  check whether magnet calibration mode is enabled or not
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		bool
+ *
+ */
+bool magnetCalibrationIsEnable(){
+	return magnetCalibrationIsEnableflag;
+}
+
+/**
+ * set flag to indicate magnet calibration mode is enabled
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		bool
+ *
+ */
+void enableMagnetCalibration() {
+	magnetCalibrationIsEnableflag = true;
+}
+
+/**
+ * set flag to indicate magnet calibration mode is disable
+ *
+ * @param
+ *		void
+ *
+ * @return
+ *		bool
+ *
+ */
+void disenableMagnetCalibration() {
+	magnetCalibrationIsEnableflag = false;
 }
 
 /**

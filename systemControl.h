@@ -26,4 +26,7 @@ bool piSystemInit();
 void enableFlySystem();
 void disenableFlySystem();
 bool flySystemIsEnable();
+bool magnetCalibrationIsEnable();
+void enableMagnetCalibration();
+void disenableMagnetCalibration();
 

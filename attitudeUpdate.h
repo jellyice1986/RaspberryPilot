@@ -53,4 +53,6 @@ void setZGravity(float z_gravity);
 float getXGravity();
 float getYGravity();
 float getZGravity();
+void setMagnetCalibrationData();
+void getMagnetCalibrationData();
 

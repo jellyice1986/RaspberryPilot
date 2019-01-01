@@ -63,6 +63,7 @@ void radioControlMotion(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioHaltPi(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -602,7 +603,14 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 		radioSetupPid(packet);
 		
 		break;
+		
+	case HEADER_MAGNET_CALIBRATION:
 
+		//setup status of Magnet calobration mode
+		radioSetupMagnetCalModeStatus(packet);
+		
+		break;
+		
 	default:
 
 		_DEBUG(DEBUG_NORMAL, "unknow packet\n");
@@ -1154,5 +1162,50 @@ void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 	 _DEBUG(DEBUG_NORMAL, "Vertical Acceleration DB=%4.6f\n",
 			 getPidDeadBand(&verticalAccelPidSettings));
 
+}
+
+/**
+ * Setup the status of Magnet calibration mode 
+ *
+ * @param packet
+ *		received packet
+ *
+ * @return
+ *		   void
+ */
+void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+	
+	 short parameter = 0;
+	 parameter = atoi(packet[MAGNET_CALIBRATION_START_STOP]);
+
+	 if(1 == parameter){
+	 	
+	 	_DEBUG(DEBUG_NORMAL, "Start Magnet Calibration Mode\n");
+
+		disenableFlySystem();
+		enableMagnetCalibration();
+		
+	 }else{
+
+	 	parameter = atoi(packet[MAGNET_CALIBRATION_IE_1]);
+		
+	 	_DEBUG(DEBUG_NORMAL, "Stop Magnet Calibration Mode\n");
+		
+		if(1 == parameter){
+			
+			_DEBUG(DEBUG_NORMAL, "Record the magnet calibration result\n");
+
+			setMagnetCalibrationData();
+			
+		}else{
+
+			_DEBUG(DEBUG_NORMAL, "Ignore the magnet calibration result\n");
+			
+		}
+			
+		disenableMagnetCalibration();
+		 
+	 }
+	 
 }
 

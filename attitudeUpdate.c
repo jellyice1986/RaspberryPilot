@@ -688,10 +688,10 @@ unsigned char GetYawPitchRoll(float *data, float *q, float *gravity) {
 }
 
 /**
- * get gravity
+ * get z component
  *
- * @param gravity
- * 		gravity
+ * @param z
+ * 		z component
  *
  * @param q
  * 		quaternion
@@ -707,7 +707,19 @@ void GetZComponent(float *z, float *q) {
 	z[2] = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
 }
 
-
+/**
+ * get x component
+ *
+ * @param x
+ * 		x component
+ *
+ * @param q
+ * 		quaternion
+ *
+ * @return
+ *		void
+ *
+ */
 void GetXComponent(float *x, float *q) {
 
 	x[0] = q[1] * q[1] + q[0] * q[0] - q[3] * q[3] - q[2] * q[2];
@@ -716,6 +728,19 @@ void GetXComponent(float *x, float *q) {
 
 }
 
+/**
+ * get y component
+ *
+ * @param y
+ * 		y component
+ *
+ * @param q
+ * 		quaternion
+ *
+ * @return
+ *		void
+ *
+ */
 void GetYComponent(float *y, float *q) {
 
 	y[0] = 2 * (q[1] * q[2] + q[0] * q[3]);
@@ -724,5 +749,33 @@ void GetYComponent(float *y, float *q) {
 
 }
 
+/**
+ * set magnet calibration data
+ *
+ * @param 
+ * 		void
+ *
+ *
+ * @return
+ *		void
+ *
+ */
+void setMagnetCalibrationData(){
+	// TODO: set calibration data
+}
 
+/**
+ * get magnet calibration data
+ *
+ * @param 
+ * 		void
+ *
+ *
+ * @return
+ *		void
+ *
+ */
+void getMagnetCalibrationData(){
+	// TODO: get calibration data
+}
 
