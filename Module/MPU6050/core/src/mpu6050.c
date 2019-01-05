@@ -60,12 +60,15 @@
 #define MPU6050_ADDRESS_AD0_HIGH    0x69 // address pin high (VCC)
 #define MPU6050_ADDRESS     		MPU6050_ADDRESS_AD0_LOW 
 #define MPU9150_RA_MAG_ADDRESS		0x0C
+#define MPU9150_RA_MAG_ST1		0x02
 #define MPU9150_RA_MAG_XOUT_L		0x03
 #define MPU9150_RA_MAG_XOUT_H		0x04
 #define MPU9150_RA_MAG_YOUT_L		0x05
 #define MPU9150_RA_MAG_YOUT_H		0x06
 #define MPU9150_RA_MAG_ZOUT_L		0x07
 #define MPU9150_RA_MAG_ZOUT_H		0x08
+#define MPU9150_RA_MAG_ST2		0x09
+#define MPU9150_RA_MAG_CNTL1		0x0A
 #define MPU9150_RA_INT_PIN_CFG      0x37
 #define MPU6050_DEFAULT_ADDRESS     MPU6050_ADDRESS_AD0_LOW  //MPU6050_ADDRESS_AD0_LOW
 #define MPU6050_RA_XG_OFFS_TC       0x00 //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
@@ -405,6 +408,11 @@ void reset();
 void setXGyroOffsetTC(char offset);
 void setYGyroOffsetTC(char offset);
 void setZGyroOffsetTC(char offset);
+void enableSingleMeasurementMode16Bit();
+void enableSingleMeasurementMode14Bit();
+bool singleMeasurementModeIsEnable();
+bool magnetDataIsReady();
+bool getMagnet(short* mx, short* my, short* mz);
 
 /**
  * Init MPU6050
@@ -1161,6 +1169,31 @@ void reset() {
 	true);
 }
 
+/**
+ * get gyro and acceleration data
+ *
+ * @param ax
+ * 		acceleration data x
+ *
+ * @param ay
+ * 		acceleration data y
+ *
+ * @param az
+ * 		acceleration data z
+ *
+ * @param gx
+ * 		gyro data x
+ *
+ * @param gy
+ * 		gyro data y
+ *
+ * @param gz
+ * 		gyro data z
+ *
+ * @return 
+ *		void
+ *
+ */
 void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy,
 		float* gz) {
 	short sax = 0;
@@ -1181,19 +1214,142 @@ void getMotion6(float* ax, float* ay, float* az, float* gx, float* gy,
 }
 
 #ifdef MPU6050_9AXIS
-/** get magnet from AK8975 inside mpu9150/mpu9250 in continous mode 2
- * @param mx magnet of x
- * @param my magnet of y
- * @param mz magnet of z
+/**
+ * enable single measurement mode whith 16 bit resolution
+ *
+ * @param
+ * 		void
+ *
+ * @return 
+ *		void
+ *
  */
-void getMagnet(short* mx, short* my, short* mz) {
-	writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x01);
+void enableSingleMeasurementMode16Bit(){
+
+	writeByte(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_CNTL1, 0x01|0x10);// Single Measurement mode|Full Scale
+	
+}
+
+/**
+ * enable single measurement mode whith 14 bit resolution
+ *
+ * @param
+ * 		void
+ *
+ * @return 
+ *		void
+ *
+ */
+void enableSingleMeasurementMode14Bit(){
+
+	writeByte(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_CNTL1, 0x01);// Single Measurement mode
+	
+}
+
+/**
+ * check whether single measurement mode is enabled or not
+ *
+ * @param
+ * 		void
+ *
+ * @return bool
+ *		whether Single measurement mode is enabled or not
+ *
+ */
+bool singleMeasurementModeIsEnable(){
+	
+	readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_CNTL1, 1, buffer);
+	return ((buffer[0] & 0x01) == 0x01);
+	
+}
+
+/**
+ * check whether magnet data are ready or not
+ *
+ * @param
+ * 		void
+ *
+ * @return bool
+ *		whether data are ready or not
+ *
+ */
+bool magnetDataIsReady(){
+	
+	readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_ST1, 1, buffer);
+	//_DEBUG(DEBUG_NORMAL,"ST1=0x%x\n",buffer[0]);
+
+	return ((buffer[0]&0x01) == 1);
+	
+}
+
+/**
+ * get raw magnet data
+ *
+ * @param mx
+ * 		raw magnet data x
+ *
+ * @param my
+ * 		raw magnet data y
+ *
+ * @param mz
+ * 		raw magnet data z
+ *
+ * @return bool
+ *		data is valid or not
+ *
+ */
+bool getMagnet(short* mx, short* my, short* mz) {
+	
 	readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_XOUT_L, 8, buffer);
 	*mx = ((((short)buffer[1]) << 8) | buffer[0]);
 	*my = ((((short)buffer[3]) << 8) | buffer[2]);
 	*mz = ((((short)buffer[5]) << 8) | buffer[4]);
-	//_DEBUG(DEBUG_NORMAL,"%d %d %d %d %d %d %d %d\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+
+	//_DEBUG(DEBUG_NORMAL,"0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
 	//_DEBUG(DEBUG_NORMAL,"RAW mx=%d, my=%d, mz=%d\n",*mx,*my,*mz);
+	return !((buffer[6] & 0x08) == 0x08);
+}
+
+/**
+ * This function is used to polling magnet data by the single measurement mode of AK8963
+ *
+ * @param mx
+ * 		magnet data x
+ *
+ * @param my
+ * 		magnet data y
+ *
+ * @param mz
+ * 		magnet data z
+ *
+ * @return bool
+ *		data is valid or not
+ *
+ */
+bool pollingMagnetDataBySingleMeasurementMode(short* mx, short* my, short* mz){
+
+	bool result = false;
+	
+	if(singleMeasurementModeIsEnable()){
+
+		if(magnetDataIsReady()){
+			
+			if(getMagnet(mx, my, mz)){
+
+				result = true;
+				
+			}
+			
+			enableSingleMeasurementMode14Bit();
+			
+		}
+		
+	}else{
+	
+		enableSingleMeasurementMode14Bit();
+
+	}
+	return result;
 }
 #endif
 

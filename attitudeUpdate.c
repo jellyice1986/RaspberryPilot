@@ -56,9 +56,9 @@ static float yGravity;
 static float zGravity;
 #ifdef MPU6050_9AXIS
 // Hard iron calibration matrix
-float mag_hard_iron_cal[3] = {0.863F, 2.537F, -7.838F};
+float mag_hard_iron_cal[3] = {+0.546, +53.180, -22.293};
 // Soft iron calibration matrix
-float mag_soft_iron_cal[3][3] = { {1.016, -0.022, -0.013}, {-0.002, 1.029, 0.024}, {-0.013, 0.024, 0.958}};
+float mag_soft_iron_cal[3][3] = { {+1.011, -0.004, -0.009}, {-0.004, +0.999, +0.027}, {-0.009, +0.027, +0.991}};
 static SMA_STRUCT x_magnetSmaFilterEntry;
 static SMA_STRUCT y_magnetSmaFilterEntry;
 static SMA_STRUCT z_magnetSmaFilterEntry;
@@ -93,9 +93,9 @@ bool altitudeUpdateInit() {
 		_DEBUG(DEBUG_NORMAL, "start attitudeUpdate thread...\n");
 	}
 #ifdef MPU6050_9AXIS
-	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",5);
-	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",5);
-	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",5);
+	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",2);
+	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",2);
+	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",2);
 #endif	
 	attitudeIsInit=true;
 
@@ -139,6 +139,7 @@ void *attitudeUpdateThread() {
 #endif
 
 		pthread_mutex_lock(&controlMotorMutex);
+
 		getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xComponent, yComponent, zComponent,xyzMagnet); 
 		setYaw(yrpAttitude[0]);
 		setRoll(yrpAttitude[1]);
@@ -170,6 +171,7 @@ void *attitudeUpdateThread() {
 				__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
 		
 		pthread_mutex_unlock(&controlMotorMutex);
+			
 			UPDATE_LAST_TIME(tv_c,tv_l);
 		}
 
@@ -586,19 +588,12 @@ void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 	float f_x=0.f;
 	float f_y=0.f;
 	float f_z=0.f;
-	struct timeval tv;
-	static struct timeval last_tv;
-	static struct timeval last_2tv;
-	
-	gettimeofday(&tv, NULL);
 #endif
 
 	getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
 #ifdef MPU6050_9AXIS
-	if(GET_USEC_TIMEDIFF(tv,last_tv)>= 10000){
-
-		getMagnet(&s_mx, &s_my, &s_mz);
+	if(pollingMagnetDataBySingleMeasurementMode(&s_mx, &s_my, &s_mz)){
 		
 		f_x = (float)s_mx - mag_hard_iron_cal[0];
 		f_y = (float)s_my - mag_hard_iron_cal[1];
@@ -606,6 +601,7 @@ void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 		f_mx = f_x * mag_soft_iron_cal[0][0] + f_y * mag_soft_iron_cal[0][1] + f_z * mag_soft_iron_cal[0][2];
 		f_my = f_x * mag_soft_iron_cal[1][0] + f_y * mag_soft_iron_cal[1][1] + f_z * mag_soft_iron_cal[1][2];
 		f_mz = f_x * mag_soft_iron_cal[2][0] + f_y * mag_soft_iron_cal[2][1] + f_z * mag_soft_iron_cal[2][2];
+
 		pushSmaData(&x_magnetSmaFilterEntry,f_mx);
 		pushSmaData(&y_magnetSmaFilterEntry,f_my);
 		pushSmaData(&z_magnetSmaFilterEntry,f_mz);
@@ -613,14 +609,8 @@ void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 		f_my = pullSmaData(&y_magnetSmaFilterEntry);
 		f_mz = pullSmaData(&z_magnetSmaFilterEntry);
 	
-		UPDATE_LAST_TIME(tv,last_tv);
-
-	}
-	
-	if(GET_USEC_TIMEDIFF(tv,last_2tv)>= 30000){
-		//overuse of magnetometer will reap negative result
 		IMUupdate9(gx, gy, gz, ax, ay, az, f_my, f_mx, f_mz, q);
-		UPDATE_LAST_TIME(tv,last_2tv);
+		
 	}else{
 		IMUupdate6(gx, gy, gz, ax, ay, az, q);
 	}

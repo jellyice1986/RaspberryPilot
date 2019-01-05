@@ -42,8 +42,8 @@ http://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
 #if defined(MADGWICK_AHRS)
 #define beta 0.5f
 #elif defined(MAHONY_AHRS)
-#define twoKpDef	(2.0f * 0.5f)	// 2 * proportional gain
-#define twoKiDef	(2.0f * 0.05f)	// 2 * integral gain
+#define twoKpDef	(2.0f * 0.9f)	// 2 * proportional gain
+#define twoKiDef	(2.0f * 0.01f)	// 2 * integral gain
 volatile float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;	// integral error terms scaled by Ki
 #endif
 
