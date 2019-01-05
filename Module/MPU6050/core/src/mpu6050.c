@@ -1300,7 +1300,7 @@ bool magnetDataIsReady(){
  */
 bool getMagnet(short* mx, short* my, short* mz) {
 	
-	readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_XOUT_L, 8, buffer);
+	readBytes(MPU9150_RA_MAG_ADDRESS, MPU9150_RA_MAG_XOUT_L, 7, buffer);
 	*mx = ((((short)buffer[1]) << 8) | buffer[0]);
 	*my = ((((short)buffer[3]) << 8) | buffer[2]);
 	*mz = ((((short)buffer[5]) << 8) | buffer[4]);
