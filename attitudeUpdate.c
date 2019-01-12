@@ -34,10 +34,8 @@ SOFTWARE.
 #include "mpu6050.h"
 #include "attitudeUpdate.h"
 
-#define ATTITUDE_UPDATE_TIME 2000 //us
 #define CHECK_ATTITUDE_UPDATE_LOOP_TIME 0
 
-static pthread_t attitudeUpdateThreadId;
 static bool attitudeIsInit;
 static float verticalAcceleration;
 static float xAcceleration;
@@ -86,24 +84,19 @@ bool altitudeUpdateInit() {
 
 	attitudeIsInit=false;
 	
-	if (pthread_create(&attitudeUpdateThreadId,NULL,attitudeUpdateThread,NULL)) {
-		_DEBUG(DEBUG_NORMAL, "attitudeUpdateThreadId create failed\n");
-		return false;
-	} else {
-		_DEBUG(DEBUG_NORMAL, "start attitudeUpdate thread...\n");
-	}
 #ifdef MPU6050_9AXIS
 	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",2);
 	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",2);
 	initSmaFilterEntity(&z_magnetSmaFilterEntry,"Z_MAGNET",2);
 #endif	
+
 	attitudeIsInit=true;
 
 	return attitudeIsInit;
 }
 
 /**
- *  attitude update thread
+ * update attitude
  *
  * @param 
  * 		void
@@ -112,11 +105,8 @@ bool altitudeUpdateInit() {
  *		void
  *
  */
-void *attitudeUpdateThread() {
+void attitudeUpdate(){
 
-	struct timeval tv_c;
-	struct timeval tv_l;
-	unsigned long timeDiff=0;
 	float yrpAttitude[3];
 	float pryRate[3];
 	float xyzAcc[3];
@@ -124,23 +114,19 @@ void *attitudeUpdateThread() {
 	float yComponent[3];
 	float zComponent[3];
 	float xyzMagnet[3];
-	
-	gettimeofday(&tv_l,NULL);
-	
-	while (!getLeaveFlyControlerFlag()) {
+#if CHECK_ATTITUDE_UPDATE_LOOP_TIME
+	struct timeval tv_c;
+	static struct timeval tv_l;
+	unsigned long timeDiff=0;
 
 		gettimeofday(&tv_c,NULL);
 		timeDiff=GET_USEC_TIMEDIFF(tv_c,tv_l);
-		
-		if(timeDiff >= ATTITUDE_UPDATE_TIME){
-
-#if CHECK_ATTITUDE_UPDATE_LOOP_TIME
 			_DEBUG(DEBUG_NORMAL,"attitude update duration=%ld us\n",timeDiff);
+	UPDATE_LAST_TIME(tv_c,tv_l);
 #endif
 
-		pthread_mutex_lock(&controlMotorMutex);
-
 		getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xComponent, yComponent, zComponent,xyzMagnet); 
+
 		setYaw(yrpAttitude[0]);
 		setRoll(yrpAttitude[1]);
 		setPitch(yrpAttitude[2]);
@@ -170,16 +156,6 @@ void *attitudeUpdateThread() {
 		_DEBUG(DEBUG_ACC, "(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",
 				__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
 		
-		pthread_mutex_unlock(&controlMotorMutex);
-			
-			UPDATE_LAST_TIME(tv_c,tv_l);
-		}
-
-		usleep(500);
-	}
-
-	pthread_exit((void *) 0);
-	
 }
 
 /**

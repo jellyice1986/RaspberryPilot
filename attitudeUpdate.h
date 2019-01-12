@@ -23,6 +23,7 @@ SOFTWARE.
 ******************************************************************************/
 
 bool altitudeUpdateInit();
+void attitudeUpdate();
 float getVerticalAcceleration();
 void setVerticalAcceleration(float v);
 float getXAcceleration();

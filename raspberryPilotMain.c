@@ -44,7 +44,7 @@ SOFTWARE.
 #include "imuread.h"
 #endif
 
-#define CONTROL_CYCLE_TIME 5000
+#define CONTROL_CYCLE_TIME 500
 #define CHECK_RASPBERRYPILOT_LOOP_TIME 0
 #define MAGNET_CALIBRATION_MODE 0
 
@@ -131,6 +131,9 @@ int main() {
 						
 			}
 #else
+
+		attitudeUpdate();
+
 		if (flySystemIsEnable()){
 
 			disenableMagnetCalibration();
