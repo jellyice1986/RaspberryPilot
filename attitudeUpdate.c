@@ -52,6 +52,7 @@ static float zAcc;
 static float xGravity;
 static float yGravity;
 static float zGravity;
+static short imuRawData[9];
 #ifdef MPU6050_9AXIS
 // Hard iron calibration matrix
 float mag_hard_iron_cal[3] = {+0.546, +53.180, -22.293};
@@ -83,7 +84,7 @@ static void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
 bool altitudeUpdateInit() {
 
 	attitudeIsInit=false;
-	
+
 #ifdef MPU6050_9AXIS
 	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",2);
 	initSmaFilterEntity(&y_magnetSmaFilterEntry,"Y_MAGNET",2);
@@ -118,44 +119,44 @@ void attitudeUpdate(){
 	struct timeval tv_c;
 	static struct timeval tv_l;
 	unsigned long timeDiff=0;
-
-		gettimeofday(&tv_c,NULL);
-		timeDiff=GET_USEC_TIMEDIFF(tv_c,tv_l);
-			_DEBUG(DEBUG_NORMAL,"attitude update duration=%ld us\n",timeDiff);
+	
+	gettimeofday(&tv_c,NULL);
+	timeDiff=GET_USEC_TIMEDIFF(tv_c,tv_l);
+	_DEBUG(DEBUG_NORMAL,"attitude update duration=%ld us\n",timeDiff);
 	UPDATE_LAST_TIME(tv_c,tv_l);
-#endif
+#endif	
+			
+	getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xComponent, yComponent, zComponent,xyzMagnet); 
 
-		getYawPitchRollInfo(yrpAttitude, pryRate, xyzAcc, xComponent, yComponent, zComponent,xyzMagnet); 
+	setYaw(yrpAttitude[0]);
+	setRoll(yrpAttitude[1]);
+	setPitch(yrpAttitude[2]);
+	setYawGyro(-pryRate[2]);
+	setPitchGyro(pryRate[0]);
+	setRollGyro(-pryRate[1]);
+	setXAcc(xyzAcc[0]);
+	setYAcc(xyzAcc[1]);
+	setZAcc(xyzAcc[2]);
+	setXGravity(zComponent[0]);
+	setYGravity(zComponent[1]);
+	setZGravity(zComponent[2]);
+	setVerticalAcceleration(deadband((getXAcc() * zComponent[0] + getYAcc() * zComponent[1]
+		+ getZAcc() * zComponent[2] - 1.f) * 100.f,3.f) );
+	setXAcceleration(deadband((getXAcc() * xComponent[0] + getYAcc() * xComponent[1]
+		+ getZAcc() * xComponent[2]) * 100.f,3.f) );
+	setYAcceleration(deadband((getXAcc() * yComponent[0] + getYAcc() * yComponent[1]
+		+ getZAcc() * yComponent[2]) * 100.f,3.f) );
 
-		setYaw(yrpAttitude[0]);
-		setRoll(yrpAttitude[1]);
-		setPitch(yrpAttitude[2]);
-		setYawGyro(-pryRate[2]);
-		setPitchGyro(pryRate[0]);
-		setRollGyro(-pryRate[1]);
-		setXAcc(xyzAcc[0]);
-		setYAcc(xyzAcc[1]);
-		setZAcc(xyzAcc[2]);
-		setXGravity(zComponent[0]);
-		setYGravity(zComponent[1]);
-		setZGravity(zComponent[2]);
-		setVerticalAcceleration(deadband((getXAcc() * zComponent[0] + getYAcc() * zComponent[1]
-			+ getZAcc() * zComponent[2] - 1.f) * 100.f,3.f) );
-		setXAcceleration(deadband((getXAcc() * xComponent[0] + getYAcc() * xComponent[1]
-			+ getZAcc() * xComponent[2]) * 100.f,3.f) );
-		setYAcceleration(deadband((getXAcc() * yComponent[0] + getYAcc() * yComponent[1]
-			+ getZAcc() * yComponent[2]) * 100.f,3.f) );
-
-		_DEBUG(DEBUG_ATTITUDE,
-				"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", __func__,
-				__LINE__, getRoll(), getPitch(), getYaw());
-		_DEBUG(DEBUG_GYRO,
-				"(%s-%d) GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",
-				__func__, __LINE__, getRollGyro(), getPitchGyro(),
-				getYawGyro());
-		_DEBUG(DEBUG_ACC, "(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",
-				__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
-		
+	_DEBUG(DEBUG_ATTITUDE,
+			"(%s-%d) ATT: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n", __func__,
+			__LINE__, getRoll(), getPitch(), getYaw());
+	_DEBUG(DEBUG_GYRO,
+			"(%s-%d) GYRO: Roll=%3.3f Pitch=%3.3f Yaw=%3.3f\n",
+			__func__, __LINE__, getRollGyro(), getPitchGyro(),
+			getYawGyro());
+	_DEBUG(DEBUG_ACC, "(%s-%d) ACC: x=%3.3f y=%3.3f z=%3.3f\n",
+			__func__, __LINE__, getXAcc(), getYAcc(), getZAcc());
+	
 }
 
 /**
@@ -716,7 +717,7 @@ void GetYComponent(float *y, float *q) {
 }
 
 /**
- * set magnet calibration data
+ * magnet calibration mode gets IMU Raw data
  *
  * @param 
  * 		void
@@ -726,8 +727,54 @@ void GetYComponent(float *y, float *q) {
  *		void
  *
  */
-void setMagnetCalibrationData(){
-	// TODO: set calibration data
+void magnetCalibrationGetImuRawData(void){
+
+	if(pollingMagnetDataBySingleMeasurementMode(&imuRawData[6], &imuRawData[7], &imuRawData[8])){
+
+		getMotion6RawData(&imuRawData[0], &imuRawData[1], &imuRawData[2], &imuRawData[3], &imuRawData[4], &imuRawData[5]);	
+
+	}
+							
+}
+
+/**
+ * get magnet calibration Raw data
+ *
+ * @param 
+ * 		void
+ *
+ *
+ * @return
+ *		void
+ *
+ */
+void getMagnetCalibrationRawData(short *rawData){
+
+	rawData[0] = imuRawData[0];
+	rawData[1] = imuRawData[1];
+	rawData[2] = imuRawData[2];
+	rawData[3] = imuRawData[3];
+	rawData[4] = imuRawData[4];
+	rawData[5] = imuRawData[5];
+	rawData[6] = imuRawData[6];
+	rawData[7] = imuRawData[7];
+	rawData[8] = imuRawData[8];
+	
+}
+
+/**
+ * set magnet calibration data
+ *
+ * @param data
+ * 		calibration result
+ *
+ *
+ * @return
+ *		void
+ *
+ */
+void setMagnetCalibrationData(char *data){
+	// TODO: set calibration data by CJSON
 }
 
 /**
@@ -742,6 +789,6 @@ void setMagnetCalibrationData(){
  *
  */
 void getMagnetCalibrationData(){
-	// TODO: get calibration data
+	// TODO: get calibration data by CJSON
 }
 

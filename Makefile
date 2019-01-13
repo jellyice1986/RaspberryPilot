@@ -73,13 +73,6 @@ else
 	endif	
 endif	
 	
-ifeq ($(CONFIG_MPU6050_9AXIS_SUPPORT),y)
-	SUBDIR += MagnetCal
-	INCLUDES += -I${PWD}/MagnetCal/core/inc
-	LIB_PATH += -L$(PWD)/MagnetCal/bin
-	LIB += -lMagnetCal_RaspberryPilot
-endif
-	
 LIB_OBJS = $(LIB_SRCS:%.c=$(OBJ_DIR)/%.o)	
 
 .PHONY: all

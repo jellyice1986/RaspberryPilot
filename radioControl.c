@@ -64,6 +64,7 @@ void radioHaltPi(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+void radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -97,7 +98,6 @@ bool radioControlInit() {
 		_DEBUG(DEBUG_NORMAL, "start transmiting...\n");
 	}
 
-	//start radio receiver thread
 	if (pthread_create(&radioThreadId, NULL, radioReceiveThread, &serialFd)) {
 		_DEBUG(DEBUG_NORMAL, "radioThreadId create failed\n");
 		return false;
@@ -172,37 +172,32 @@ void printPayload(unsigned char *payload, unsigned int len) {
 void *radioTransmitThread(void *arg) {
 
 	char message[150];
+	short magCalRawData[9];
 	int fd = *(int *) arg;
+	unsigned int sleepTime=TRANSMIT_TIMER;
 
 	while (!getLeaveFlyControlerFlag()) {
-		/*
-		 *	     2 CCW2   CW2 3
-		 *		          X
-		 *	        1 CW1  CCW1 0
-		 *		          F
-		 */
-		/** packet format
-		 @
-		 roll attitude: 0
-		 pitch attitude: 1
-		 yaw attitude: 2
-		 height: 3
-		 rollAttitudeSp: 4
-		 pitchAttitudeSp: 5
-		 yawAttitudeSp: 6
-		 heightSp: 7
-		 roll gyro: 8
-		 pitch gyro: 9
-		 yaw gyro: 10
-		 center throttle: 11
-		 ccw1 throttle: 12
-		 cw1 throttle : 13
-		 ccw2 throttle: 14
-		 cw2 throttle: 15
-		 #
-		 */
-		if (checkLogIsEnable()) {
-			snprintf(message, sizeof(message),
+		 
+		if(magnetCalibrationIsEnable()){
+
+			pthread_mutex_lock(&controlMotorMutex);
+			
+			getMagnetCalibrationRawData(magCalRawData);
+
+			pthread_mutex_unlock(&controlMotorMutex);
+			
+			snprintf(message, sizeof(message), "@2:%d:%d:%d:%d:%d:%d:%d:%d:%d#", 
+				magCalRawData[0],magCalRawData[1],magCalRawData[2],
+				magCalRawData[3],magCalRawData[4],magCalRawData[5],
+				magCalRawData[6],magCalRawData[7],magCalRawData[8]);
+			
+			sleepTime = 4000;
+			
+		}else{
+		
+			if (checkLogIsEnable()) {
+				
+				snprintf(message, sizeof(message),
 					"@%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
 					(int) getRoll(), (int) getPitch(), (int) getYaw(),
 					(int) getCurrentAltHoldAltitude(),
@@ -215,11 +210,18 @@ void *radioTransmitThread(void *arg) {
 					getThrottlePowerLevel(), getMotorPowerLevelCCW1(),
 					getMotorPowerLevelCW1(), getMotorPowerLevelCCW2(),
 					getMotorPowerLevelCW2());
-		} else {
-			snprintf(message, sizeof(message), "@%d:%d:%d:%d#", (int) getRoll(),
-					(int) getPitch(), (int) getYaw(),
-					(int) getCurrentAltHoldAltitude());
-		}
+				
+			}else{
+	
+				snprintf(message, sizeof(message), "@%d:%d:%d:%d#", (int) getRoll(),
+						(int) getPitch(), (int) getYaw(),
+						(int) getCurrentAltHoldAltitude());
+			}
+
+			sleepTime = TRANSMIT_TIMER;
+
+		}	
+	
 		if ('#' != message[strlen(message) - 1]) {
 			_DEBUG(DEBUG_NORMAL, "invilid package\n");
 		} else {
@@ -228,10 +230,12 @@ void *radioTransmitThread(void *arg) {
 			memset(message, '\0', sizeof(message));
 		}
 
-		usleep(TRANSMIT_TIMER);
+		usleep(sleepTime);
+		
 	}
 
 	pthread_exit((void *) 0);
+	
 }
 
 /**
@@ -408,23 +412,31 @@ bool checkPacketFieldIsValid(char *buf, short lenth) {
 	}
 
 	switch (i) {
-	case HEADER_ENABLE_FLY_SYSTEM:
-		count2 = ENABLE_FLY_SYSTEM_FIWLD_END - 1;
-		break;
-	case HEADER_CONTROL_MOTION:
-		count2 = CONTROL_MOTION_END - 1;
-		break;
-	case HEADER_HALT_PI:
-		count2 = HALT_PI_END - 1;
-		break;
-	case HEADER_SETUP_FACTOR:
-		count2 = SETUP_FACTOR_END - 1;
-		break;
-	case HEADER_SETUP_PID:
-		count2 = SETUP_PID_END - 1;
-		break;
-	default:
-		count2 = -1;
+		
+		case HEADER_ENABLE_FLY_SYSTEM:
+			count2 = ENABLE_FLY_SYSTEM_FIWLD_END - 1;
+			break;
+		case HEADER_CONTROL_MOTION:
+			count2 = CONTROL_MOTION_END - 1;
+			break;
+		case HEADER_HALT_PI:
+			count2 = HALT_PI_END - 1;
+			break;
+		case HEADER_SETUP_FACTOR:
+			count2 = SETUP_FACTOR_END - 1;
+			break;
+		case HEADER_SETUP_PID:
+			count2 = SETUP_PID_END - 1;
+			break;
+		case MAGNET_CALIBRATION_START:
+			count2 = MAGNET_CALIBRATION_START_END;
+			break;
+		case MAGNET_CALIBRATION_RESULT:
+			count2 = MAGNET_CALIBRATION_RESULT_END;	
+			break;
+		default:
+			count2 = -1;
+			
 	}
 
 	if (count2 != count) {
@@ -514,22 +526,28 @@ unsigned short getChecksumFieldIndex(unsigned int header) {
 	unsigned short ret = 0;
 
 	switch (header) {
-	case HEADER_ENABLE_FLY_SYSTEM:
-		ret = ENABLE_FLY_SYSTEM_CHECKSUM;
-		break;
-	case HEADER_CONTROL_MOTION:
-		ret = CONTROL_MOTION_CHECKSUM;
-		break;
-	case HEADER_HALT_PI:
-		ret = HALT_PI_CHECKSUM;
-		break;
-	case HEADER_SETUP_FACTOR:
-		ret = SETUP_FACTOR_CHECKSUM;
-		break;
-	case HEADER_SETUP_PID:
-		ret = SETUP_PID_CHECKSUM;
-		break;
-	default:
+		case HEADER_ENABLE_FLY_SYSTEM:
+			ret = ENABLE_FLY_SYSTEM_CHECKSUM;
+			break;
+		case HEADER_CONTROL_MOTION:
+			ret = CONTROL_MOTION_CHECKSUM;
+			break;
+		case HEADER_HALT_PI:
+			ret = HALT_PI_CHECKSUM;
+			break;
+		case HEADER_SETUP_FACTOR:
+			ret = SETUP_FACTOR_CHECKSUM;
+			break;
+		case HEADER_SETUP_PID:
+			ret = SETUP_PID_CHECKSUM;
+			break;
+		case MAGNET_CALIBRATION_START:
+			ret = MAGNET_CALIBRATION_START_CHECKSUM;
+			break;
+		case MAGNET_CALIBRATION_RESULT:
+			ret = MAGNET_CALIBRATION_RESULT_CHECKSUM;
+			break;
+		default:
 		_DEBUG(DEBUG_NORMAL, "%s can't find index, header=%d\n", __func__,
 				header);
 		ret = -1;
@@ -565,55 +583,62 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 
 	switch (atoi(packet[0])) {
 
-	case HEADER_ENABLE_FLY_SYSTEM:
-		
-		// Enable or disable fly syatem
-		radioEnableFlySystem(packet);
+		case HEADER_ENABLE_FLY_SYSTEM:
+			
+			// Enable or disable fly syatem
+			radioEnableFlySystem(packet);
 
-		break;
+			break;
 
-	case HEADER_CONTROL_MOTION:
-		
-		//control packet
-		radioControlMotion(packet);
-		
-		break;
+		case HEADER_CONTROL_MOTION:
+			
+			//control packet
+			radioControlMotion(packet);
+			
+			break;
 
-	case HEADER_HALT_PI:
+		case HEADER_HALT_PI:
 
-		//halt raspberry pi
-		radioHaltPi(packet);
-		
-		break;
+			//halt raspberry pi
+			radioHaltPi(packet);
+			
+			break;
 
-	case HEADER_SETUP_FACTOR:
-		
-		//setup factor
-		radioSetupFactor(packet);
-		
-		break;
+		case HEADER_SETUP_FACTOR:
+			
+			//setup factor
+			radioSetupFactor(packet);
+			
+			break;
 
-	case HEADER_OlED_DISPLAY:
-		// oled control, doesn't exist anymore
-		break;
+		case HEADER_OlED_DISPLAY:
+			// oled control, doesn't exist anymore
+			break;
 
-	case HEADER_SETUP_PID:
-		
-		//setup pid parameters
-		radioSetupPid(packet);
-		
-		break;
-		
-	case HEADER_MAGNET_CALIBRATION:
+		case HEADER_SETUP_PID:
+			
+			//setup pid parameters
+			radioSetupPid(packet);
+			
+			break;
+			
+		case MAGNET_CALIBRATION_START:
 
-		//setup status of Magnet calobration mode
-		radioSetupMagnetCalModeStatus(packet);
-		
-		break;
-		
-	default:
+			//setup status of Magnet calobration mode
+			radioSetupMagnetCalModeStatus(packet);
+			
+			break;
 
-		_DEBUG(DEBUG_NORMAL, "unknow packet\n");
+		case MAGNET_CALIBRATION_RESULT:
+
+			//save magnet calibration result
+			radioSaveMagnetCalModeResult(packet);
+				
+			break;
+			
+		default:
+
+			_DEBUG(DEBUG_NORMAL, "unknow packet\n");
 
 	}
 
@@ -634,8 +659,10 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 
  	if (!(checkPacketFieldIsValid(buf, lenth)
 			&& extractPacketInfo(buf, lenth, packet))) {
+			
 		_DEBUG(DEBUG_RADIO_RX_FAIL, "invilid field: %s\n", buf);
 		rev_drop++;
+		
 		return false;
 	} else if (!(getChecksum(buf, lenth - 5)
 			== (unsigned short) hexStringToInt(
@@ -650,6 +677,7 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 	}
 
 	rev_success++;
+	
 	return true;
  }
  
@@ -1151,7 +1179,8 @@ void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 	
 	 short parameter = 0;
-	 parameter = atoi(packet[MAGNET_CALIBRATION_START_STOP]);
+	 
+	 parameter = atoi(packet[MAGNET_CALIBRATION_START_ON_OFF]);
 
 	 if(1 == parameter){
 	 	
@@ -1161,26 +1190,27 @@ void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LE
 		enableMagnetCalibration();
 		
 	 }else{
-
-	 	parameter = atoi(packet[MAGNET_CALIBRATION_IE_1]);
 		
 	 	_DEBUG(DEBUG_NORMAL, "Stop Magnet Calibration Mode\n");
-		
-		if(1 == parameter){
-			
-			_DEBUG(DEBUG_NORMAL, "Record the magnet calibration result\n");
-
-			setMagnetCalibrationData();
-			
-		}else{
-
-			_DEBUG(DEBUG_NORMAL, "Ignore the magnet calibration result\n");
-			
-		}
-			
+					
 		disenableMagnetCalibration();
-		 
 	 }
 	 
+}
+
+/**
+ * save the result of Magnet calibration mode 
+ *
+ * @param packet
+ *		received packet
+ *
+ * @return
+ *		   void
+ */
+void radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+
+	// TODO: record data
+	 //setMagnetCalibrationData(packet);
+
 }
 
