@@ -863,7 +863,6 @@ bool parseMagnetCalibrationData(int *calCount, float *hardIron, float softIron[3
 		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "22");
 		softIron[2][2] = pSub->valuedouble;
 
-		
 		cJSON_Delete(pJsonRoot);
 	}
 	

@@ -1254,19 +1254,19 @@ bool radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LEN
 		cJSON_AddItemToObject(pJsonRoot, "Hard Iron", pSubJsonHardIron);
 		cJSON_AddItemToObject(pJsonRoot, "Soft Iron", pSubJsonSoftIron);
 		
-		cJSON_AddNumberToObject(pSubJsonHardIron, "0", atof(packet[0]));
-		cJSON_AddNumberToObject(pSubJsonHardIron, "1", atof(packet[1]));
-		cJSON_AddNumberToObject(pSubJsonHardIron, "2", atof(packet[2]));
+		cJSON_AddNumberToObject(pSubJsonHardIron, "0", atof(packet[MAGNET_CALIBRATION_RESULT_HARD_IRON_0]));
+		cJSON_AddNumberToObject(pSubJsonHardIron, "1", atof(packet[MAGNET_CALIBRATION_RESULT_HARD_IRON_1]));
+		cJSON_AddNumberToObject(pSubJsonHardIron, "2", atof(packet[MAGNET_CALIBRATION_RESULT_HARD_IRON_2]));
 		
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "00", atof(packet[3]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "01", atof(packet[4]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "02", atof(packet[5]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "10", atof(packet[6]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "11", atof(packet[7]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "12", atof(packet[8]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "20", atof(packet[9]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "21", atof(packet[10]));
-		cJSON_AddNumberToObject(pSubJsonSoftIron, "22", atof(packet[11]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "00", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_0_0]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "01", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_0_1]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "02", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_0_2]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "10", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_1_0]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "11", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_1_1]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "12", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_1_2]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "20", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_2_0]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "21", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_2_1]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "22", atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_2_2]));
 		  
 		p = cJSON_Print(pJsonRoot);
 		fwrite(p, 1, strlen(p), fptr);
