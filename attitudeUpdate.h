@@ -54,8 +54,7 @@ void setZGravity(float z_gravity);
 float getXGravity();
 float getYGravity();
 float getZGravity();
-void setMagnetCalibrationData(char *data);
-void getMagnetCalibrationData();
 void magnetCalibrationGetImuRawData(void);
 void getMagnetCalibrationRawData(short *rawData);
+bool parseMagnetCalibrationData(int *calCount, float *hardIron, float softIron[3][3]);
 

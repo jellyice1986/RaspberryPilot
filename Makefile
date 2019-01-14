@@ -25,11 +25,11 @@
 CC = $(CROSS_COMPILE)gcc
 RM = rm -rf 
 PWD	= ${shell pwd}
-SUBDIR = Module
-LIB_PATH = -L$(PWD)/Module/bin
+SUBDIR = Module CJSON
+LIB_PATH = -L$(PWD)/Module/bin -L$(PWD)/CJSON/bin
 OUTPUT_DIR = bin
 OBJ_DIR = obj
-LIB = -lModule_RaspberryPilot -lwiringPi -lm -lpthread
+LIB = -lModule_RaspberryPilot -lCJson_RaspberryPilot -lwiringPi -lm -lpthread
 PROCESS = RaspberryPilot
 TARGET_PROCESS = $(OUTPUT_DIR)/$(PROCESS)
 RASPBERRYPILOT_CFLAGS += $(DEFAULT_CFLAGS)
@@ -39,7 +39,8 @@ include $(PWD)/config.mk
 INCLUDES = \
 	-I. \
 	-I${PWD}/Module/PCA9685/core/inc \
-	-I${PWD}/Module/MPU6050/core/inc
+	-I${PWD}/Module/MPU6050/core/inc \
+	-I${PWD}/CJSON/core/inc
 
 LIB_SRCS = \
 	commonLib.c \

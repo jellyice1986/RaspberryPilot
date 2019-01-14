@@ -23,10 +23,11 @@ SOFTWARE.
 ******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <math.h>
+#include "cJSON.h"
 #include "commonLib.h"
 #include "ahrs.h"
 #include "smaFilter.h"
@@ -55,9 +56,9 @@ static float zGravity;
 static short imuRawData[9];
 #ifdef MPU6050_9AXIS
 // Hard iron calibration matrix
-float mag_hard_iron_cal[3] = {+0.546, +53.180, -22.293};
+float mag_hard_iron_cal[3];
 // Soft iron calibration matrix
-float mag_soft_iron_cal[3][3] = { {+1.011, -0.004, -0.009}, {-0.004, +0.999, +0.027}, {-0.009, +0.027, +0.991}};
+float mag_soft_iron_cal[3][3];
 static SMA_STRUCT x_magnetSmaFilterEntry;
 static SMA_STRUCT y_magnetSmaFilterEntry;
 static SMA_STRUCT z_magnetSmaFilterEntry;
@@ -83,7 +84,24 @@ static void getYawPitchRollInfo(float *yprAttitude, float *yprRate,
  */
 bool altitudeUpdateInit() {
 
+	int calCount;
+	
 	attitudeIsInit=false;
+
+	if(!parseMagnetCalibrationData(&calCount, mag_hard_iron_cal, mag_soft_iron_cal)){
+		_DEBUG(DEBUG_NORMAL,"Read magnet calibration data fail\n");
+		return false;
+	}
+
+	if(0 == calCount){
+		_DEBUG(DEBUG_NORMAL,"Use default magnet calibration data\n");
+	}
+	
+	_DEBUG(DEBUG_NORMAL,"Hard Iron: \n[%.3f %.3f %.3f]\n",mag_hard_iron_cal[0],mag_hard_iron_cal[1],mag_hard_iron_cal[2]);
+	_DEBUG(DEBUG_NORMAL,"Soft Iron: \n[%.3f %.3f %.3f]\n[%.3f %.3f %.3f]\n[%.3f %.3f %.3f]\n",
+		mag_soft_iron_cal[0][0],mag_soft_iron_cal[0][1],mag_soft_iron_cal[0][2],
+		mag_soft_iron_cal[1][0],mag_soft_iron_cal[1][1],mag_soft_iron_cal[1][2],
+		mag_soft_iron_cal[2][0],mag_soft_iron_cal[2][1],mag_soft_iron_cal[2][2]);
 
 #ifdef MPU6050_9AXIS
 	initSmaFilterEntity(&x_magnetSmaFilterEntry,"X_MAGNET",2);
@@ -93,7 +111,8 @@ bool altitudeUpdateInit() {
 
 	attitudeIsInit=true;
 
-	return attitudeIsInit;
+	return true;
+	
 }
 
 /**
@@ -763,32 +782,92 @@ void getMagnetCalibrationRawData(short *rawData){
 }
 
 /**
- * set magnet calibration data
- *
- * @param data
- * 		calibration result
- *
- *
- * @return
- *		void
- *
- */
-void setMagnetCalibrationData(char *data){
-	// TODO: set calibration data by CJSON
-}
-
-/**
  * get magnet calibration data
  *
- * @param 
- * 		void
+ * @param calCount
+ * 		pointer for calibraction count
+ *
+ * @param hardIron
+ * 		array for hard iron
+ *
+ * @param softIron
+ * 		array for soft iron
  *
  *
- * @return
- *		void
+ * @return bool
+ *		parse Magnet CalibrationData successfully or not
  *
  */
-void getMagnetCalibrationData(){
-	// TODO: get calibration data by CJSON
+bool parseMagnetCalibrationData(int *calCount, float *hardIron, float softIron[3][3]){
+ 
+	char buf[1024];
+	FILE *fptr;
+	cJSON *pJsonRoot;
+	cJSON *pSubJsonHardIron;
+	cJSON *pSubJsonSoftIron;
+	cJSON *pSub;
+	
+	fptr = fopen(MAGNET_CAL_DATA_PATH, "r");
+	
+	if (NULL == fptr)
+	{
+		_DEBUG(DEBUG_NORMAL,"MagnetCal.data doesn't exist\n");
+		return false;
+	}
+	else
+	{
+		memset(buf,'\0',sizeof(buf));
+		
+		fread(buf, 1, sizeof(buf), fptr);
+		fclose(fptr);
+		
+		pJsonRoot = cJSON_Parse(buf);
+		if(NULL == pJsonRoot){
+		   return false;
+		}
+		
+		pSub = cJSON_GetObjectItem(pJsonRoot, "Calibration Count");
+		*calCount = pSub->valueint;
+		
+		pSubJsonHardIron = cJSON_GetObjectItem(pJsonRoot, "Hard Iron");
+		if(NULL == pSubJsonHardIron){
+		   return false;
 }
+		pSub = cJSON_GetObjectItem(pSubJsonHardIron, "0");
+		hardIron[0] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonHardIron, "1");
+		hardIron[1] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonHardIron, "2");
+		hardIron[2] = pSub->valuedouble;
+		
+		pSubJsonSoftIron = cJSON_GetObjectItem(pJsonRoot, "Soft Iron");
+		if(NULL == pSubJsonSoftIron){
+		   return false;
+		}
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "00");
+		softIron[0][0] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "01");
+		softIron[0][1] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "02");
+		softIron[0][2] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "10");
+		softIron[1][0] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "11");
+		softIron[1][1] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "12");
+		softIron[1][2] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "20");
+		softIron[2][0] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "21");
+		softIron[2][1] = pSub->valuedouble;
+		pSub = cJSON_GetObjectItem(pSubJsonSoftIron, "22");
+		softIron[2][2] = pSub->valuedouble;
+
+		
+		cJSON_Delete(pJsonRoot);
+	}
+	
+	return true;
+
+  }
 

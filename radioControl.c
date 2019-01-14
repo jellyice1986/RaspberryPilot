@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <wiringSerial.h>
+#include "cJSON.h"
 #include "commonLib.h"
 #include "flyControler.h"
 #include "pid.h"
@@ -64,7 +65,7 @@ void radioHaltPi(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
-void radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
+bool radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]);
 
 #define CHECK_RECEIVER_PERIOD 0
 
@@ -632,7 +633,11 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 		case MAGNET_CALIBRATION_RESULT:
 
 			//save magnet calibration result
-			radioSaveMagnetCalModeResult(packet);
+			if(radioSaveMagnetCalModeResult(packet)){
+				_DEBUG(DEBUG_NORMAL, "Save magnet calibration data successfully\n");
+			}else{
+				_DEBUG(DEBUG_NORMAL, "Save magnet calibration data unsuccessfully\n");
+			}
 				
 			break;
 			
@@ -1204,13 +1209,75 @@ void radioSetupMagnetCalModeStatus(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LE
  * @param packet
  *		received packet
  *
- * @return
- *		   void
+ * @return bool
+ *		   save magnet calibretion data successfully or not
  */
-void radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
+bool radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 
-	// TODO: record data
-	 //setMagnetCalibrationData(packet);
+		cJSON *pJsonRoot = NULL;
+		cJSON *pSubJsonHardIron = NULL;
+		cJSON *pSubJsonSoftIron = NULL;
+		float hardIron[3];
+		float softIron[3][3];
+		int calCount;
+		char *p;
+		FILE *fptr;
+		
+		if(!parseMagnetCalibrationData(&calCount, hardIron, softIron)){
+			return false;
+		}
+		
+		fptr = fopen(MAGNET_CAL_DATA_PATH, "w");
+		if(NULL == fptr) {
+		  return false;
+		}
+		 
+		pJsonRoot = cJSON_CreateObject();
+		if(NULL == pJsonRoot){
+		  return false;
+		}
+		
+		pSubJsonHardIron = cJSON_CreateObject();
+		if(NULL == pSubJsonHardIron){
+		  cJSON_Delete(pJsonRoot);
+		  return false;
+		}
+		
+		pSubJsonSoftIron = cJSON_CreateObject();
+		if(NULL == pSubJsonSoftIron){
+		  cJSON_Delete(pJsonRoot);
+		  cJSON_Delete(pSubJsonHardIron);
+		  return false;
+		}
+	
+		cJSON_AddNumberToObject(pJsonRoot, "Calibration Count", ++calCount);
+		cJSON_AddItemToObject(pJsonRoot, "Hard Iron", pSubJsonHardIron);
+		cJSON_AddItemToObject(pJsonRoot, "Soft Iron", pSubJsonSoftIron);
+		
+		cJSON_AddNumberToObject(pSubJsonHardIron, "0", atof(packet[0]));
+		cJSON_AddNumberToObject(pSubJsonHardIron, "1", atof(packet[1]));
+		cJSON_AddNumberToObject(pSubJsonHardIron, "2", atof(packet[2]));
+		
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "00", atof(packet[3]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "01", atof(packet[4]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "02", atof(packet[5]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "10", atof(packet[6]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "11", atof(packet[7]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "12", atof(packet[8]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "20", atof(packet[9]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "21", atof(packet[10]));
+		cJSON_AddNumberToObject(pSubJsonSoftIron, "22", atof(packet[11]));
+		  
+		p = cJSON_Print(pJsonRoot);
+		fwrite(p, 1, strlen(p), fptr);
+		fclose(fptr);
+		cJSON_Delete(pJsonRoot);
+		
+		_DEBUG(DEBUG_MAGNET_CALIBRATION, "%s %d: %s\n",__func__,__LINE__,p);
+		
+		free(p);
+		
+		return true;
 
 }
 
