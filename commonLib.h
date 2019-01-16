@@ -22,7 +22,7 @@
  SOFTWARE.
  ******************************************************************************/
 
-#define MAGNET_CAL_DATA_PATH "./Data/MagnetCal.data"
+#define MAGNET_CAL_DATA_PATH "/home/pi/RaspberryPilot/Data/MagnetCal.data"
 
 #define true (1==1)
 #define false (1==0)
