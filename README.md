@@ -15,7 +15,7 @@ Circuit:
 
 RaspberryPilotApp (https://github.com/jellyice1986/RaspberryPilotApp) is an Android APP which is used to control RaspberryPilot, currently RaspberryPilotApp is the only tool to configure or drive RaspberryPilot.
 
-There are two type of wireless communication system beteen RaspberryPilotApp and RaspberryPilot as below
+There are two type of wireless communication system between RaspberryPilotApp and RaspberryPilot as below:
 
 Type 1: use WiFi directly, the communication range is about 10 meters
  
