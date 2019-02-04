@@ -175,7 +175,6 @@ void *radioTransmitThread(void *arg) {
 	char message[150];
 	short magCalRawData[9];
 	int fd = *(int *) arg;
-	unsigned int sleepTime=TRANSMIT_TIMER;
 
 	while (!getLeaveFlyControlerFlag()) {
 		 
@@ -192,14 +191,12 @@ void *radioTransmitThread(void *arg) {
 				magCalRawData[3],magCalRawData[4],magCalRawData[5],
 				magCalRawData[6],magCalRawData[7],magCalRawData[8]);
 			
-			sleepTime = 4000;
-			
 		}else{
 		
 			if (checkLogIsEnable()) {
 				
 				snprintf(message, sizeof(message),
-					"@%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
+					"@1:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d#",
 					(int) getRoll(), (int) getPitch(), (int) getYaw(),
 					(int) getCurrentAltHoldAltitude(),
 					(int) getPidSp(&rollAttitudePidSettings),
@@ -214,13 +211,10 @@ void *radioTransmitThread(void *arg) {
 				
 			}else{
 	
-				snprintf(message, sizeof(message), "@%d:%d:%d:%d#", (int) getRoll(),
+				snprintf(message, sizeof(message), "@1:%d:%d:%d:%d#", (int) getRoll(),
 						(int) getPitch(), (int) getYaw(),
 						(int) getCurrentAltHoldAltitude());
 			}
-
-			sleepTime = TRANSMIT_TIMER;
-
 		}	
 	
 		if ('#' != message[strlen(message) - 1]) {
@@ -231,8 +225,7 @@ void *radioTransmitThread(void *arg) {
 			memset(message, '\0', sizeof(message));
 		}
 
-		usleep(sleepTime);
-		
+		usleep(TRANSMIT_TIMER);
 	}
 
 	pthread_exit((void *) 0);
@@ -430,10 +423,10 @@ bool checkPacketFieldIsValid(char *buf, short lenth) {
 			count2 = SETUP_PID_END - 1;
 			break;
 		case MAGNET_CALIBRATION_START:
-			count2 = MAGNET_CALIBRATION_START_END;
+			count2 = MAGNET_CALIBRATION_START_END -1 ;
 			break;
 		case MAGNET_CALIBRATION_RESULT:
-			count2 = MAGNET_CALIBRATION_RESULT_END;	
+			count2 = MAGNET_CALIBRATION_RESULT_END - 1;	
 			break;
 		default:
 			count2 = -1;
@@ -934,7 +927,7 @@ void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
   */
 void radioSetupPid(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 
-	short parameterF = 0;
+	float parameterF = 0;
 
 	//attitude Roll P gain
 	 parameterF = atof(packet[SETUP_PID_ATTITUDE_ROLL_P]);
@@ -1249,6 +1242,20 @@ bool radioSaveMagnetCalModeResult(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LEN
 		  cJSON_Delete(pSubJsonHardIron);
 		  return false;
 		}
+	
+		setMagnetCalIron(atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_0_0]),
+						atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_0_1]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_0_2]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_1_0]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_1_1]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_1_2]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_2_0]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_2_1]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_SOFT_IRON_2_2]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_HARD_IRON_0]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_HARD_IRON_1]),
+						 atof(packet[MAGNET_CALIBRATION_RESULT_HARD_IRON_2]));
+
 	
 		cJSON_AddNumberToObject(pJsonRoot, "Calibration Count", ++calCount);
 		cJSON_AddItemToObject(pJsonRoot, "Hard Iron", pSubJsonHardIron);

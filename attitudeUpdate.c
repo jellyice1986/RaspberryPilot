@@ -736,6 +736,34 @@ void GetYComponent(float *y, float *q) {
 }
 
 /**
+ * set magnet calibration hard/soft iron
+ *
+ * @param  soft/hard iron
+ *
+ * @return
+ *		void
+ *
+ */
+void setMagnetCalIron(float soft_00,float soft_01,float soft_02,
+		float soft_10,float soft_11,float soft_12,
+		float soft_20,float soft_21,float soft_22,
+		float hard_0,float hard_1,float hard_2){
+
+		mag_hard_iron_cal[0] = hard_0;
+		mag_hard_iron_cal[1] = hard_1;
+		mag_hard_iron_cal[2] = hard_2;
+		mag_soft_iron_cal[0][0] = soft_00;
+		mag_soft_iron_cal[0][1] = soft_01;
+		mag_soft_iron_cal[0][2] = soft_02;
+		mag_soft_iron_cal[1][0] = soft_10;
+		mag_soft_iron_cal[1][1] = soft_11;
+		mag_soft_iron_cal[1][2] = soft_12;
+		mag_soft_iron_cal[2][0] = soft_20;
+		mag_soft_iron_cal[2][1] = soft_21;
+		mag_soft_iron_cal[2][2] = soft_22;
+}
+
+/**
  * magnet calibration mode gets IMU Raw data
  *
  * @param 
