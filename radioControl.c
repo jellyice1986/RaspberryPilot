@@ -561,6 +561,8 @@ unsigned short getChecksumFieldIndex(unsigned int header) {
  */
 bool processRadioMessages(int fd, char *buf, short lenth) {
 
+	//_DEBUG(DEBUG_NORMAL,"%s\n",buf);
+	
 	char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH];
 
 	if(!validPacket(buf, lenth, packet)){
@@ -810,8 +812,6 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 
 	short parameter = 0;
-
-	//_DEBUG(DEBUG_NORMAL, "%s %d: %s\n", __func__, __LINE__, buf);
 
 	/***/
 	parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
