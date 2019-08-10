@@ -73,7 +73,7 @@ int main() {
 		gettimeofday(&tv_c,NULL);
 		timeDiff=GET_USEC_TIMEDIFF(tv_c,tv_l);
 
-		if(timeDiff >=((unsigned long) (getAdjustPeriod() * CONTROL_CYCLE_TIME))){
+		if(timeDiff >= CONTROL_CYCLE_TIME){
 
 #if CHECK_RASPBERRYPILOT_LOOP_TIME
 			_DEBUG(DEBUG_NORMAL,"RaspberryPilot main duration=%ld us\n",timeDiff);

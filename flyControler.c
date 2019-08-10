@@ -55,12 +55,8 @@ static float rollAttitudeOutput;
 static float pitchAttitudeOutput;
 static float yawAttitudeOutput;
 static float altHoltAltOutput;
-static unsigned short adjustPeriod;
-static float angularLimit;
-static float gyroLimit;
 static float yawCenterPoint;
 static float maxThrottleOffset;
-static float altitudePidOutputLimitation;
 
 /**
  * Init paramtes and states for flyControler
@@ -81,14 +77,6 @@ bool flyControlerInit() {
 
 	setLeaveFlyControlerFlag(false);
 	disenableFlySystem();
-	setAdjustPeriod(DEFAULT_ADJUST_PERIOD);
-	setGyroLimit(DEFAULT_GYRO_LIMIT);
-	setAngularLimit(DEFAULT_ANGULAR_LIMIT);
-	setMotorGain(SOFT_PWM_CCW1, 1);
-	setMotorGain(SOFT_PWM_CW1, 1);
-	setMotorGain(SOFT_PWM_CCW2, 1);
-	setMotorGain(SOFT_PWM_CW2, 1);
-	setAltitudePidOutputLimitation(15.f); // 15 cm/sec
 	rollAttitudeOutput = 0.f;
 	pitchAttitudeOutput = 0.f;
 	yawAttitudeOutput = 0.f;
@@ -138,17 +126,9 @@ bool getLeaveFlyControlerFlag() {
  */
 void getAttitudePidOutput() {
 
-	rollAttitudeOutput = LIMIT_MIN_MAX_VALUE(
-			pidCalculation(&rollAttitudePidSettings, getRoll(),true,true,true),
-			-getGyroLimit(), getGyroLimit());
-	pitchAttitudeOutput =
-			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&pitchAttitudePidSettings, getPitch(),true,true,true),
-					-getGyroLimit(), getGyroLimit());
-	yawAttitudeOutput =
-			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw()),true,true,true),
-					-getGyroLimit(), getGyroLimit());
+	rollAttitudeOutput = pidCalculation(&rollAttitudePidSettings, getRoll(),true,true,true);
+	pitchAttitudeOutput = pidCalculation(&pitchAttitudePidSettings, getPitch(),true,true,true);
+	yawAttitudeOutput =	pidCalculation(&yawAttitudePidSettings, yawTransform(getYaw()),true,true,true);
 
 	_DEBUG(DEBUG_ATTITUDE_PID_OUTPUT,
 			"(%s-%d) attitude pid output: roll=%.5f, pitch=%.5f, yaw=%.5f\n",
@@ -235,10 +215,8 @@ void motorControler() {
 
 	centerThrottle = (float) getThrottlePowerLevel() + throttleOffset;
 
-	maxLimit = (float) min(centerThrottle + getAdjustPowerLeveRange(),
-			getMaxPowerLeve());
-	minLimit = (float) max(centerThrottle - getAdjustPowerLeveRange(),
-			getMinPowerLevel());
+	maxLimit = (float) getMaxPowerLeve();
+	minLimit = (float) getMinPowerLevel();
 
 	getAttitudePidOutput();
 	getRatePidOutput(&rollRateOutput, &pitchRateOutput, &yawRateOutput);
@@ -297,27 +275,15 @@ void motorControler() {
 	yawCw1 = -yawRateOutput;
 	yawCw2 = -yawRateOutput;
 
-	outCcw1 = centerThrottle
-			+ LIMIT_MIN_MAX_VALUE(rollCcw1 + pitchCcw1 + yawCcw1,
-					-getPidOutputLimitation(), getPidOutputLimitation());
-	outCcw2 = centerThrottle
-			+ LIMIT_MIN_MAX_VALUE(rollCcw2 + pitchCcw2 + yawCcw2,
-					-getPidOutputLimitation(), getPidOutputLimitation());
-	outCw1 = centerThrottle
-			+ LIMIT_MIN_MAX_VALUE(rollCw1 + pitchCw1 + yawCw1,
-					-getPidOutputLimitation(), getPidOutputLimitation());
-	outCw2 = centerThrottle
-			+ LIMIT_MIN_MAX_VALUE(rollCw2 + pitchCw2 + yawCw2,
-					-getPidOutputLimitation(), getPidOutputLimitation());
+	outCcw1 = centerThrottle + (rollCcw1 + pitchCcw1 + yawCcw1);
+	outCcw2 = centerThrottle + (rollCcw2 + pitchCcw2 + yawCcw2);
+	outCw1 = centerThrottle	+ (rollCw1 + pitchCw1 + yawCw1);
+	outCw2 = centerThrottle	+ (rollCw2 + pitchCw2 + yawCw2);
 
-	outCcw1 = getMotorGain(
-			SOFT_PWM_CCW1) * LIMIT_MIN_MAX_VALUE(outCcw1, minLimit, maxLimit);
-	outCcw2 = getMotorGain(
-			SOFT_PWM_CCW2) * LIMIT_MIN_MAX_VALUE(outCcw2, minLimit, maxLimit);
-	outCw1 = getMotorGain(
-			SOFT_PWM_CW1) * LIMIT_MIN_MAX_VALUE(outCw1, minLimit, maxLimit);
-	outCw2 = getMotorGain(
-			SOFT_PWM_CW2) * LIMIT_MIN_MAX_VALUE(outCw2, minLimit, maxLimit);
+	outCcw1 =  LIMIT_MIN_MAX_VALUE(outCcw1, minLimit, maxLimit);
+	outCcw2 =  LIMIT_MIN_MAX_VALUE(outCcw2, minLimit, maxLimit);
+	outCw1 =  LIMIT_MIN_MAX_VALUE(outCw1, minLimit, maxLimit);
+	outCw2 = LIMIT_MIN_MAX_VALUE(outCw2, minLimit, maxLimit);
 
 	setupCcw1MotorPoewrLevel((unsigned short) outCcw1);
 	setupCcw2MotorPoewrLevel((unsigned short) outCcw2);
@@ -389,123 +355,6 @@ float yawTransform(float originPoint) {
 }
 
 /**
- * set a value to limit the PID output of attitude
- *
- * @param limitation
- * 		the period of adjusting motor
- *
- * @return
- *		void
- *
- */
-void setGyroLimit(float limitation) {
-
-	gyroLimit = limitation;
-}
-
-/**
- * get the limitation of PID output of attitude
- *
- * @param
- * 		void
- *
- * @return
- *		 the limitation of PID output of attitude
- *
- */
-float getGyroLimit() {
-
-	return gyroLimit;
-}
-
-/**
- * set a value to indicate the period of adjusting motor
- *
- * @param period
- * 		the period of adjusting motor
- *
- * @return
- *		void
- *
- */
-void setAdjustPeriod(unsigned short period) {
-
-	adjustPeriod = period;
-}
-
-/**
- * get the period of adjusting motor
- *
- * @param
- * 		void
- *
- * @return
- *		 the period of adjusting motor
- *
- */
-unsigned short getAdjustPeriod() {
-
-	return adjustPeriod;
-}
-
-/**
- * set a value to limit the maximum of angular which is got from remote controler
- *
- * @param angular
- *               the limitation
- *
- * @return
- *			void
- *
- */
-void setAngularLimit(float angular) {
-
-	angularLimit = angular;
-}
-
-/**
- * get the maxumum of angular that  your quadcopter can get
- *
- * @param
- *		whetjer update altHold offset or not
- *
- * @return
- *		the limitation of angular
- */
-float getAngularLimit() {
-
-	return angularLimit;
-}
-
-/**
- * set the limitation of output of altiude PID controler
- *
- * @param
- *		limitation
- *
- * @return
- *		void
- */
-void setAltitudePidOutputLimitation(float v) {
-
-	altitudePidOutputLimitation = v;
-}
-
-/**
- * get the limitation of output of altiude PID controler
- *
- * @param
- *		void
- *
- * @return
- *		limitation
- */
-float getAltitudePidOutputLimitation(void) {
-
-	return altitudePidOutputLimitation;
-}
-
-/**
  * get output from altitude pid controler
  *
  * @param
@@ -516,11 +365,7 @@ float getAltitudePidOutputLimitation(void) {
  */
 void getAltHoldAltPidOutput() {
 
-	altHoltAltOutput =
-			LIMIT_MIN_MAX_VALUE(
-					pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude()-getTargetAlt(),true,true,true),
-					-getAltitudePidOutputLimitation(),
-					getAltitudePidOutputLimitation());
+	altHoltAltOutput =	pidCalculation(&altHoldAltSettings, getCurrentAltHoldAltitude()-getTargetAlt(),true,true,true);
 	
 	//_DEBUG(DEBUG_NORMAL,"getPidSp(&altHoldAltSettings)=%f\n",getPidSp(&altHoldAltSettings));
 	//_DEBUG(DEBUG_NORMAL,"getCurrentAltHoldAltitude=%f,getTargetAlt=%f\n",getCurrentAltHoldAltitude(),getTargetAlt());

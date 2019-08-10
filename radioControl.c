@@ -278,6 +278,7 @@ void *radioReceiveThread(void *arg) {
 				} else if ((getChar == '#') && (*buf == '@')
 						&& (count < sizeof(buf))) {
 					*(buf + count) = getChar;
+					*(buf + count+1) = '\0';
 					processRadioMessages(fd, buf, count + 1);
 					count = 0;
 				} else {
@@ -766,12 +767,8 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 				 setPidSp(&yawAttitudePidSettings, 0);
 			 }
 
-			 setPidSp(&rollAttitudePidSettings,
-					 LIMIT_MIN_MAX_VALUE(rollSpShift, -getAngularLimit(),
-							 getAngularLimit()));
-			 setPidSp(&pitchAttitudePidSettings,
-					 LIMIT_MIN_MAX_VALUE(pitchSpShift, -getAngularLimit(),
-							 getAngularLimit()));
+			 setPidSp(&rollAttitudePidSettings,rollSpShift);
+			 setPidSp(&pitchAttitudePidSettings,pitchSpShift);
 			 setYawCenterPoint(getYawCenterPoint() + (yawShiftValue * 4));
 
 			 //_DEBUG(DEBUG_NORMAL,"setYawCenterPoint=%f\n",getYawCenterPoint());
@@ -813,106 +810,18 @@ bool processRadioMessages(int fd, char *buf, short lenth) {
 void radioSetupFactor(char packet[PACKET_FIELD_NUM][PACKET_FIELD_LENGTH]){
 
 	short parameter = 0;
-	float parameterF = 0.0;
 
 	//_DEBUG(DEBUG_NORMAL, "%s %d: %s\n", __func__, __LINE__, buf);
-	/***/
-	parameter = atoi(packet[SETUP_FACTOR_PERIOD]);
-	if (parameter == 0) {
-		parameter = 1;
-	}
 
-	setAdjustPeriod(parameter);
-	_DEBUG(DEBUG_NORMAL, "Adjustment Period: %d\n", getAdjustPeriod());
-	/***/
-	parameter = atoi(packet[SETUP_FACTOR_POWER_LEVEL_RANGE]);
-	if (parameter == 0) {
-		parameter = 1;
-	}
-	setAdjustPowerLeveRange(parameter);
-	_DEBUG(DEBUG_NORMAL, "Adjustment Range: %d\n",
-			getAdjustPowerLeveRange());
-	/***/
-	parameter = atoi(packet[SETUP_FACTOR_POWER_LIMIT]);
-	if (parameter == 0) {
-		parameter = 1;
-	}
-	setPidOutputLimitation(parameter);
-	_DEBUG(DEBUG_NORMAL, "PID Output Limitation: %d\n",
-			getPidOutputLimitation());
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_GYRO_LIMIT]);
-	if (parameterF == 0.) {
-		parameterF = 1.;
-	}
-	setGyroLimit(parameterF);
-	_DEBUG(DEBUG_NORMAL, "Angular Velocity Limit: %5.3f\n", getGyroLimit());
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_ANGULAR_LIMIT]);
-	if (parameterF == 0.) {
-		parameterF = 1.;
-	}
-	setAngularLimit(parameterF);
-	_DEBUG(DEBUG_NORMAL, "Roll/Pitch Angular Limit: %5.3f\n",
-			getAngularLimit());
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_ROLL_CAL]);
-	setPidSpShift(&rollAttitudePidSettings, parameterF);
-	_DEBUG(DEBUG_NORMAL, "Roll Angular Calibration: %5.3f\n",
-			getPidSpShift(&rollAttitudePidSettings));
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_PITCH_CAL]);
-	setPidSpShift(&pitchAttitudePidSettings, parameterF);
-	_DEBUG(DEBUG_NORMAL, "Pitch Angular Calibration: %5.3f\n",
-			getPidSpShift(&pitchAttitudePidSettings));
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_0]);
-	if (parameterF == 0.) {
-		parameterF = 1.;
-	}
-	setMotorGain(SOFT_PWM_CCW1, parameterF);
-	_DEBUG(DEBUG_NORMAL, "Motor 0 Gain: %5.3f\n",
-			getMotorGain(SOFT_PWM_CCW1));
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_1]);
-	if (parameterF == 0.) {
-		parameterF = 1.;
-	}
-	setMotorGain(SOFT_PWM_CW1, parameterF);
-	_DEBUG(DEBUG_NORMAL, "Motor 1 Gain: %5.3f\n",
-			getMotorGain(SOFT_PWM_CW1));
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_2]);
-	if (parameterF == 0.) {
-		parameterF = 1.;
-	}
-	setMotorGain(SOFT_PWM_CCW2, parameterF);
-	_DEBUG(DEBUG_NORMAL, "Motor 2 Gain: %5.3f\n",
-			getMotorGain(SOFT_PWM_CCW2));
-	/***/
-	parameterF = atof(packet[SETUP_FACTOR_MOTOR_GAIN_3]);
-	if (parameterF == 0.) {
-		parameterF = 1.;
-	}
-	setMotorGain(SOFT_PWM_CW2, parameterF);
-	_DEBUG(DEBUG_NORMAL, "Motor 3 Gain: %5.3f\n",
-			getMotorGain(SOFT_PWM_CW2));
 	/***/
 	parameter = atoi(packet[SETUP_FACTOR_VERTICAL_HOLD_ENABLE]);
 	setEnableAltHold((bool) parameter);
-	_DEBUG(DEBUG_NORMAL, "Enable aAltHold: %s\n",
-			getEnableAltHold()==true?"true":"false");
-	/***/
-	parameterF = atof(
-			packet[SETUP_FACTOR_ALTHOLD_ALT_PID_OUTPUT_LIMITATION]);
-	setAltitudePidOutputLimitation(parameterF);
-	_DEBUG(DEBUG_NORMAL, "getAltitudePidOutputLimitation: %5.3f\n",
-			getAltitudePidOutputLimitation());
+	_DEBUG(DEBUG_NORMAL, "Enable aAltHold: %s\n", getEnableAltHold()==true?"true":"false");
 
 	/***/
 	parameter = atoi(packet[SETUP_FACTOR_LOG_ENABLED]);
 	setLogIsEnable(parameter);
-	_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %d\n", checkLogIsEnable());
+	_DEBUG(DEBUG_NORMAL, "checkLogIsEnable: %s\n", checkLogIsEnable()==true?"true":"false");
 	/***/
 }
 

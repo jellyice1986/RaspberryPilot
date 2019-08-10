@@ -22,8 +22,6 @@
  SOFTWARE.
  ******************************************************************************/
 
-#define DEFAULT_ADJUST_POWER_RANGE 500  
-#define DEFAULT_PID_OUTPUT_LIMITATION 500
 #if defined(ESC_ONESHOT125)
 #define ESC_MAX_THROTTLE_HZ 		4000.f //1/(250us)
 #define ESC_MIN_THROTTLE_HZ 		8000.f //1/(125us)
@@ -50,10 +48,4 @@ void setThrottlePowerLevel(unsigned short level);
 unsigned short getThrottlePowerLevel();
 unsigned short getMinPowerLevel();
 unsigned short getMaxPowerLeve();
-unsigned short getAdjustPowerLeveRange();
-void setAdjustPowerLeveRange(int v);
-unsigned short getPidOutputLimitation();
-void setPidOutputLimitation(int v);
-float getMotorGain(unsigned char index);
-void setMotorGain(unsigned char index, float value);
 

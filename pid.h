@@ -57,8 +57,6 @@ void setPidError(PID_STRUCT *pi, float value);
 float getPidSperror(PID_STRUCT *pi);
 void setPidSp(PID_STRUCT *pid, float set_point);
 float getPidSp(PID_STRUCT *pid);
-void setPidSpShift(PID_STRUCT *pi, float value);
-float getPidSpShift(PID_STRUCT *pi);
 void setName(PID_STRUCT *pid, char *name);
 char *getName(PID_STRUCT *pid);
 void setPGain(PID_STRUCT *pid, float gain);

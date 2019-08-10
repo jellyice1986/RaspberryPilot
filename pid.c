@@ -430,37 +430,6 @@ float getPidSperror(PID_STRUCT *pi) {
 }
 
 /**
- *  set a shift for set point
- *
- * @param pi
- * 		PID entity
- *
- * @param value
- * 		value
- *
- * @return
- *		 void
- *
- */
-void setPidSpShift(PID_STRUCT *pi, float value) {
-	pi->spShift = value;
-}
-
-/**
- *  get  shift
- *
- * @param pi
- * 		PID entity
- *
- * @return
- *		 shift
- *
- */
-float getPidSpShift(PID_STRUCT *pi) {
-	return pi->spShift;
-}
-
-/**
  *  set set point
  *
  * @param pid
